@@ -1741,6 +1741,9 @@ if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListen
     if (!S.goals[sg.week] && !LS.get(flag, false)) { S.goals[sg.week] = { week: sg.week, items: parseGoalsText(sg.text) }; await DB.put('goals', S.goals[sg.week]); }
     LS.set(flag, true);
   }
+  // Reopen today's unfinished round after a reload instead of losing it.
+  const open = S.dialogs.filter(d => !d.completed && d.day === today() && d.messages.some(m => m.role === 'assistant')).sort((a, b) => b.createdAt - a.createdAt)[0];
+  if (open) S.activeDialog = open.id;
   render(); celebrate();
   if (IS_ARTIFACT) window.claude.use('sample').then(fn => { SAMPLE = fn; render(); }).catch(() => {});
   if (!IS_ARTIFACT && 'serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
