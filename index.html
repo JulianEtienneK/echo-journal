@@ -203,6 +203,8 @@ i[data-l="0"] { background: var(--surface-2); }
 .badge .em { font-size: 26px; line-height: 1; }
 .badge.locked .em { filter: grayscale(1); opacity: .45; }
 .badge.locked b { color: var(--muted); }
+.badge.secret { border-style: dashed; }
+.badge.secret:not(.locked) { border: 1px solid var(--gold); background: var(--gold-soft); }
 
 /* Tabs + player */
 #tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--surface); border-top: 1px solid var(--line);
@@ -396,6 +398,29 @@ const I18N = {
     b_soc1: ['Eule', 'Erste Sokrates-Runde'], b_soc10: ['Agora', '10 Sokrates-Runden'],
     b_fullday: ['Volle Runde', 'Alle drei Tagesaufgaben an einem Tag'], b_full7: ['Sieben volle Runden', '7 Tage mit voller Runde'],
     b_echo10: ['Echo', '10 ältere Memos wiedergehört'], b_promise10: ['Wort gehalten', '10 Vorsätze erledigt'], b_goals: ['Volltreffer', 'Eine Woche mit allen Zielen erreicht'],
+    secretTitle: 'Geheime Abzeichen', newSecret: n => 'Geheimes Abzeichen entdeckt: ' + n,
+    b_memos3: ['Warmgeredet', '3 Memos'], b_memos25: ['Vielsprecher', '25 Memos'], b_memos100: ['Hundert Stimmen', '100 Memos'],
+    b_streak3: ['Funkenflug', '3 Tage Serie'], b_streak14: ['Zwei Wochen', '14 Tage Serie'], b_streak100: ['Dreistellig', '100 Tage Serie'],
+    b_days10: ['Stammgast', 'An 10 Tagen aufgenommen'], b_days50: ['Gewohnheit', 'An 50 Tagen aufgenommen'],
+    b_min10: ['Zehn Minuten', '10 Minuten gesprochen'], b_min600: ['Hörbuch', '10 Stunden gesprochen'], b_impulses6: ['Vielseitig', 'Jeden Impuls einmal genutzt'],
+    b_soc3: ['Fragensteller', '3 Sokrates-Runden'], b_soc25: ['Akademie', '25 Sokrates-Runden'], b_soc50: ['Symposion', '50 Sokrates-Runden'],
+    b_talk1: ['Bühnenreif', 'Erste Vortragsdiskussion'], b_talk5: ['Souverän', '5 Vortragsdiskussionen'],
+    b_full3: ['Dreiklang', '3 Tage mit voller Runde'], b_full30: ['Ritual', '30 Tage mit voller Runde'],
+    b_recap7: ['Tagebuch', '7 Tagesrückblicke'], b_recap30: ['Chronik', '30 Tagesrückblicke'],
+    b_echo1: ['Zeitreise', 'Ein älteres Memo wiedergehört'], b_promise1: ['Versprochen', 'Ersten Vorsatz erledigt'],
+    b_goals4: ['Vier Treffer', '4 Wochen mit allen Zielen'], b_mainGoal: ['Hauptsache', 'Ein Hauptziel erreicht'],
+    b_night: ['Nachteule', 'Ein Memo zwischen Mitternacht und 4 Uhr', 'Manche Gedanken kommen erst spät.'],
+    b_early: ['Morgengrauen', 'Ein Memo vor 6 Uhr', 'Wer früh spricht …'],
+    b_marathon: ['Monolog', 'Ein Memo über 20 Minuten', 'Manchmal muss alles raus.'],
+    b_chatty: ['Plaudertasche', '5 Memos an einem Tag', 'Ein sehr gesprächiger Tag.'],
+    b_comeback: ['Comeback', 'Nach einer Woche Pause wieder aufgenommen', 'Pausen gehören dazu.'],
+    b_turbo: ['Turbo', 'Mit 3-fachem Tempo gehört', 'Schneller geht immer.'],
+    b_pi: ['π', 'Ein Memo von genau 3:14 Minuten', 'Irrational genau.'],
+    b_palindrome: ['Spiegelzeit', 'Ein Memo zu einer Spiegelzeit wie 12:21', 'Vorwärts wie rückwärts.'],
+    b_holiday: ['Festtagsstimme', 'Ein Memo an Halloween, Heiligabend, Silvester oder Neujahr', 'Besondere Tage, besondere Worte.'],
+    b_explorer: ['Entdecker', 'Jeden Bereich der App besucht', 'Neugier zahlt sich aus.'],
+    b_dayone: ['Tag eins', 'Gleich am allerersten Tag die volle Runde', 'Der Anfang zählt doppelt.'],
+    b_hints3: ['Rettungsring', 'Drei Hinweise in einer Sokrates-Runde', 'Fragen ist keine Schwäche.'],
     micArtifact: 'In claude.ai ist das Mikrofon für Seiten gesperrt. Nimm mit der Rekorder-App deines Handys auf, wähle eine Audiodatei, oder schreib bzw. diktiere über das Mikro der Tastatur.',
     capRecord: 'Mit Rekorder aufnehmen', capPick: 'Audiodatei wählen', capReady: d => 'Aufnahme bereit · ' + d,
     capNote: 'Worum ging es? (optional, daraus entsteht die Zusammenfassung)', capNotePh: 'Stichworte, oder per Tastatur-Mikro diktieren …',
@@ -470,6 +495,29 @@ const I18N = {
     b_soc1: ['Owl', 'First Socratic round'], b_soc10: ['Agora', '10 Socratic rounds'],
     b_fullday: ['Full round', 'All three daily tasks in one day'], b_full7: ['Seven full rounds', '7 days with a full round'],
     b_echo10: ['Echo', 'Replayed 10 older memos'], b_promise10: ['Kept my word', '10 commitments done'], b_goals: ['Bullseye', 'A week with every goal reached'],
+    secretTitle: 'Secret badges', newSecret: n => 'Secret badge found: ' + n,
+    b_memos3: ['Warmed up', '3 memos'], b_memos25: ['Talker', '25 memos'], b_memos100: ['A hundred voices', '100 memos'],
+    b_streak3: ['Kindling', '3-day streak'], b_streak14: ['Two weeks', '14-day streak'], b_streak100: ['Triple digits', '100-day streak'],
+    b_days10: ['Regular', 'Recorded on 10 days'], b_days50: ['Habit', 'Recorded on 50 days'],
+    b_min10: ['Ten minutes', '10 minutes spoken'], b_min600: ['Audiobook', '10 hours spoken'], b_impulses6: ['Versatile', 'Used every starter once'],
+    b_soc3: ['Questioner', '3 Socratic rounds'], b_soc25: ['Academy', '25 Socratic rounds'], b_soc50: ['Symposium', '50 Socratic rounds'],
+    b_talk1: ['Stage ready', 'First talk discussion'], b_talk5: ['Poised', '5 talk discussions'],
+    b_full3: ['Triad', '3 days with a full round'], b_full30: ['Ritual', '30 days with a full round'],
+    b_recap7: ['Diary', '7 daily recaps'], b_recap30: ['Chronicle', '30 daily recaps'],
+    b_echo1: ['Time travel', 'Replayed an older memo'], b_promise1: ['Promised', 'First commitment done'],
+    b_goals4: ['Four for four', '4 weeks with every goal reached'], b_mainGoal: ['Main thing', 'Reached a main goal'],
+    b_night: ['Night owl', 'A memo between midnight and 4 am', 'Some thoughts only come late.'],
+    b_early: ['Daybreak', 'A memo before 6 am', 'The early voice …'],
+    b_marathon: ['Monologue', 'A memo over 20 minutes', 'Sometimes it all needs to come out.'],
+    b_chatty: ['Chatterbox', '5 memos in one day', 'A very talkative day.'],
+    b_comeback: ['Comeback', 'Recorded again after a week off', 'Breaks are part of it.'],
+    b_turbo: ['Turbo', 'Listened at 3× speed', 'There is always faster.'],
+    b_pi: ['π', 'A memo of exactly 3:14', 'Irrationally precise.'],
+    b_palindrome: ['Mirror time', 'A memo at a mirror time like 12:21', 'Forwards and backwards.'],
+    b_holiday: ['Holiday voice', "A memo on Halloween, Christmas Eve, New Year's Eve or Day", 'Special days, special words.'],
+    b_explorer: ['Explorer', 'Visited every part of the app', 'Curiosity pays off.'],
+    b_dayone: ['Day one', 'A full round on your very first day', 'Beginnings count double.'],
+    b_hints3: ['Lifebuoy', 'Three hints in one Socratic round', 'Asking is no weakness.'],
     micArtifact: "claude.ai blocks the microphone for pages. Record with your phone's recorder app, pick an audio file, or type or dictate with the keyboard mic.",
     capRecord: 'Record with recorder', capPick: 'Choose audio file', capReady: d => 'Recording ready · ' + d,
     capNote: 'What was it about? (optional, the summary is made from this)', capNotePh: 'Keywords, or dictate with the keyboard mic …',
@@ -600,7 +648,29 @@ function computeStats() {
   if (best > LS.get('echo-best', 0)) LS.set('echo-best', best);
   const level = levelFrom(xp);
   const quests = { memo: dayMin.has(td), socratic: socDays.has(td), recap: recapSet.has(td), echo: (pl[td] || []).length > 0 };
-  return {
+  // Extra counters for badges.
+  const perDay = new Map(), imps = new Set(); let longest = 0, night = 0, early = 0, pi = 0, mirror = 0, holiday = 0;
+  for (const m of S.memos) {
+    perDay.set(m.day, (perDay.get(m.day) || 0) + 1);
+    if (m.impulse) imps.add(m.impulse);
+    longest = Math.max(longest, m.dur || 0);
+    const dt = new Date(m.createdAt), h = dt.getHours(), hm = pad(h) + pad(dt.getMinutes());
+    if (h < 4) night++; else if (h < 6) early++;
+    if (m.blob && Math.floor(m.dur || 0) === 194) pi++;
+    if (hm === hm.split('').reverse().join('')) mirror++;
+    if (['10-31', '12-24', '12-31', '01-01'].includes(m.day.slice(5))) holiday++;
+  }
+  const active = [...dayMin.keys()].sort();
+  let comeback = 0; for (let i = 1; i < active.length; i++) if ((parseDay(active[i]) - parseDay(active[i - 1])) / 864e5 >= 8) comeback++;
+  const hintTexts = [I18N.de.hintMsg, I18N.en.hintMsg];
+  const maxHints = Math.max(0, ...S.dialogs.map(d => d.messages.filter(m => m.role === 'user' && hintTexts.includes(m.content)).length));
+  const mainGoal = Object.values(S.goals).some(g => weekProgress(g).items.some(it => it.tier === 'big' && goalDone(it)));
+  const extra = {
+    activeDays: dayMin.size, maxDayMemos: Math.max(0, ...perDay.values()), longest, night, early, pi, mirror, holiday, comeback, maxHints, mainGoal: mainGoal ? 1 : 0,
+    talk: socDone.filter(d => d.mode === 'talk').length, recaps: recapDays.length, impulses: imps.size,
+    maxSpeed: LS.get('echo-maxspeed', 1), tabs: LS.get('echo-tabs', []).length, dayOne: active.length && fullDays.includes(active[0]) ? 1 : 0,
+  };
+  return { ...extra,
     xp, level, levelBase: levelBase(level), levelNext: levelBase(level + 1), streak: st, bestStreak: best,
     minutes: seconds / 60, weekMin: Math.round(weekSec / 60), memoCount: S.memos.length,
     soc: socDone.length, fullDays: fullDays.length, echoCount, commitDone, goalWeeks, dayMin, quests,
@@ -608,13 +678,28 @@ function computeStats() {
 }
 
 const BADGES = [
-  ['first', '🎙️', s => [s.memoCount, 1]], ['memos10', '🗣️', s => [s.memoCount, 10]],
-  ['streak7', '🔥', s => [s.bestStreak, 7]], ['streak30', '🌋', s => [s.bestStreak, 30]],
-  ['min60', '⏱️', s => [Math.floor(s.minutes), 60]], ['min300', '📼', s => [Math.floor(s.minutes), 300]], ['memos50', '📚', s => [s.memoCount, 50]],
-  ['soc1', '🦉', s => [s.soc, 1]], ['soc10', '🏛️', s => [s.soc, 10]],
-  ['fullday', '⭐', s => [s.fullDays, 1]], ['full7', '🌟', s => [s.fullDays, 7]],
-  ['echo10', '🔁', s => [s.echoCount, 10]], ['promise10', '🤝', s => [s.commitDone, 10]], ['goals', '🎯', s => [s.goalWeeks, 1]],
-].map(([id, em, prog]) => ({ id, em, prog }));
+  ['first', '🎙️', s => [s.memoCount, 1]], ['memos3', '🎤', s => [s.memoCount, 3]], ['memos10', '🗣️', s => [s.memoCount, 10]],
+  ['memos25', '📣', s => [s.memoCount, 25]], ['memos50', '📚', s => [s.memoCount, 50]], ['memos100', '💯', s => [s.memoCount, 100]],
+  ['streak3', '✨', s => [s.bestStreak, 3]], ['streak7', '🔥', s => [s.bestStreak, 7]], ['streak14', '☄️', s => [s.bestStreak, 14]],
+  ['streak30', '🌋', s => [s.bestStreak, 30]], ['streak100', '🏔️', s => [s.bestStreak, 100]],
+  ['days10', '📅', s => [s.activeDays, 10]], ['days50', '🗓️', s => [s.activeDays, 50]],
+  ['min10', '⏲️', s => [Math.floor(s.minutes), 10]], ['min60', '⏱️', s => [Math.floor(s.minutes), 60]],
+  ['min300', '📼', s => [Math.floor(s.minutes), 300]], ['min600', '🎧', s => [Math.floor(s.minutes), 600]],
+  ['impulses6', '🎨', s => [s.impulses, 6]],
+  ['soc1', '🦉', s => [s.soc, 1]], ['soc3', '❓', s => [s.soc, 3]], ['soc10', '🏛️', s => [s.soc, 10]],
+  ['soc25', '🎓', s => [s.soc, 25]], ['soc50', '📜', s => [s.soc, 50]],
+  ['talk1', '🎤', s => [s.talk, 1]], ['talk5', '🎩', s => [s.talk, 5]],
+  ['fullday', '⭐', s => [s.fullDays, 1]], ['full3', '🌠', s => [s.fullDays, 3]], ['full7', '🌟', s => [s.fullDays, 7]], ['full30', '🌌', s => [s.fullDays, 30]],
+  ['recap7', '📓', s => [s.recaps, 7]], ['recap30', '📔', s => [s.recaps, 30]],
+  ['echo1', '⏳', s => [s.echoCount, 1]], ['echo10', '🔁', s => [s.echoCount, 10]],
+  ['promise1', '✅', s => [s.commitDone, 1]], ['promise10', '🤝', s => [s.commitDone, 10]],
+  ['goals', '🎯', s => [s.goalWeeks, 1]], ['goals4', '🏹', s => [s.goalWeeks, 4]], ['mainGoal', '🏆', s => [s.mainGoal, 1]],
+  // Secret: hidden until earned, only a teaser shows.
+  ['night', '🌙', s => [s.night, 1], 1], ['early', '🌅', s => [s.early, 1], 1], ['marathon', '🏃', s => [s.longest >= 1200 ? 1 : 0, 1], 1],
+  ['chatty', '🦜', s => [s.maxDayMemos, 5], 1], ['comeback', '🪃', s => [s.comeback, 1], 1], ['turbo', '⚡', s => [s.maxSpeed >= 3 ? 1 : 0, 1], 1],
+  ['pi', '🥧', s => [s.pi, 1], 1], ['palindrome', '🪞', s => [s.mirror, 1], 1], ['holiday', '🎃', s => [s.holiday, 1], 1],
+  ['explorer', '🧭', s => [s.tabs, 5], 1], ['dayone', '🎉', s => [s.dayOne, 1], 1], ['hints3', '🛟', s => [s.maxHints, 3], 1],
+].map(([id, em, prog, secret]) => ({ id, em, prog, secret: !!secret }));
 const badgeName = b => t('b_' + b.id)[0];
 const badgeDesc = b => t('b_' + b.id)[1];
 const earned = (b, st) => { const [v, n] = b.prog(st); return v >= n; };
@@ -626,7 +711,7 @@ function celebrate() {
   const now = { level: st.level, badges: BADGES.filter(b => earned(b, st)).map(b => b.id), full: st.quests.memo && st.quests.socratic && st.quests.recap ? today() : (seen && seen.full) || '' };
   if (seen) {
     if (now.level > seen.level) { toast(t('levelUp', now.level, levelName(now.level)), 'gold'); burst(); }
-    for (const id of now.badges) if (!seen.badges.includes(id)) { const b = BADGES.find(x => x.id === id); toast(b.em + ' ' + t('newBadge', badgeName(b)), 'gold'); burst(); }
+    for (const id of now.badges) if (!seen.badges.includes(id)) { const b = BADGES.find(x => x.id === id); toast(b.em + ' ' + t(b.secret ? 'newSecret' : 'newBadge', badgeName(b)), 'gold'); burst(); if (b.secret) setTimeout(burst, 350); }
     if (now.full === today() && seen.full !== today()) { toast(t('fullRound') + ' · ' + t('fullRoundXP'), 'gold'); burst(); }
   }
   LS.set('echo-seen', now);
@@ -882,9 +967,10 @@ const canDictate = () => !IS_ARTIFACT && !!(S.set.openaiKey || window.SpeechReco
 /* ---------- player ---------- */
 const P = { audio: new Audio(), queue: [], idx: -1, url: null, showSpeed: false };
 P.audio.preload = 'auto';
+function trackSpeed(v) { if (v > LS.get('echo-maxspeed', 1)) { LS.set('echo-maxspeed', v); if (v >= 3) celebrate(); } }
 function setSpeed(v) {
   v = Math.min(5, Math.max(1, Math.round(v * 100) / 100));
-  S.set.speed = v; saveSettings();
+  S.set.speed = v; saveSettings(); trackSpeed(v);
   P.audio.defaultPlaybackRate = v; P.audio.playbackRate = v;
   renderPlayer();
 }
@@ -1114,7 +1200,7 @@ function viewToday() {
   const td = today(), ydays = dayKey(addDays(new Date(), -1));
   const commits = S.commitments.filter(c => !c.done || (c.doneAt && dayKey(new Date(c.doneAt)) === td)).sort((a, b) => a.createdAt - b.createdAt);
   const earnedN = BADGES.filter(b => earned(b, st)).length;
-  const nextB = BADGES.filter(b => !earned(b, st)).map(b => ({ b, p: b.prog(st) })).sort((x, y) => y.p[0] / y.p[1] - x.p[0] / x.p[1])[0];
+  const nextB = BADGES.filter(b => !b.secret && !earned(b, st)).map(b => ({ b, p: b.prog(st) })).sort((x, y) => y.p[0] / y.p[1] - x.p[0] / x.p[1])[0];
   return `
   <header class="top">
     <div class="stack" style="gap:4px"><span class="eyebrow">${esc(fmtDate(td))}</span><h1>${esc(t('greet', h, S.set.name))}</h1></div>
@@ -1500,9 +1586,16 @@ async function importGoalsFile(file) {
   toast(t('goalsImported', r.n, weekLabel(r.ws)), 'ok');
 }
 function openBadges() {
-  const st = computeStats();
+  const st = computeStats(), sec = BADGES.filter(b => b.secret), secN = sec.filter(b => earned(b, st)).length;
+  const card = b => {
+    const [v, n] = b.prog(st), ok = v >= n;
+    if (b.secret && !ok) return `<div class="badge locked secret"><span class="em">❔</span><b>???</b><span class="small muted"><i>${esc(t('b_' + b.id)[2])}</i></span></div>`;
+    return `<div class="badge ${ok ? '' : 'locked'} ${b.secret ? 'secret' : ''}"><span class="em">${b.em}</span><b>${esc(badgeName(b))}</b><span class="small muted">${esc(badgeDesc(b))}</span>${ok ? '' : `<div class="bar gold"><i style="width:${Math.round(100 * Math.min(1, v / n))}%"></i></div><span class="small mono muted">${Math.min(v, n)}/${n}</span>`}</div>`;
+  };
   openSheet(`${sheetHead(t('badgesTitle'))}<p class="small muted">${st.xp} XP · ${esc(t('level'))} ${st.level} ${esc(levelName(st.level))} · ${esc(t('freezeInfo'))}</p>
-    <div class="badges">${BADGES.map(b => { const [v, n] = b.prog(st), ok = v >= n; return `<div class="badge ${ok ? '' : 'locked'}"><span class="em">${b.em}</span><b>${esc(badgeName(b))}</b><span class="small muted">${esc(badgeDesc(b))}</span>${ok ? '' : `<div class="bar gold"><i style="width:${Math.round(100 * v / n)}%"></i></div><span class="small mono muted">${Math.min(v, n)}/${n}</span>`}</div>`; }).join('')}</div>`);
+    <div class="badges">${BADGES.filter(b => !b.secret).map(card).join('')}</div>
+    <div class="row spread"><h3>${esc(t('secretTitle'))}</h3><span class="mono muted small">${secN}/${sec.length}</span></div>
+    <div class="badges">${sec.map(card).join('')}</div>`);
 }
 function openCommitNew() {
   openSheet(`${sheetHead(t('commitAdd'))}<p class="small muted">${esc(t('commitHint'))}</p>
@@ -1595,7 +1688,8 @@ document.addEventListener('click', async e => {
   const act = b.dataset.act, v = b.dataset.v, id = b.dataset.id;
   if (b.tagName === 'INPUT' && b.type === 'checkbox') return; // handled on change
   switch (act) {
-    case 'tab': S.tab = v; if (v === 'recap' && !S.recapDay) S.recapDay = today(); if (v === 'goals') S.goalWeek = null; render(); scrollTo(0, 0); break;
+    case 'tab': { const tv = LS.get('echo-tabs', []); if (!tv.includes(v)) { LS.set('echo-tabs', [...tv, v]); setTimeout(celebrate, 400); } }
+      S.tab = v; if (v === 'recap' && !S.recapDay) S.recapDay = today(); if (v === 'goals') S.goalWeek = null; render(); scrollTo(0, 0); break;
     case 'gweek': { const nw = dayKey(addDays(parseDay(S.goalWeek || weekStart()), 7 * +v)); if (nw <= weekStart()) { S.goalWeek = nw; render(); } break; }
     case 'gday': updateGoal(b.dataset.w, id, it => { it.days[+v] = !it.days[+v]; }); break;
     case 'tab-socratic': S.tab = 'socratic'; render(); scrollTo(0, 0); break;
@@ -1732,7 +1826,7 @@ document.addEventListener('input', e => {
 });
 function setSpeedLive(v) {
   // Slider drag: apply immediately without rebuilding the player (keeps the thumb under the finger).
-  S.set.speed = v; saveSettings(); P.audio.defaultPlaybackRate = v; P.audio.playbackRate = v;
+  S.set.speed = v; saveSettings(); trackSpeed(v); P.audio.defaultPlaybackRate = v; P.audio.playbackRate = v;
   const btn = $('#player .speedbtn'); if (btn) btn.textContent = v.toFixed(2).replace(/0$/, '').replace(/\.0$/, '') + '×';
   $$('#player .speeds button').forEach(x => x.setAttribute('aria-pressed', String(Math.abs(+x.dataset.v - v) < 0.001)));
   const lab = $('#player .row.spread .mono'); if (lab) lab.textContent = v.toFixed(2) + '×';
@@ -1764,6 +1858,7 @@ if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListen
   // Reopen today's unfinished round after a reload instead of losing it.
   const open = S.dialogs.filter(d => !d.completed && d.day === today() && d.messages.some(m => m.role === 'assistant')).sort((a, b) => b.createdAt - a.createdAt)[0];
   if (open) S.activeDialog = open.id;
+  { const tv = LS.get('echo-tabs', []); if (!tv.includes('today')) LS.set('echo-tabs', [...tv, 'today']); }
   render(); celebrate();
   if (IS_ARTIFACT) window.claude.use('sample').then(fn => { SAMPLE = fn; render(); }).catch(() => {});
   if (!IS_ARTIFACT && 'serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
