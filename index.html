@@ -369,7 +369,7 @@ const I18N = {
     socStart: 'Heutige Runde starten', socAnother: 'Noch eine Runde', socHint: 'Hinweis', socFinish: 'Abschließen', socSend: 'Senden',
     socPlaceholder: 'Deine Antwort … (Diktat über die Tastatur geht auch)', socNeedKey: 'Für den Dialog braucht Echo einen Anthropic-API-Key (Einstellungen).',
     socDone: 'Runde abgeschlossen · +20 XP', socRate: 'Wie schwer war es?', easy: 'Leicht', okay: 'Passend', hard: 'Schwer',
-    socPast: 'Frühere Runden', keyPoints: 'Kernpunkte', gap: 'Nochmal anschauen', nextTopic: 'Nächstes Mal', socMin: 'Beantworte erst zwei Fragen, dann kannst du abschließen.', socSumFail: 'Zusammenfassung fehlgeschlagen, die Runde zählt trotzdem.', socLeft: n => 'Noch ' + n + ' ' + (n === 1 ? 'Antwort' : 'Antworten') + ', dann kannst du abschließen und bekommst +20 XP.',
+    socPast: 'Frühere Runden', keyPoints: 'Kernpunkte', gap: 'Nochmal anschauen', nextTopic: 'Nächstes Mal', socMin: 'Beantworte erst zwei Fragen, dann kannst du abschließen.', socSumFail: 'Zusammenfassung fehlgeschlagen, die Runde zählt trotzdem.', addNote: 'Notiz ergänzen', addNoteHint: 'Ein paar Stichworte, worum es ging. Daraus entstehen Titel, Zusammenfassung und der Tagesrückblick.', socLeft: n => 'Noch ' + n + ' ' + (n === 1 ? 'Antwort' : 'Antworten') + ', dann kannst du abschließen und bekommst +20 XP.',
     thinking: 'Claude denkt nach …', hintMsg: 'Ich komme nicht weiter. Gib mir bitte einen kleinen Hinweis, nicht die Lösung.', dictate: 'Diktieren', dictating: 'Hört zu … tippen zum Stoppen',
     recapTitle: 'Rückblick', memosN: n => n + ' ' + plural(n, 'Memo', 'Memos'), minutesN: n => n + ' min gesprochen',
     recapHeading: 'Tageszusammenfassung', recapMake: 'Tagesrückblick mit Claude', recapRedo: 'Neu schreiben', reflectTitle: 'Selbst reflektieren',
@@ -443,7 +443,7 @@ const I18N = {
     socStart: "Start today's round", socAnother: 'One more round', socHint: 'Hint', socFinish: 'Finish', socSend: 'Send',
     socPlaceholder: 'Your answer … (keyboard dictation works too)', socNeedKey: 'The dialogue needs an Anthropic API key (Settings).',
     socDone: 'Round complete · +20 XP', socRate: 'How hard was it?', easy: 'Easy', okay: 'About right', hard: 'Hard',
-    socPast: 'Earlier rounds', keyPoints: 'Key points', gap: 'Review again', nextTopic: 'Next time', socMin: 'Answer two questions first, then you can finish.', socSumFail: 'Summary failed, the round still counts.', socLeft: n => n + ' more ' + (n === 1 ? 'answer' : 'answers') + ', then you can finish and earn +20 XP.',
+    socPast: 'Earlier rounds', keyPoints: 'Key points', gap: 'Review again', nextTopic: 'Next time', socMin: 'Answer two questions first, then you can finish.', socSumFail: 'Summary failed, the round still counts.', addNote: 'Add a note', addNoteHint: 'A few keywords on what it was about. Title, summary and the daily recap are made from this.', socLeft: n => n + ' more ' + (n === 1 ? 'answer' : 'answers') + ', then you can finish and earn +20 XP.',
     thinking: 'Claude is thinking …', hintMsg: "I'm stuck. Please give me a small hint, not the answer.", dictate: 'Dictate', dictating: 'Listening … tap to stop',
     recapTitle: 'Recap', memosN: n => n + ' ' + plural(n, 'memo', 'memos'), minutesN: n => n + ' min spoken',
     recapHeading: 'Daily summary', recapMake: 'Daily recap with Claude', recapRedo: 'Rewrite', reflectTitle: 'Reflect yourself',
@@ -1195,6 +1195,7 @@ function memoCard(m) {
     ${status ? `<div class="status"><span class="spin"></span>${esc(status)}</div>` : ''}
     ${m.status === 'error' ? `<div class="status err">${esc(t('aiError'))}: ${esc(m.error)} <button class="btn sm" data-act="memo-ai" data-id="${m.id}">${esc(t('retry'))}</button></div>` : ''}
     ${!status && m.status !== 'error' && canProcess ? `<button class="btn sm" data-act="memo-ai" data-id="${m.id}" style="justify-self:start">${icon('sparkles')} ${esc(t('aiProcess'))}</button>` : ''}
+    ${!m.transcript && !status ? `<button class="btn sm" data-act="memo-note" data-id="${m.id}" style="justify-self:start">${icon('text')} ${esc(t('addNote'))}</button>` : ''}
     ${m.transcript ? `<details><summary>${esc(m.transcriptSource === 'live' ? t('liveText') : m.transcriptSource === 'note' ? t('noteLabel') : t('transcript'))}</summary><p>${esc(m.transcript)}</p></details>` : ''}
   </article>`;
 }
@@ -1358,7 +1359,7 @@ function viewSocratic() {
 function recapMaterial(day) {
   const memos = S.memos.filter(m => m.day === day).sort((a, b) => a.createdAt - b.createdAt);
   const out = [`Date: ${fmtDate(day)}`, '', 'VOICE MEMOS:'];
-  for (const m of memos) out.push(`[${fmtTime(m.createdAt)} | ${fmtDur(m.dur)}] ${(m.transcript || m.summary || '(no transcript)').slice(0, 3500)}`);
+  for (const m of memos) out.push(`[${fmtTime(m.createdAt)} | ${fmtDur(m.dur)}] ${(m.transcript || m.summary || '(audio only, no text)').slice(0, 3500)}`);
   const ds = S.dialogs.filter(d => d.day === day && d.completed);
   if (ds.length) { out.push('', 'SOCRATIC STUDY ROUNDS (nutritional medicine):'); for (const d of ds) out.push(`- ${d.topic}: ${(d.summary && d.summary.keyPoints || []).join('; ')}`); }
   const cDone = S.commitments.filter(c => c.done && c.doneAt && dayKey(new Date(c.doneAt)) === day);
@@ -1375,7 +1376,7 @@ async function makeRecap(day) {
   S.recapBusy = day; render();
   try {
     const system = `Write a short daily recap for a person's private journal, in ${langName()}, addressed to them as "you". Warm, concrete, no clichés, no judgement, no diagnosis, no advice beyond their own plans. ` +
-      `Use only the material provided. Use exactly these markdown headings: "## ${t('H_did')}", "## ${t('H_proud')}", "## ${t('H_open')}", "## ${t('H_tomorrow')}". Bullet points under each. Under 180 words. Skip a section's bullets only if there is truly nothing for it.`;
+      `Use only the material provided. Use exactly these markdown headings: "## ${t('H_did')}", "## ${t('H_proud')}", "## ${t('H_open')}", "## ${t('H_tomorrow')}". Bullet points under each. Under 180 words. Skip a section's bullets only if there is truly nothing for it. Memos marked audio only have no text: do not mention them, missing transcripts or anything the person should add.`;
     const text = await askClaude({ system, messages: [{ role: 'user', content: recapMaterial(day) }], maxTokens: 700 });
     S.recaps[day] = Object.assign({ day }, S.recaps[day], { text, createdAt: Date.now() });
     await DB.put('recaps', S.recaps[day]);
@@ -1392,7 +1393,7 @@ async function makeWeekRecap(ws) {
       const ds = S.dialogs.filter(x => x.day === d && x.completed);
       if (!ms.length && !ds.length && !S.recaps[d]) continue;
       parts.push('', `## ${fmtDate(d)}`);
-      for (const m of ms) parts.push(`- memo (${fmtDur(m.dur)}): ${(m.summary || m.transcript || '(no transcript)').slice(0, 600)}`);
+      for (const m of ms) parts.push(`- memo (${fmtDur(m.dur)}): ${(m.summary || m.transcript || '(audio only, no text)').slice(0, 600)}`);
       for (const x of ds) parts.push(`- study round: ${x.topic}`);
       if (S.recaps[d] && S.recaps[d].text) parts.push('- daily recap: ' + S.recaps[d].text.slice(0, 700));
     }
@@ -1400,7 +1401,7 @@ async function makeWeekRecap(ws) {
     parts.push('', 'WEEKLY GOALS (ordered from biggest to smallest):', ...(g && g.items.length ? g.items.map(goalLine) : ['- none set']));
     parts.push('', 'COMMITMENTS:', ...S.commitments.filter(c => c.day >= ws && c.day <= days[6]).map(c => `- [${c.done ? 'x' : ' '}] ${c.text}`));
     const system = `Write a weekly review for a person's private journal, in ${langName()}, addressed as "you". Warm, specific, honest, never shaming, no diagnosis. ` +
-      `Use only the material. Headings exactly: "## ${t('H_wdid')}", "## ${t('H_goals')}", "## ${t('H_notice')}", "## ${t('H_next')}". Bullets. Under 230 words. Under the goals heading, state progress per goal plainly.`;
+      `Use only the material. Headings exactly: "## ${t('H_wdid')}", "## ${t('H_goals')}", "## ${t('H_notice')}", "## ${t('H_next')}". Bullets. Under 230 words. Under the goals heading, state progress per goal plainly. Memos marked audio only have no text: do not mention them or missing transcripts.`;
     const text = await askClaude({ system, messages: [{ role: 'user', content: parts.join('\n') }], maxTokens: 900 });
     S.recaps[key] = { day: key, text, createdAt: Date.now() }; await DB.put('recaps', S.recaps[key]);
   } catch (e) { toast(t('aiError') + ': ' + e.message, 'err'); }
@@ -1631,6 +1632,19 @@ document.addEventListener('click', async e => {
       if (currentMemo() && currentMemo().id === id) stopPlayer();
       S.memos = S.memos.filter(m => m.id !== id); await DB.del('memos', id); afterChange(); break;
     }
+    case 'memo-note': {
+      openSheet(`${sheetHead(t('addNote'))}<p class="small muted">${esc(t('addNoteHint'))}</p>
+        <textarea class="input" id="noteText" rows="5" placeholder="${esc(t('capNotePh'))}"></textarea>
+        <button class="btn primary" data-act="memo-note-save" data-id="${id}" style="justify-self:end">${esc(t('save'))}</button>`);
+      setTimeout(() => { const n = $('#noteText'); if (n) n.focus(); }, 50); break;
+    }
+    case 'memo-note-save': {
+      const m = S.memos.find(x => x.id === id), txt = (($('#noteText') || {}).value || '').trim();
+      if (!m || !txt) break;
+      m.transcript = txt; m.transcriptSource = 'note'; m.summary = ''; await DB.put('memos', m); closeSheet(); afterChange();
+      if (hasAI()) processMemo(m);
+      break;
+    }
     case 'memo-ai': { const m = S.memos.find(x => x.id === id); if (m) { m.status = ''; processMemo(m); } break; }
     case 'settings': openSettings(); break;
     case 'sheet-close': closeSheet(); break;
@@ -1735,6 +1749,12 @@ if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListen
   applyTheme();
   try { await DB.open(); await loadAll(); }
   catch (e) { $('#app').innerHTML = `<div class="card"><h2>IndexedDB</h2><p>${esc(String(e && e.message || e))}</p></div>`; return; }
+  // Free browser speech recognition fills in the transcript while recording. Turned on once by default on desktop;
+  // on phones it can fight the recorder for the microphone, so it stays opt-in there.
+  if (!LS.get('echo-mig-livestt', false)) {
+    if (!IS_ARTIFACT && (window.SpeechRecognition || window.webkitSpeechRecognition) && !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { S.set.liveStt = true; saveSettings(); }
+    LS.set('echo-mig-livestt', true);
+  }
   const seed = window.ECHO_SEED;
   for (const sg of (seed && seed.goals) || []) {
     const flag = 'echo-seed-' + sg.week;
