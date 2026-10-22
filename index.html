@@ -1,0 +1,1744 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Echo Voice Journal</title>
+<meta name="theme-color" content="#F2F3EF">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Echo">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one calm column, record button as the hero, tab bar + mini player docked at the bottom. */
+:root {
+  --bg: #F2F3EF; --surface: #FFFFFF; --surface-2: #E7EAE4; --ink: #1A1E1C; --muted: #5C6661; --line: #D5DAD3;
+  --rec: #D4542A; --rec-soft: rgba(212,84,42,.12);
+  --calm: #1B8173; --calm-soft: rgba(27,129,115,.12);
+  --gold: #A87D14; --gold-soft: rgba(184,138,30,.16);
+  --shadow: 0 1px 2px rgba(20,30,25,.05), 0 10px 28px rgba(20,30,25,.07);
+  --f-display: "Bricolage Grotesque", "DM Sans", system-ui, sans-serif;
+  --f-body: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --r: 18px; --tabh: 62px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F1211; --surface: #171B19; --surface-2: #212624; --ink: #E8ECE7; --muted: #95A09A; --line: #2A312E;
+  --rec: #FF7647; --rec-soft: rgba(255,118,71,.15); --calm: #3DC2AD; --calm-soft: rgba(61,194,173,.14);
+  --gold: #E5B84C; --gold-soft: rgba(229,184,76,.15); --shadow: 0 1px 0 rgba(255,255,255,.03);
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0F1211; --surface: #171B19; --surface-2: #212624; --ink: #E8ECE7; --muted: #95A09A; --line: #2A312E;
+  --rec: #FF7647; --rec-soft: rgba(255,118,71,.15); --calm: #3DC2AD; --calm-soft: rgba(61,194,173,.14);
+  --gold: #E5B84C; --gold-soft: rgba(229,184,76,.15); --shadow: 0 1px 0 rgba(255,255,255,.03);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink); font: 400 16px/1.5 var(--f-body);
+  -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+}
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--calm); outline-offset: 2px; border-radius: 8px; }
+[hidden] { display: none !important; }
+svg.i { width: 20px; height: 20px; flex: none; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+#app {
+  max-width: 560px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: calc(env(safe-area-inset-top, 0px) + 18px) calc(var(--tabh) + 120px + env(safe-area-inset-bottom, 0px));
+  display: grid; gap: 14px;
+}
+h1, h2, h3, h4 { margin: 0; font-family: var(--f-display); font-weight: 700; letter-spacing: -.01em; text-wrap: balance; }
+h1 { font-size: 30px; line-height: 1.1; }
+h2 { font-size: 20px; }
+h3 { font-size: 17px; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 13.5px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.row { display: flex; align-items: center; gap: 10px; }
+.row.wrap { flex-wrap: wrap; }
+.spread { justify-content: space-between; }
+.stack { display: grid; gap: 10px; }
+.grow { flex: 1; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; box-shadow: var(--shadow); display: grid; gap: 12px; min-width: 0; }
+.card.flat { box-shadow: none; }
+
+.btn { white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 9px 16px; font-weight: 500; font-size: 15px; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn.primary:hover { opacity: .9; }
+.btn.rec { background: var(--rec); border-color: var(--rec); color: #fff; }
+.btn.ghost { background: transparent; border-color: transparent; }
+.btn.ghost:hover { background: var(--surface-2); }
+.btn.sm { padding: 6px 12px; font-size: 14px; }
+.btn:disabled { opacity: .45; cursor: default; }
+.icon-btn { width: 40px; height: 40px; border-radius: 999px; border: 1px solid transparent; background: transparent; display: inline-grid; place-items: center; color: var(--ink); }
+.icon-btn:hover { background: var(--surface-2); }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 14px; white-space: nowrap; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.field { display: grid; gap: 6px; }
+.field label { font-size: 13.5px; color: var(--muted); }
+.input, textarea.input, select.input { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 12px; padding: 10px 12px; font-size: 16px; }
+textarea.input { resize: vertical; min-height: 80px; line-height: 1.45; }
+.bar { height: 6px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--calm); border-radius: 99px; transition: width .6s ease; }
+.bar.gold > i { background: var(--gold); }
+
+/* Header + stats */
+.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0; }
+.stat b { font-family: var(--f-display); font-size: 22px; line-height: 1.1; display: flex; align-items: center; gap: 6px; }
+.stat .small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.flame { color: var(--rec); }
+.flame.cold { color: var(--muted); }
+
+/* Record hero */
+.hero { background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 18px 16px 22px; display: grid; gap: 16px; justify-items: center; text-align: center; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+.hero .chips { justify-self: stretch; }
+.hero > :not(canvas) { position: relative; }
+.hero canvas { position: absolute; inset: auto 0 0 0; width: 100%; height: 90px; pointer-events: none; opacity: .9; }
+.prompt { font-family: var(--f-display); font-size: 21px; line-height: 1.25; max-width: 30ch; font-weight: 500; position: relative; }
+.micwrap { position: relative; width: 148px; height: 148px; display: grid; place-items: center; }
+.micwrap::before, .micwrap::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--rec-soft); animation: breathe 9s ease-in-out infinite; }
+.micwrap::after { inset: -14px; opacity: .55; animation-duration: 13s; animation-delay: -4s; }
+@keyframes breathe { 0%,100% { transform: scale(.92); } 50% { transform: scale(1.04); } }
+.micbtn { position: relative; z-index: 1; width: 104px; height: 104px; border-radius: 50%; border: 0; background: var(--rec); color: #fff; display: grid; place-items: center; box-shadow: 0 8px 26px rgba(212,84,42,.35); }
+.micbtn svg.i { width: 40px; height: 40px; stroke-width: 1.8; }
+.micbtn:active { transform: scale(.97); }
+
+/* Quests */
+.quest { display: flex; align-items: center; gap: 12px; padding: 8px 4px; border: 0; background: none; text-align: left; width: 100%; border-radius: 12px; }
+.quest:hover { background: var(--surface-2); }
+.qdot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; flex: none; color: transparent; }
+.quest.done .qdot { background: var(--calm); border-color: var(--calm); color: #fff; }
+.quest.done .qlabel { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
+.qdot svg.i { width: 15px; height: 15px; stroke-width: 3; }
+.xp { font-family: var(--f-mono); font-size: 12.5px; color: var(--gold); background: var(--gold-soft); padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+.ring { --p: 0; width: 44px; height: 44px; border-radius: 50%; background: conic-gradient(var(--calm) calc(var(--p) * 1%), var(--surface-2) 0); display: grid; place-items: center; flex: none; }
+.ring span { width: 34px; height: 34px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; font: 600 13px var(--f-mono); }
+
+/* Lists */
+.check { display: flex; align-items: flex-start; gap: 10px; }
+.check input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--calm); flex: none; }
+.check.done span { color: var(--muted); text-decoration: line-through; }
+.goal { display: grid; gap: 6px; }
+.gcard { display: flex; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; min-width: 0; }
+.gcard.mid { border-left: 3px solid var(--calm); }
+.gcard.big { border-left: 5px solid var(--calm); padding: 18px; }
+.gcard.big .gtitle { font-size: 19px; }
+.gcard.complete .gtitle { color: var(--muted); }
+.gnum { flex: none; width: 28px; height: 28px; border-radius: 8px; background: var(--calm-soft); color: var(--calm); display: grid; place-items: center; font: 600 13px var(--f-mono); }
+.gcard.complete .gnum { background: var(--calm); color: #fff; }
+.gnum svg.i { width: 16px; height: 16px; stroke-width: 3; }
+.gtitle { font-weight: 700; font-size: 16px; overflow-wrap: anywhere; }
+.gbadge { display: inline-block; font-size: 11.5px; font-weight: 500; background: var(--calm-soft); color: var(--calm); border-radius: 6px; padding: 2px 7px; vertical-align: middle; }
+.days { display: flex; gap: 4px; flex-wrap: wrap; }
+.day { width: 36px; height: 36px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); font-size: 12.5px; color: var(--muted); }
+.day.on { background: var(--calm); border-color: var(--calm); color: #fff; font-weight: 700; }
+.day.now { outline: 2px solid var(--ink); outline-offset: 1px; }
+.dots { display: inline-flex; gap: 3px; flex: none; align-self: center; }
+.dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--surface-2); }
+.dots i.on { background: var(--calm); }
+.dots i.now { box-shadow: 0 0 0 1.5px var(--ink); }
+.bar.big { height: 10px; }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; }
+.stepper button { width: 34px; height: 30px; border: 0; background: none; display: grid; place-items: center; }
+.stepper span { min-width: 44px; text-align: center; font: 500 13.5px var(--f-mono); }
+
+/* History */
+.heat { display: grid; grid-template-rows: repeat(7, 1fr); grid-auto-flow: column; grid-auto-columns: 1fr; gap: 3px; }
+.heat i { aspect-ratio: 1; border-radius: 3px; background: var(--surface-2); display: block; max-width: 100%; }
+i[data-l="1"] { background: color-mix(in srgb, var(--calm) 30%, var(--surface-2)); }
+i[data-l="2"] { background: color-mix(in srgb, var(--calm) 55%, var(--surface-2)); }
+i[data-l="3"] { background: color-mix(in srgb, var(--calm) 80%, var(--surface-2)); }
+i[data-l="4"] { background: var(--calm); }
+i[data-l="0"] { background: var(--surface-2); }
+.heat i.future { visibility: hidden; }
+.heat i.today { outline: 1.5px solid var(--ink); outline-offset: -1.5px; }
+.dayhead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 6px 2px 0; }
+.memo { display: grid; gap: 8px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); min-width: 0; }
+.memo.playing { border-color: var(--calm); box-shadow: 0 0 0 3px var(--calm-soft); }
+.memo .title { font-weight: 700; }
+.memo details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+.memo details p { margin-top: 6px; white-space: pre-wrap; font-size: 15px; overflow-wrap: anywhere; }
+.playbtn { width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--ink); color: var(--bg); display: grid; place-items: center; flex: none; }
+.playbtn svg.i { width: 18px; height: 18px; fill: currentColor; }
+.status { font-size: 13.5px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+.status.err { color: var(--rec); }
+.spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--calm); animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Socratic */
+.chat { display: grid; gap: 10px; }
+.bubble { padding: 12px 14px; border-radius: 16px; max-width: 92%; overflow-wrap: anywhere; line-height: 1.5; }
+.bubble.a { background: var(--surface); border: 1px solid var(--line); justify-self: start; border-bottom-left-radius: 6px; }
+.bubble.u { background: var(--calm-soft); justify-self: end; border-bottom-right-radius: 6px; white-space: pre-wrap; }
+.bubble p + p, .md p + p, .md ul, .md h4 { margin-top: 8px; }
+.md h4 { font-size: 15px; }
+.md ul { padding-left: 20px; margin-bottom: 0; }
+.md li + li { margin-top: 3px; }
+.composer { position: sticky; bottom: calc(var(--tabh) + 8px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 10px; display: grid; gap: 8px; box-shadow: var(--shadow); }
+.composer textarea { border: 0; background: transparent; min-height: 64px; padding: 4px 6px; outline: none; }
+
+/* Badges */
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.badge { border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; gap: 4px; background: var(--surface); }
+.badge .em { font-size: 26px; line-height: 1; }
+.badge.locked .em { filter: grayscale(1); opacity: .45; }
+.badge.locked b { color: var(--muted); }
+
+/* Tabs + player */
+#tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--surface); border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+#tabs .in { max-width: 560px; margin: 0 auto; height: var(--tabh); display: grid; grid-template-columns: repeat(5, 1fr); }
+#tabs button { border: 0; background: none; display: grid; justify-items: center; align-content: center; gap: 2px; font-size: 12px; color: var(--muted); }
+#tabs button[aria-current="page"] { color: var(--ink); font-weight: 700; }
+#tabs button[aria-current="page"] svg.i { stroke: var(--rec); }
+#player { position: fixed; left: 0; right: 0; z-index: 19; bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0px));
+  padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); padding-bottom: 8px; }
+#player .in { max-width: 560px; margin: 0 auto; grid-template-columns: minmax(0, 1fr); background: var(--ink); color: var(--bg); border-radius: 18px; padding: 10px 12px; display: grid; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+#player .in > * { min-width: 0; }
+#player .row { gap: 4px; }
+#player .icon-btn { color: var(--bg); width: 36px; height: 36px; flex: none; }
+@media (max-width: 480px) { .speedhint { display: none; } }
+#player .icon-btn:hover { background: rgba(127,127,127,.2); }
+#player .icon-btn.big svg.i { fill: currentColor; }
+#player .meta { font-size: 13px; opacity: .75; }
+#player .ttl { font-weight: 700; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#player input[type=range] { width: 100%; accent-color: var(--rec); margin: 0; }
+.speedbtn { flex: none; border: 1px solid rgba(127,127,127,.45); background: none; color: inherit; border-radius: 99px; padding: 5px 10px; font: 600 13px var(--f-mono); min-width: 62px; }
+.speeds { display: flex; gap: 6px; flex-wrap: wrap; }
+.speeds button { border: 1px solid rgba(127,127,127,.45); background: none; color: inherit; border-radius: 99px; padding: 4px 10px; font: 500 13px var(--f-mono); }
+.speeds button[aria-pressed="true"] { background: var(--rec); border-color: var(--rec); color: #fff; }
+
+/* Recorder overlay */
+#recorder { position: fixed; inset: 0; z-index: 40; background: var(--bg); display: grid; grid-template-rows: auto 1fr auto;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 24px) max(16px, env(safe-area-inset-left, 0px)); }
+#recorder .mid { display: grid; align-content: center; justify-items: center; gap: 22px; text-align: center; max-width: 560px; margin: 0 auto; width: 100%; }
+.dot { width: 12px; height: 12px; border-radius: 50%; background: var(--rec); animation: pulse 1.6s ease-in-out infinite; }
+.paused .dot { animation: none; background: var(--muted); }
+@keyframes pulse { 50% { opacity: .25; } }
+.rectime { font: 600 54px/1 var(--f-mono); letter-spacing: -.02em; }
+#recWave { width: 100%; height: 110px; }
+.live { min-height: 3em; color: var(--muted); font-size: 15px; max-width: 46ch; }
+.reccontrols { display: flex; justify-content: center; align-items: center; gap: 18px; }
+.stopbtn { width: 84px; height: 84px; border-radius: 50%; border: 0; background: var(--rec); color: #fff; display: grid; place-items: center; box-shadow: 0 8px 26px rgba(212,84,42,.35); }
+.stopbtn svg.i { width: 30px; height: 30px; fill: currentColor; }
+
+/* Sheet + toasts */
+#sheet { position: fixed; inset: 0; z-index: 50; background: rgba(10,14,12,.45); display: grid; align-items: end; justify-items: center; }
+#sheet .panel { background: var(--bg); width: 100%; max-width: 560px; max-height: 88vh; overflow: auto; border-radius: 22px 22px 0 0; display: grid; gap: 14px;
+  padding: 18px max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 22px) max(16px, env(safe-area-inset-left, 0px)); }
+#toasts { position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 12px); display: grid; gap: 8px; width: min(92vw, 420px); pointer-events: none; }
+.toast { background: var(--ink); color: var(--bg); padding: 11px 14px; border-radius: 14px; font-size: 14.5px; box-shadow: 0 8px 24px rgba(0,0,0,.2); animation: toastin .35s ease-out; }
+.toast.ok { background: var(--calm); color: #fff; }
+.toast.err { background: var(--rec); color: #fff; }
+.toast.gold { background: var(--gold); color: #1A1E1C; }
+@keyframes toastin { from { transform: translateY(-8px); opacity: 0; } }
+.burst { position: fixed; z-index: 61; width: 8px; height: 8px; border-radius: 2px; pointer-events: none; animation: fly 1.1s cubic-bezier(.2,.7,.3,1) forwards; }
+@keyframes fly { to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; } }
+.empty { text-align: center; padding: 26px 12px; color: var(--muted); display: grid; gap: 10px; justify-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--surface); }
+.seg button { border: 0; background: none; border-radius: 999px; padding: 6px 12px; font-size: 14px; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
+.has-player #app { padding-bottom: calc(var(--tabh) + 240px + env(safe-area-inset-bottom, 0px)); }
+.has-player .composer { bottom: calc(var(--tabh) + 118px + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 700px) { h1 { font-size: 34px; } }
+</style>
+
+<div id="app" aria-live="polite"></div>
+<div id="player" hidden></div>
+<nav id="tabs"></nav>
+<div id="recorder" hidden></div>
+<div id="sheet" hidden></div>
+<div id="toasts"></div>
+
+<script>
+'use strict';
+
+/* ---------- tiny helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage full or blocked */ } },
+};
+const pad = n => String(n).padStart(2, '0');
+const dayKey = (d = new Date()) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const parseDay = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const today = () => dayKey();
+const weekStart = (d = new Date()) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return dayKey(addDays(x, -((x.getDay() + 6) % 7))); };
+const fmtDur = s => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ':' + pad(s % 60); };
+const hash = s => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h); };
+const dayOfYear = () => { const n = new Date(); return Math.floor((n - new Date(n.getFullYear(), 0, 1)) / 864e5); };
+
+/* ---------- icons (Lucide geometry) ---------- */
+const ICONS = {
+  mic: '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>',
+  play: '<path d="M7 4.5v15l12-7.5z"/>',
+  pause: '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
+  stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+  next: '<path d="M5 4.5v15l10-7.5z"/><path d="M19 5v14"/>',
+  prev: '<path d="M19 4.5v15L9 12z"/><path d="M5 5v14"/>',
+  home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>',
+  history: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>',
+  socrates: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+  book: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+  settings: '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+  flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
+  sparkles: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  minus: '<path d="M5 12h14"/>',
+  left: '<path d="m15 18-6-6 6-6"/>',
+  right: '<path d="m9 18 6-6-6-6"/>',
+  shuffle: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
+  headphones: '<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/>',
+  send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  bulb: '<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  trophy: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
+  download: '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
+  upload: '<path d="M12 21V9M7 14l5-5 5 5M5 3h14"/>',
+  text: '<path d="M4 7V4h16v3M9 20h6M12 4v16"/>',
+};
+const icon = (n, cls = '') => '<svg class="i ' + cls + '" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[n] || '') + '</svg>';
+
+/* ---------- i18n ---------- */
+const plural = (n, one, many) => n === 1 ? one : many;
+const I18N = {
+  de: {
+    tabToday: 'Heute', tabHistory: 'Verlauf', tabSocratic: 'Sokrates', tabRecap: 'Rückblick',
+    greet: (h, name) => (h < 5 ? 'Gute Nacht' : h < 11 ? 'Guten Morgen' : h < 17 ? 'Hallo' : h < 22 ? 'Guten Abend' : 'Gute Nacht') + (name ? ', ' + name : ''),
+    streak: 'Serie', days: n => n + ' ' + plural(n, 'Tag', 'Tage'), streakOpen: 'heute noch offen', streakDone: 'heute erledigt',
+    freezeInfo: 'Ein verpasster Tag pro Woche bricht die Serie nicht.',
+    level: 'Level', xpTo: n => 'noch ' + n + ' XP', weekMin: 'Min. diese Woche',
+    record: 'Aufnehmen', recordHint: 'Ein Tipp, dann einfach losreden. Perfekt muss es nicht sein.', newPrompt: 'Andere Frage',
+    questsTitle: 'Heutige Runde', q_memo: 'Ein Memo sprechen', q_socratic: 'Eine Sokrates-Runde', q_recap: 'Tagesrückblick', q_echo: 'Bonus: ein älteres Memo wiederhören',
+    fullRound: 'Volle Runde geschafft', fullRoundXP: '+15 XP Bonus',
+    commitTitle: 'Deine Vorsätze', commitAdd: 'Vorsatz hinzufügen', commitPlaceholder: 'z.B. Morgen 30 min Biochemie',
+    commitHint: 'Kommen automatisch aus deinen Memos, wenn du sagst, was du vorhast.',
+    goalsTitle: 'Wochenziele', goalsEmpty: 'Noch keine Ziele für diese Woche.', goalsEdit: 'Bearbeiten', goalsAdd: 'Ziele eintragen',
+    goalsHelp: 'Von groß nach klein, ein Ziel pro Zeile. "! Titel" = Hauptziel, "+ Titel" = wichtig, darunter "- Schritt" = Teilschritt, "> Text" = Notiz, "[Text]" am Ende = Abzeichen, "3x Titel" = Zähler, "täglich" oder "/ Tag" im Titel = Kästchen Mo bis So. Eine Wochenseite (HTML) aus dem Growth-Chat kannst du auch einfügen oder importieren.',
+    tabGoals: 'Ziele', goalsToday: 'Heute dran', thisWeek: 'Diese Woche', goalsPct: (p, d, n) => p + ' % erledigt (' + d + '/' + n + ')',
+    goalsImport: 'Wochenseite importieren', goalsImported: (n, w) => n + ' Ziele übernommen · ' + w, goalsFooter: 'Jeder erledigte Tag ist ein Schritt Richtung der großen Ziele.',
+    goalDoneLabel: 'Erledigt', goalReached: n => 'Ziel erreicht: ' + n, goalsImportFail: 'In der Datei wurden keine Ziele gefunden.',
+    socModeNutri: 'Ernährungsmedizin', socModeTalk: 'Vortrag & Diskussion', socTalkTopic: 'Thema deines Vortrags', socTalkMaterial: 'Material (optional): Gliederung, Abstract, Kernaussagen',
+    socTalkIntro: 'Claude spielt das kritische Publikum: eine Frage nach der anderen, wie in der Diskussion nach dem Vortrag. Du antwortest, Claude gibt kurzes Feedback und hakt nach.', socTalkNeed: 'Gib zuerst das Thema ein.', socTalkStart: 'Diskussion starten',
+    goalsCarry: 'Ziele der Vorwoche übernehmen', goalsDone: 'Alle Wochenziele erreicht',
+    echoTitle: 'Echo', echoAgo: n => n === 1 ? 'Gestern' : 'Vor ' + n + ' Tagen', echoYear: 'Vor einem Jahr', echoRandom: 'Aus deinem Archiv',
+    echoHint: 'Hör dir selbst zu. Was würdest du deinem damaligen Ich heute sagen?',
+    badgesTitle: 'Abzeichen', nextBadge: 'Als Nächstes',
+    save: 'Speichern', cancel: 'Abbrechen', del: 'Löschen', close: 'Schließen', confirmDel: 'Wirklich löschen?', yes: 'Ja, löschen',
+    recording: 'Aufnahme läuft', paused: 'Pausiert', stopSave: 'Fertig', discard: 'Verwerfen', pause: 'Pause', resume: 'Weiter',
+    saved: xp => 'Gespeichert · +' + xp + ' XP', tooShort: 'Zu kurz, nichts gespeichert.',
+    micDenied: 'Kein Mikrofonzugriff. Erlaube das Mikrofon für diese Seite in den Browser-Einstellungen.',
+    micInsecure: 'Das Mikrofon braucht HTTPS (oder localhost). Siehe README.', micUnsupported: 'Dieser Browser kann nicht aufnehmen.',
+    transcribing: 'Transkribiere …', summarizing: 'Fasse zusammen …', aiError: 'KI-Fehler', retry: 'Erneut versuchen', aiProcess: 'Transkribieren & zusammenfassen',
+    transcript: 'Transkript', liveText: 'Live mitgeschrieben', openYesterday: 'Offen von gestern:',
+    noAI: 'Ohne Schlüssel bleibt es bei der Aufnahme. Transkription und Zusammenfassung brauchen einen API-Key (Einstellungen).',
+    search: 'Memos durchsuchen', all: 'Alle', playAll: 'Alles durchhören', playAllHint: n => n + ' ' + plural(n, 'Memo', 'Memos') + ', ältestes zuerst',
+    playDay: 'Tag durchhören', emptyHistory: 'Noch keine Memos. Dein erstes ist einen Tipp entfernt.', noMatch: 'Nichts gefunden.',
+    heatLess: 'weniger', heatMore: 'mehr', minShort: 'min', memoFallback: 'Memo',
+    speed: 'Tempo', speedHint: 'Schneller hören, öfter hören.',
+    socTitle: 'Sokratischer Dialog', socSub: 'Ernährungsmedizin',
+    socIntro: 'Claude fragt, du denkst laut. Keine fertigen Antworten, bis du sie selbst herleitest. Mal ein Mechanismus, mal ein Fall, die Schwierigkeit passt sich an.',
+    socStart: 'Heutige Runde starten', socAnother: 'Noch eine Runde', socHint: 'Hinweis', socFinish: 'Abschließen', socSend: 'Senden',
+    socPlaceholder: 'Deine Antwort … (Diktat über die Tastatur geht auch)', socNeedKey: 'Für den Dialog braucht Echo einen Anthropic-API-Key (Einstellungen).',
+    socDone: 'Runde abgeschlossen · +20 XP', socRate: 'Wie schwer war es?', easy: 'Leicht', okay: 'Passend', hard: 'Schwer',
+    socPast: 'Frühere Runden', keyPoints: 'Kernpunkte', gap: 'Nochmal anschauen', nextTopic: 'Nächstes Mal', socMin: 'Beantworte erst zwei Fragen, dann kannst du abschließen.',
+    thinking: 'Claude denkt nach …', hintMsg: 'Ich komme nicht weiter. Gib mir bitte einen kleinen Hinweis, nicht die Lösung.', dictate: 'Diktieren', dictating: 'Hört zu … tippen zum Stoppen',
+    recapTitle: 'Rückblick', memosN: n => n + ' ' + plural(n, 'Memo', 'Memos'), minutesN: n => n + ' min gesprochen',
+    recapHeading: 'Tageszusammenfassung', recapMake: 'Tagesrückblick mit Claude', recapRedo: 'Neu schreiben', reflectTitle: 'Selbst reflektieren',
+    refDid: 'Was habe ich heute getan?', refGood: 'Was lief gut?', refNext: 'Was ist morgen dran?', reflectSaved: 'Notiert',
+    weekTitle: 'Diese Woche', weekMake: 'Wochenrückblick mit Claude', noMemosDay: 'An diesem Tag gibt es keine Memos.',
+    recapNoKey: 'Mit einem Anthropic-Key schreibt Claude dir hier eine Zusammenfassung. Ohne Key reflektierst du selbst, das zählt genauso.',
+    H_did: 'Was du getan hast', H_proud: 'Worauf du stolz sein kannst', H_open: 'Noch offen', H_tomorrow: 'Für morgen',
+    H_wdid: 'Was du diese Woche bewegt hast', H_goals: 'Deine Wochenziele', H_notice: 'Was auffällt', H_next: 'Für nächste Woche',
+    settings: 'Einstellungen', language: 'Sprache', theme: 'Darstellung', themeSystem: 'System', light: 'Hell', dark: 'Dunkel', yourName: 'Dein Name',
+    aiSection: 'KI (optional)', aiNote: 'Die Schlüssel bleiben auf diesem Gerät. Zur Transkription geht die Aufnahme an OpenAI, für Zusammenfassung, Dialog und Rückblick der Text an Anthropic. Ohne Schlüssel verlässt nichts das Gerät.',
+    anthropicKey: 'Anthropic-API-Key', model: 'Modell für Dialog & Rückblick', fastModel: 'Modell für Memo-Zusammenfassungen',
+    openaiKey: 'OpenAI-API-Key (Transkription)', sttModel: 'Transkriptionsmodell',
+    liveStt: 'Live mitschreiben im Browser (kostenlos, ungenauer; auf Android teils nicht parallel zur Aufnahme)',
+    autoAI: 'Neue Memos automatisch transkribieren und zusammenfassen', dataSection: 'Daten',
+    exportBtn: 'Backup exportieren', importBtn: 'Backup importieren', used: s => 'Belegt: ' + s, wipe: 'Alles löschen',
+    wipeConfirm: 'Alle Memos, Dialoge, Ziele und Rückblicke auf diesem Gerät löschen? Das lässt sich nicht rückgängig machen.',
+    imported: n => n + ' Einträge importiert', exported: 'Backup erstellt', importFail: 'Die Datei ist kein Echo-Backup.',
+    privacy: 'Alles liegt lokal in diesem Browser. Mach ab und zu ein Backup: Browserdaten löschen heißt Memos löschen.',
+    newBadge: n => 'Neues Abzeichen: ' + n, levelUp: (n, name) => 'Level ' + n + ': ' + name,
+    levels: ['Funke', 'Stimme', 'Erzähler', 'Chronist', 'Kompass', 'Leuchtturm', 'Weggefährte', 'Architekt', 'Mentor', 'Weiser'],
+    b_first: ['Erste Worte', 'Das erste Memo'], b_memos10: ['Zehn Takes', '10 Memos'],
+    b_streak7: ['Eine Woche', '7 Tage Serie'], b_streak30: ['Ein Monat', '30 Tage Serie'],
+    b_min60: ['Eine Stunde', '60 Minuten gesprochen'], b_min300: ['Tonband', '5 Stunden gesprochen'], b_memos50: ['Archiv', '50 Memos'],
+    b_soc1: ['Eule', 'Erste Sokrates-Runde'], b_soc10: ['Agora', '10 Sokrates-Runden'],
+    b_fullday: ['Volle Runde', 'Alle drei Tagesaufgaben an einem Tag'], b_full7: ['Sieben volle Runden', '7 Tage mit voller Runde'],
+    b_echo10: ['Echo', '10 ältere Memos wiedergehört'], b_promise10: ['Wort gehalten', '10 Vorsätze erledigt'], b_goals: ['Volltreffer', 'Eine Woche mit allen Zielen erreicht'],
+    micArtifact: 'In claude.ai ist das Mikrofon für Seiten gesperrt. Nimm mit der Rekorder-App deines Handys auf, wähle eine Audiodatei, oder schreib bzw. diktiere über das Mikro der Tastatur.',
+    capRecord: 'Mit Rekorder aufnehmen', capPick: 'Audiodatei wählen', capReady: d => 'Aufnahme bereit · ' + d,
+    capNote: 'Worum ging es? (optional, daraus entsteht die Zusammenfassung)', capNotePh: 'Stichworte, oder per Tastatur-Mikro diktieren …',
+    noteLabel: 'Notiz', textMemo: 'Text', aiDenied: 'Claude-Zugriff wurde nicht erlaubt.', exportFail: 'Backup konnte nicht gespeichert werden.',
+    aiBuiltin: 'Claude ist eingebaut: Zusammenfassung, Dialog und Rückblick laufen über dein Claude-Konto, ohne API-Key. Beim ersten Mal fragt claude.ai um Erlaubnis. Audio kann hier nicht transkribiert werden; eine kurze Notiz zum Memo reicht für die Zusammenfassung.',
+    impulseLabel: 'Impuls zum Einstieg', imp_mix: 'Überrasch mich', imp_dump: 'Kopf leeren', imp_wins: 'Heute geschafft', imp_plan: 'Plan & Zusage', imp_learn: 'Gelerntes erklären', imp_proud: 'Stolz', imp_keep: 'Festhalten',
+    install: 'Tipp: Über das Browser-Menü "Zum Startbildschirm hinzufügen", dann startet Echo wie eine App.',
+  },
+  en: {
+    tabToday: 'Today', tabHistory: 'History', tabSocratic: 'Socrates', tabRecap: 'Recap',
+    greet: (h, name) => (h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 17 ? 'Hello' : h < 22 ? 'Good evening' : 'Good night') + (name ? ', ' + name : ''),
+    streak: 'Streak', days: n => n + ' ' + plural(n, 'day', 'days'), streakOpen: 'still open today', streakDone: 'done today',
+    freezeInfo: 'One missed day per week does not break the streak.',
+    level: 'Level', xpTo: n => n + ' XP to go', weekMin: 'min this week',
+    record: 'Record', recordHint: 'One tap, then just talk. It does not have to be perfect.', newPrompt: 'Another prompt',
+    questsTitle: "Today's round", q_memo: 'Record a memo', q_socratic: 'One Socratic round', q_recap: 'Daily recap', q_echo: 'Bonus: replay an older memo',
+    fullRound: 'Full round done', fullRoundXP: '+15 XP bonus',
+    commitTitle: 'Your commitments', commitAdd: 'Add commitment', commitPlaceholder: 'e.g. 30 min biochemistry tomorrow',
+    commitHint: 'Picked up from your memos automatically when you say what you plan to do.',
+    goalsTitle: 'Weekly goals', goalsEmpty: 'No goals for this week yet.', goalsEdit: 'Edit', goalsAdd: 'Add goals',
+    goalsHelp: 'Big to small, one goal per line. "! Title" = main goal, "+ Title" = important, "- step" below = sub-step, "> text" = note, "[text]" at the end = badge, "3x Title" = counter, "daily" or "/ day" in the title = boxes Mon to Sun. You can also paste or import a weekly page (HTML) from the Growth chat.',
+    tabGoals: 'Goals', goalsToday: 'Up today', thisWeek: 'This week', goalsPct: (p, d, n) => p + ' % done (' + d + '/' + n + ')',
+    goalsImport: 'Import weekly page', goalsImported: (n, w) => n + ' goals imported · ' + w, goalsFooter: 'Every day done is a step toward the big goals.',
+    goalDoneLabel: 'Done', goalReached: n => 'Goal reached: ' + n, goalsImportFail: 'No goals found in this file.',
+    socModeNutri: 'Nutritional medicine', socModeTalk: 'Talk & discussion', socTalkTopic: 'Topic of your talk', socTalkMaterial: 'Material (optional): outline, abstract, key claims',
+    socTalkIntro: 'Claude plays the critical audience: one question at a time, like the discussion after a talk. You answer, Claude gives brief feedback and follows up.', socTalkNeed: 'Enter the topic first.', socTalkStart: 'Start discussion',
+    goalsCarry: "Copy last week's goals", goalsDone: 'All weekly goals reached',
+    echoTitle: 'Echo', echoAgo: n => n === 1 ? 'Yesterday' : n + ' days ago', echoYear: 'A year ago', echoRandom: 'From your archive',
+    echoHint: 'Listen to yourself. What would you tell that version of you today?',
+    badgesTitle: 'Badges', nextBadge: 'Up next',
+    save: 'Save', cancel: 'Cancel', del: 'Delete', close: 'Close', confirmDel: 'Delete this?', yes: 'Yes, delete',
+    recording: 'Recording', paused: 'Paused', stopSave: 'Done', discard: 'Discard', pause: 'Pause', resume: 'Resume',
+    saved: xp => 'Saved · +' + xp + ' XP', tooShort: 'Too short, nothing saved.',
+    micDenied: 'No microphone access. Allow the microphone for this site in your browser settings.',
+    micInsecure: 'The microphone needs HTTPS (or localhost). See README.', micUnsupported: 'This browser cannot record audio.',
+    transcribing: 'Transcribing …', summarizing: 'Summarizing …', aiError: 'AI error', retry: 'Try again', aiProcess: 'Transcribe & summarize',
+    transcript: 'Transcript', liveText: 'Live transcript', openYesterday: 'Open from yesterday:',
+    noAI: 'Without a key the recording stays a recording. Transcripts and summaries need an API key (Settings).',
+    search: 'Search memos', all: 'All', playAll: 'Play everything', playAllHint: n => n + ' ' + plural(n, 'memo', 'memos') + ', oldest first',
+    playDay: 'Play this day', emptyHistory: 'No memos yet. Your first one is a tap away.', noMatch: 'Nothing found.',
+    heatLess: 'less', heatMore: 'more', minShort: 'min', memoFallback: 'Memo',
+    speed: 'Speed', speedHint: 'Listen faster, listen more often.',
+    socTitle: 'Socratic dialogue', socSub: 'Nutritional medicine',
+    socIntro: 'Claude asks, you think out loud. No ready-made answers until you work them out yourself. Sometimes a mechanism, sometimes a case; difficulty adapts.',
+    socStart: "Start today's round", socAnother: 'One more round', socHint: 'Hint', socFinish: 'Finish', socSend: 'Send',
+    socPlaceholder: 'Your answer … (keyboard dictation works too)', socNeedKey: 'The dialogue needs an Anthropic API key (Settings).',
+    socDone: 'Round complete · +20 XP', socRate: 'How hard was it?', easy: 'Easy', okay: 'About right', hard: 'Hard',
+    socPast: 'Earlier rounds', keyPoints: 'Key points', gap: 'Review again', nextTopic: 'Next time', socMin: 'Answer two questions first, then you can finish.',
+    thinking: 'Claude is thinking …', hintMsg: "I'm stuck. Please give me a small hint, not the answer.", dictate: 'Dictate', dictating: 'Listening … tap to stop',
+    recapTitle: 'Recap', memosN: n => n + ' ' + plural(n, 'memo', 'memos'), minutesN: n => n + ' min spoken',
+    recapHeading: 'Daily summary', recapMake: 'Daily recap with Claude', recapRedo: 'Rewrite', reflectTitle: 'Reflect yourself',
+    refDid: 'What did I do today?', refGood: 'What went well?', refNext: 'What is next tomorrow?', reflectSaved: 'Noted',
+    weekTitle: 'This week', weekMake: 'Weekly review with Claude', noMemosDay: 'No memos on this day.',
+    recapNoKey: 'With an Anthropic key, Claude writes a summary here. Without one, reflect yourself; it counts just the same.',
+    H_did: 'What you did', H_proud: 'What you can be proud of', H_open: 'Still open', H_tomorrow: 'For tomorrow',
+    H_wdid: 'What you moved this week', H_goals: 'Your weekly goals', H_notice: 'What stands out', H_next: 'For next week',
+    settings: 'Settings', language: 'Language', theme: 'Appearance', themeSystem: 'System', light: 'Light', dark: 'Dark', yourName: 'Your name',
+    aiSection: 'AI (optional)', aiNote: 'Keys stay on this device. For transcripts the recording goes to OpenAI; for summaries, dialogue and recaps the text goes to Anthropic. Without keys nothing leaves the device.',
+    anthropicKey: 'Anthropic API key', model: 'Model for dialogue & recaps', fastModel: 'Model for memo summaries',
+    openaiKey: 'OpenAI API key (transcription)', sttModel: 'Transcription model',
+    liveStt: 'Live transcript in the browser (free, less accurate; on Android it may not run alongside recording)',
+    autoAI: 'Transcribe and summarize new memos automatically', dataSection: 'Data',
+    exportBtn: 'Export backup', importBtn: 'Import backup', used: s => 'Used: ' + s, wipe: 'Delete everything',
+    wipeConfirm: 'Delete all memos, dialogues, goals and recaps on this device? This cannot be undone.',
+    imported: n => n + ' entries imported', exported: 'Backup created', importFail: 'This file is not an Echo backup.',
+    privacy: 'Everything lives locally in this browser. Back up now and then: clearing browser data deletes your memos.',
+    newBadge: n => 'New badge: ' + n, levelUp: (n, name) => 'Level ' + n + ': ' + name,
+    levels: ['Spark', 'Voice', 'Storyteller', 'Chronicler', 'Compass', 'Lighthouse', 'Companion', 'Architect', 'Mentor', 'Sage'],
+    b_first: ['First words', 'Your first memo'], b_memos10: ['Ten takes', '10 memos'],
+    b_streak7: ['One week', '7-day streak'], b_streak30: ['One month', '30-day streak'],
+    b_min60: ['One hour', '60 minutes spoken'], b_min300: ['Tape reel', '5 hours spoken'], b_memos50: ['Archive', '50 memos'],
+    b_soc1: ['Owl', 'First Socratic round'], b_soc10: ['Agora', '10 Socratic rounds'],
+    b_fullday: ['Full round', 'All three daily tasks in one day'], b_full7: ['Seven full rounds', '7 days with a full round'],
+    b_echo10: ['Echo', 'Replayed 10 older memos'], b_promise10: ['Kept my word', '10 commitments done'], b_goals: ['Bullseye', 'A week with every goal reached'],
+    micArtifact: "claude.ai blocks the microphone for pages. Record with your phone's recorder app, pick an audio file, or type or dictate with the keyboard mic.",
+    capRecord: 'Record with recorder', capPick: 'Choose audio file', capReady: d => 'Recording ready · ' + d,
+    capNote: 'What was it about? (optional, the summary is made from this)', capNotePh: 'Keywords, or dictate with the keyboard mic …',
+    noteLabel: 'Note', textMemo: 'Text', aiDenied: 'Access to Claude was not allowed.', exportFail: 'The backup could not be saved.',
+    aiBuiltin: 'Claude is built in: summaries, dialogue and recaps run on your Claude account, no API key. claude.ai asks for permission the first time. Audio cannot be transcribed here; a short note on the memo is enough for the summary.',
+    impulseLabel: 'Starter', imp_mix: 'Surprise me', imp_dump: 'Brain dump', imp_wins: 'Done today', imp_plan: 'Plan & commit', imp_learn: 'Explain what I learned', imp_proud: 'Proud of', imp_keep: 'Keep this',
+    install: 'Tip: use "Add to Home screen" in the browser menu and Echo opens like an app.',
+  },
+};
+const t = (k, ...a) => { const v = (I18N[S.set.lang] || I18N.en)[k] ?? I18N.en[k] ?? k; return typeof v === 'function' ? v(...a) : v; };
+const locale = () => S.set.lang === 'de' ? 'de-DE' : 'en-GB';
+const langName = () => S.set.lang === 'de' ? 'German' : 'English';
+const fmtDate = (k, o = { weekday: 'long', day: 'numeric', month: 'long' }) => parseDay(k).toLocaleDateString(locale(), o);
+const fmtTime = ms => new Date(ms).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
+
+// Optional starters. "mix" draws from all decks; without a choice the time of day picks one.
+const IMPULSES = ['mix', 'dump', 'wins', 'plan', 'learn', 'proud', 'keep'];
+const PROMPTS = {
+  de: {
+    dump: ['Was ist gerade in deinem Kopf?', 'Was beschäftigt dich heute am meisten?', 'Erzähl einfach, wie dein Tag war.', 'Was würdest du jetzt jemandem erzählen, dem du vertraust?', 'Was willst du loswerden, bevor der Tag weitergeht?'],
+    wins: ['Was hast du heute erledigt, auch Kleines?', 'Was hast du heute angefangen, das du lange vor dir hergeschoben hast?', 'Wann warst du heute richtig bei der Sache?', 'Was hat heute geklappt, und warum?', 'Was hast du heute für dein Wochenziel getan?'],
+    plan: ['Was nimmst du dir bis morgen konkret vor?', 'Was hast du gestern zugesagt, und wie ist es gelaufen?', 'Welcher eine Schritt bringt dein Wochenziel heute voran?', 'Wenn du heute Abend zurückblickst: Was soll erledigt sein?', 'Was hält dich gerade ab, und was ist der kleinste nächste Schritt?'],
+    learn: ['Erklär in zwei Minuten, was du heute gelernt hast, als würdest du es einem Erstsemester erklären.', 'Welcher Mechanismus ist dir heute klar geworden? Geh ihn Schritt für Schritt durch.', 'Nimm ein Thema von heute und erklär es ganz ohne Fachwörter.', 'Was hast du heute gelesen, und was ist die eine Kernaussage?', 'Welche Frage zu deinem Stoff kannst du noch nicht beantworten? Sprich laut durch, was du schon weißt.'],
+    proud: ['Erzähl von etwas, das du geschafft hast, obwohl es schwer war.', 'Welche Stärke hast du diese Woche gezeigt?', 'Sprich mit dir, wie du mit einem guten Freund sprechen würdest.', 'Was kannst du heute besser als vor einem Jahr?', 'Wofür würden dir andere heute danken?'],
+    keep: ['Halte eine Erinnerung fest, die du nicht verlieren willst.', 'Welcher Moment heute soll nicht verloren gehen?', 'Erzähl von einem Menschen, der dich geprägt hat.', 'Worüber wirst du in zehn Jahren lachen?', 'Welcher Geruch oder Klang bringt dich sofort zurück?'],
+  },
+  en: {
+    dump: ["What's on your mind right now?", 'What is occupying you most today?', 'Just tell me how your day went.', 'What would you tell someone you trust right now?', 'What do you want to get off your chest before the day moves on?'],
+    wins: ['What did you get done today, small things included?', 'What did you finally start today that you had been putting off?', 'When were you fully absorbed today?', 'What worked today, and why?', 'What did you do for your weekly goal today?'],
+    plan: ['What exactly will you get done by tomorrow?', 'What did you commit to yesterday, and how did it go?', 'Which single step moves your weekly goal forward today?', 'Looking back tonight, what should be done?', 'What is holding you back, and what is the smallest next step?'],
+    learn: ["Explain in two minutes what you learned today, as if to a first-year student.", 'Which mechanism clicked for you today? Walk through it step by step.', 'Take one topic from today and explain it without any jargon.', 'What did you read today, and what is the one key message?', "Which question about your material can't you answer yet? Talk through what you already know."],
+    proud: ['Tell me about something you managed even though it was hard.', 'Which strength did you show this week?', 'Talk to yourself the way you would talk to a good friend.', 'What can you do better today than a year ago?', 'What would others thank you for today?'],
+    keep: ["Capture a memory you don't want to lose.", 'Which moment from today should not get lost?', 'Tell me about a person who shaped you.', 'What will you laugh about in ten years?', 'Which smell or sound takes you straight back?'],
+  },
+};
+
+/* ---------- state ---------- */
+const DEFAULTS = {
+  lang: (navigator.language || 'de').toLowerCase().startsWith('de') ? 'de' : 'en', theme: 'system', name: '',
+  anthropicKey: '', model: 'claude-sonnet-5-5', fastModel: 'claude-haiku-5-5',
+  openaiKey: '', sttModel: 'gpt-4o-mini-transcribe', liveStt: false, autoAI: true, speed: 1.5,
+};
+const S = {
+  set: Object.assign({}, DEFAULTS, LS.get('echo-settings', {})),
+  memos: [], dialogs: [], recaps: {}, goals: {}, commitments: [],
+  tab: 'today', socMode: LS.get('echo-soc-mode', 'nutri'), goalWeek: null, editWeek: null, impulse: null, promptShift: 0, recapDay: null, histQuery: '', histImp: 'all', activeDialog: null, draft: '', socBusy: false,
+};
+const saveSettings = () => LS.set('echo-settings', S.set);
+
+/* ---------- IndexedDB ---------- */
+const STORES = { memos: 'id', dialogs: 'id', recaps: 'day', goals: 'week', commitments: 'id' };
+const DB = {
+  db: null,
+  open() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('echo-journal', 1);
+      r.onupgradeneeded = () => { for (const [s, key] of Object.entries(STORES)) if (!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s, { keyPath: key }); };
+      r.onsuccess = () => { this.db = r.result; res(); };
+      r.onerror = () => rej(r.error);
+    });
+  },
+  req(store, mode, fn) {
+    return new Promise((res, rej) => { const q = fn(this.db.transaction(store, mode).objectStore(store)); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+  },
+  all(s) { return this.req(s, 'readonly', o => o.getAll()); },
+  put(s, v) { return this.req(s, 'readwrite', o => o.put(v)).catch(e => { toast(String(e && e.message || e), 'err'); }); },
+  del(s, k) { return this.req(s, 'readwrite', o => o.delete(k)); },
+  clear(s) { return this.req(s, 'readwrite', o => o.clear()); },
+};
+async function loadAll() {
+  S.memos = await DB.all('memos');
+  S.dialogs = await DB.all('dialogs');
+  S.commitments = await DB.all('commitments');
+  S.recaps = Object.fromEntries((await DB.all('recaps')).map(r => [r.day, r]));
+  S.goals = Object.fromEntries((await DB.all('goals')).map(g => [g.week, g]));
+}
+
+/* ---------- gamification ---------- */
+const memoXP = m => 10 + 2 * Math.min(10, Math.floor((m.dur || 0) / 60));
+const isRecapDone = r => !!r && (!!r.text || Object.values(r.reflection || {}).some(v => (v || '').trim().length >= 3));
+const levelFrom = xp => Math.floor((1 + Math.sqrt(1 + 4 * xp / 25)) / 2);
+const levelBase = n => 25 * n * (n - 1);
+const levelName = n => { const L = t('levels'); return L[Math.min(n, L.length) - 1] + (n > L.length ? ' ' + (n - L.length + 1) : ''); };
+const played = () => LS.get('echo-played', {});
+
+function streakInfo(daySet) {
+  // Walk back from today. One missed day per 7 days is forgiven, two in a row ends the streak.
+  let d = new Date(), count = 0, i = 0, lastFreeze = -100, freezeUsed = false;
+  const doneToday = daySet.has(dayKey(d));
+  if (!doneToday) d = addDays(d, -1);
+  while (i < 5000) {
+    const k = dayKey(d);
+    if (daySet.has(k)) count++;
+    else if (i - lastFreeze >= 7 && daySet.has(dayKey(addDays(d, -1)))) { lastFreeze = i; if (i < 7) freezeUsed = true; }
+    else break;
+    d = addDays(d, -1); i++;
+  }
+  return { count, doneToday, freezeUsed };
+}
+
+function computeStats() {
+  const td = today(), ws = weekStart();
+  const dayMin = new Map(); let seconds = 0, weekSec = 0; let xp = 0;
+  for (const m of S.memos) {
+    dayMin.set(m.day, (dayMin.get(m.day) || 0) + (m.dur || 0) / 60);
+    seconds += m.dur || 0; xp += memoXP(m);
+    if (m.day >= ws) weekSec += m.dur || 0;
+  }
+  const socDone = S.dialogs.filter(d => d.completed);
+  xp += socDone.length * 20;
+  const recapDays = Object.values(S.recaps).filter(r => !r.day.includes(':') && isRecapDone(r)).map(r => r.day);
+  xp += recapDays.length * 10;
+  const commitDone = S.commitments.filter(c => c.done).length;
+  xp += commitDone * 5;
+  let goalWeeks = 0;
+  for (const g of Object.values(S.goals)) {
+    const wp = weekProgress(g);
+    xp += 3 * wp.done;
+    if (wp.items.length && wp.items.every(goalDone)) goalWeeks++;
+  }
+  const pl = played(); let echoCount = 0;
+  for (const ids of Object.values(pl)) { echoCount += ids.length; xp += 2 * Math.min(5, ids.length); }
+  const socDays = new Set(socDone.map(d => d.day)), recapSet = new Set(recapDays);
+  const fullDays = [...dayMin.keys()].filter(k => socDays.has(k) && recapSet.has(k));
+  xp += fullDays.length * 15;
+  const st = streakInfo(new Set(dayMin.keys()));
+  const best = Math.max(st.count, LS.get('echo-best', 0));
+  if (best > LS.get('echo-best', 0)) LS.set('echo-best', best);
+  const level = levelFrom(xp);
+  const quests = { memo: dayMin.has(td), socratic: socDays.has(td), recap: recapSet.has(td), echo: (pl[td] || []).length > 0 };
+  return {
+    xp, level, levelBase: levelBase(level), levelNext: levelBase(level + 1), streak: st, bestStreak: best,
+    minutes: seconds / 60, weekMin: Math.round(weekSec / 60), memoCount: S.memos.length,
+    soc: socDone.length, fullDays: fullDays.length, echoCount, commitDone, goalWeeks, dayMin, quests,
+  };
+}
+
+const BADGES = [
+  ['first', '🎙️', s => [s.memoCount, 1]], ['memos10', '🗣️', s => [s.memoCount, 10]],
+  ['streak7', '🔥', s => [s.bestStreak, 7]], ['streak30', '🌋', s => [s.bestStreak, 30]],
+  ['min60', '⏱️', s => [Math.floor(s.minutes), 60]], ['min300', '📼', s => [Math.floor(s.minutes), 300]], ['memos50', '📚', s => [s.memoCount, 50]],
+  ['soc1', '🦉', s => [s.soc, 1]], ['soc10', '🏛️', s => [s.soc, 10]],
+  ['fullday', '⭐', s => [s.fullDays, 1]], ['full7', '🌟', s => [s.fullDays, 7]],
+  ['echo10', '🔁', s => [s.echoCount, 10]], ['promise10', '🤝', s => [s.commitDone, 10]], ['goals', '🎯', s => [s.goalWeeks, 1]],
+].map(([id, em, prog]) => ({ id, em, prog }));
+const badgeName = b => t('b_' + b.id)[0];
+const badgeDesc = b => t('b_' + b.id)[1];
+const earned = (b, st) => { const [v, n] = b.prog(st); return v >= n; };
+
+function celebrate() {
+  // Compare against what the person has already seen; toast only what is new.
+  const st = computeStats();
+  const seen = LS.get('echo-seen', null);
+  const now = { level: st.level, badges: BADGES.filter(b => earned(b, st)).map(b => b.id), full: st.quests.memo && st.quests.socratic && st.quests.recap ? today() : (seen && seen.full) || '' };
+  if (seen) {
+    if (now.level > seen.level) { toast(t('levelUp', now.level, levelName(now.level)), 'gold'); burst(); }
+    for (const id of now.badges) if (!seen.badges.includes(id)) { const b = BADGES.find(x => x.id === id); toast(b.em + ' ' + t('newBadge', badgeName(b)), 'gold'); burst(); }
+    if (now.full === today() && seen.full !== today()) { toast(t('fullRound') + ' · ' + t('fullRoundXP'), 'gold'); burst(); }
+  }
+  LS.set('echo-seen', now);
+}
+function burst() {
+  const cols = ['--rec', '--calm', '--gold'].map(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim());
+  const cx = innerWidth / 2, cy = innerHeight * 0.38;
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('i'); p.className = 'burst';
+    const a = Math.random() * Math.PI * 2, r = 70 + Math.random() * 110;
+    p.style.cssText = `left:${cx}px;top:${cy}px;background:${cols[i % 3]};--dx:${Math.cos(a) * r}px;--dy:${Math.sin(a) * r + 40}px;--rot:${Math.random() * 540}deg`;
+    document.body.appendChild(p); setTimeout(() => p.remove(), 1200);
+  }
+}
+function toast(msg, kind = '') {
+  const el = document.createElement('div'); el.className = 'toast ' + kind; el.textContent = msg;
+  $('#toasts').appendChild(el); setTimeout(() => el.remove(), kind === 'err' ? 6000 : 3200);
+}
+
+/* ---------- AI ---------- */
+// Inside claude.ai the page runs as an Artifact: Claude comes from the viewer's account, no key needed.
+const IS_ARTIFACT = !!(window.claude && typeof window.claude.use === 'function');
+let SAMPLE = null;
+const hasAI = () => !!(SAMPLE || S.set.anthropicKey);
+async function askClaude({ system, messages, maxTokens = 800, model, quick = false }) {
+  if (SAMPLE) {
+    const turns = messages.map(({ role, content }) => ({ role, content }));
+    turns[0] = { role: 'user', content: 'INSTRUCTIONS (follow them exactly):\n' + system + '\n\n---\n\n' + turns[0].content };
+    try { const r = await SAMPLE(turns, { cache: false, modelTier: quick ? 'quick' : 'default' }); return String(r.text || '').trim(); }
+    catch (e) { throw new Error(e && e.code === 'not_granted' ? t('aiDenied') : (e && (e.message || e.code)) || 'error'); }
+  }
+  if (!S.set.anthropicKey) throw new Error('No Anthropic key');
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-api-key': S.set.anthropicKey.trim(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: model || S.set.model, max_tokens: maxTokens, system, messages }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error((j.error && j.error.message) || ('HTTP ' + r.status));
+  return (j.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+}
+function parseJSON(text) {
+  const a = text.indexOf('{'), b = text.lastIndexOf('}');
+  return JSON.parse(a >= 0 && b > a ? text.slice(a, b + 1) : text);
+}
+const extFor = mime => mime.includes('mp4') ? 'mp4' : mime.includes('ogg') ? 'ogg' : mime.includes('wav') ? 'wav' : 'webm';
+async function transcribe(blob) {
+  const fd = new FormData();
+  const type = (blob.type || 'audio/webm').split(';')[0];
+  fd.append('file', new File([blob], 'memo.' + extFor(type), { type }));
+  fd.append('model', S.set.sttModel || 'whisper-1');
+  const r = await fetch('https://api.openai.com/v1/audio/transcriptions', { method: 'POST', headers: { Authorization: 'Bearer ' + S.set.openaiKey.trim() }, body: fd });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error((j.error && j.error.message) || ('HTTP ' + r.status));
+  return (j.text || '').trim();
+}
+async function summarizeMemo(m) {
+  const system = `You help a person keep a private voice journal. You get the transcript of one voice memo${m.prompt ? ` answering the question "${m.prompt}"` : ''}. ` +
+    `Return ONLY a JSON object: {"title": "max 6 words", "summary": "1-2 sentences, warm and concrete, addressed to the person as 'you'", ` +
+    `"tags": ["up to 3 short lowercase keywords"], "commitments": ["things the person explicitly said they will do, as short to-dos; [] if none; max 3"]}. ` +
+    `Only report what was said. No judgement, no advice, no diagnosis. Write all values in ${langName()}.`;
+  return parseJSON(await askClaude({ system, messages: [{ role: 'user', content: m.transcript.slice(0, 12000) }], maxTokens: 400, model: S.set.fastModel, quick: true }));
+}
+async function processMemo(m) {
+  try {
+    if (!m.transcript && m.blob && S.set.openaiKey && !IS_ARTIFACT) {
+      m.status = 'transcribing'; render();
+      m.transcript = await transcribe(m.blob); m.transcriptSource = 'openai'; await DB.put('memos', m);
+    }
+    if (m.transcript && !m.summary && hasAI()) {
+      m.status = 'summarizing'; render();
+      const r = await summarizeMemo(m);
+      m.title = String(r.title || ''); m.summary = String(r.summary || '');
+      m.tags = Array.isArray(r.tags) ? r.tags.slice(0, 3).map(String) : [];
+      for (const c of (Array.isArray(r.commitments) ? r.commitments : []).slice(0, 3)) {
+        const cm = { id: uid(), text: String(c), day: m.day, createdAt: Date.now(), memoId: m.id, done: false };
+        S.commitments.push(cm); await DB.put('commitments', cm);
+      }
+    }
+    m.status = ''; m.error = '';
+  } catch (e) { m.status = 'error'; m.error = String(e && e.message || e); }
+  await DB.put('memos', m); afterChange();
+}
+
+/* ---------- recorder ---------- */
+const R = { levels: [] };
+const pickMime = () => ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg;codecs=opus'].find(m => window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) || '';
+// One pool, interleaved so consecutive days draw from different angles (talking freely, a memory, confidence, a commitment ...).
+const defaultImpulse = () => { const h = new Date().getHours(); return h < 11 ? 'plan' : h >= 18 ? 'wins' : 'mix'; };
+const activeImpulse = () => S.impulse || defaultImpulse();
+function pickPrompt() {
+  const imp = activeImpulse(), P = PROMPTS[S.set.lang], n = dayOfYear() + S.promptShift;
+  if (imp !== 'mix') return { k: imp, q: P[imp][n % P[imp].length] };
+  const pool = []; for (let i = 0; i < 5; i++) for (const k of IMPULSES.slice(1)) pool.push({ k, q: P[k][i] });
+  return pool[n % pool.length];
+}
+const currentPrompt = () => pickPrompt().q;
+
+async function openRecorder(opts = {}) {
+  const fallback = msg => { if (opts.mode === 'dictate') toast(msg, 'err'); else openCapture(msg); };
+  if (!window.isSecureContext) { fallback(t('micInsecure')); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) { fallback(t('micUnsupported')); return; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
+  catch { fallback(IS_ARTIFACT ? t('micArtifact') : t('micDenied')); return; }
+  Object.assign(R, { stream, mode: opts.mode || 'memo', onDone: opts.onDone || null, prompt: opts.mode === 'dictate' ? '' : currentPrompt(), impulse: opts.mode === 'dictate' ? '' : pickPrompt().k, chunks: [], levels: [], acc: 0, paused: false, sttText: '', sttInterim: '' });
+  R.mime = pickMime();
+  R.rec = new MediaRecorder(stream, R.mime ? { mimeType: R.mime } : undefined);
+  R.rec.ondataavailable = e => { if (e.data && e.data.size) R.chunks.push(e.data); };
+  R.rec.start(1000); R.t0 = performance.now();
+  try { R.ctx = new (window.AudioContext || window.webkitAudioContext)(); R.an = R.ctx.createAnalyser(); R.an.fftSize = 1024; R.ctx.createMediaStreamSource(stream).connect(R.an); } catch { R.an = null; }
+  if (S.set.liveStt && !(R.mode === 'dictate' && S.set.openaiKey)) startSTT();
+  try { R.wake = navigator.wakeLock ? await navigator.wakeLock.request('screen') : null; } catch { R.wake = null; }
+  renderRecorder();
+  R.timer = setInterval(() => { const el = $('#recTime'); if (el) el.textContent = fmtDur(recElapsed()); }, 250);
+}
+const recElapsed = () => (R.acc + (R.paused ? 0 : performance.now() - R.t0)) / 1000;
+function togglePause() {
+  if (!R.rec) return;
+  if (R.paused) { R.rec.resume(); R.t0 = performance.now(); R.paused = false; }
+  else { R.rec.pause(); R.acc += performance.now() - R.t0; R.paused = true; }
+  renderRecorder();
+}
+async function stopRecorder(save) {
+  if (!R.rec) return;
+  const dur = recElapsed(), rec = R.rec; R.rec = null;
+  clearInterval(R.timer); cancelAnimationFrame(R.raf); stopSTT();
+  const blob = await new Promise(res => { rec.onstop = () => res(new Blob(R.chunks, { type: rec.mimeType || R.mime || 'audio/webm' })); try { rec.stop(); } catch { res(null); } });
+  R.stream.getTracks().forEach(tr => tr.stop());
+  try { R.ctx && R.ctx.close(); } catch { /* already closed */ }
+  try { R.wake && R.wake.release(); } catch { /* released */ }
+  $('#recorder').hidden = true; document.body.style.overflow = '';
+  if (!save) return;
+  if (!blob || dur < 1) { toast(t('tooShort')); return; }
+  const live = (R.sttText + ' ' + R.sttInterim).trim();
+  if (R.mode === 'dictate') { R.onDone && R.onDone(blob, live); return; }
+  await saveMemo({ prompt: R.prompt, impulse: R.impulse, dur, blob, transcript: live, source: live ? 'live' : '' });
+}
+async function saveMemo({ prompt, impulse, dur, blob, transcript, source }) {
+  const m = { id: uid(), createdAt: Date.now(), day: today(), prompt, impulse: impulse || '', dur: dur || 0, mime: blob ? blob.type : '', blob: blob || null,
+    transcript: transcript || '', transcriptSource: source || '', title: '', summary: '', tags: [], plays: 0, status: '', error: '' };
+  S.memos.push(m); await DB.put('memos', m);
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch { /* optional */ }
+  toast(t('saved', memoXP(m)), 'ok'); burst(); afterChange();
+  if (S.set.autoAI && ((m.blob && !m.transcript && S.set.openaiKey && !IS_ARTIFACT) || (m.transcript && hasAI()))) processMemo(m);
+}
+function startSTT() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+  const r = new SR(); r.lang = S.set.lang === 'de' ? 'de-DE' : 'en-US'; r.continuous = true; r.interimResults = true;
+  r.onresult = e => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) { const x = e.results[i]; if (x.isFinal) R.sttText += x[0].transcript + ' '; else interim += x[0].transcript; }
+    R.sttInterim = interim; const el = $('#recLive'); if (el) el.textContent = (R.sttText + interim).slice(-300);
+  };
+  r.onend = () => { if (R.stt === r && R.rec && R.rec.state !== 'inactive') { try { r.start(); } catch { /* restarting too fast */ } } };
+  r.onerror = () => {};
+  R.stt = r; try { r.start(); } catch { R.stt = null; }
+}
+function stopSTT() { const r = R.stt; R.stt = null; try { r && r.stop(); } catch { /* not running */ } }
+function drawWave() {
+  cancelAnimationFrame(R.raf);
+  const c = $('#recWave'); if (!c) return;
+  const g = c.getContext('2d'), dpr = devicePixelRatio || 1, N = 72;
+  const col = getComputedStyle(document.documentElement).getPropertyValue('--rec').trim();
+  const buf = new Uint8Array(R.an ? R.an.fftSize : 0);
+  const step = () => {
+    if ($('#recorder').hidden) return;
+    const w = c.clientWidth, h = c.clientHeight;
+    if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+    let lvl = 0;
+    if (R.an && !R.paused) { R.an.getByteTimeDomainData(buf); for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; lvl += v * v; } lvl = Math.sqrt(lvl / buf.length); }
+    R.levels.push(lvl); if (R.levels.length > N) R.levels.shift();
+    g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h); g.fillStyle = col;
+    const bw = w / N;
+    R.levels.forEach((l, i) => { const bh = Math.max(3, Math.min(h, l * h * 4)); g.globalAlpha = 0.25 + 0.75 * (i / N); g.beginPath(); g.roundRect ? g.roundRect(i * bw + 1.5, (h - bh) / 2, Math.max(2, bw - 3), bh, 2) : g.rect(i * bw + 1.5, (h - bh) / 2, Math.max(2, bw - 3), bh); g.fill(); });
+    g.globalAlpha = 1; R.raf = requestAnimationFrame(step);
+  };
+  step();
+}
+function renderRecorder() {
+  const el = $('#recorder');
+  const dict = R.mode === 'dictate';
+  const yesterday = dayKey(addDays(new Date(), -1));
+  const open = !dict ? S.commitments.filter(c => !c.done && c.day <= yesterday).slice(-3) : [];
+  el.className = R.paused ? 'paused' : '';
+  el.innerHTML = `
+    <div class="row spread" style="max-width:560px;margin:0 auto;width:100%">
+      <div class="row"><span class="dot"></span><span class="eyebrow">${esc(R.paused ? t('paused') : t('recording'))}</span></div>
+      <button class="btn ghost sm" data-act="rec-discard">${icon('x')} ${esc(t('discard'))}</button>
+    </div>
+    <div class="mid">
+      ${R.prompt ? `<p class="prompt">${esc(R.prompt)}</p>` : ''}
+      ${open.length ? `<div class="small muted">${esc(t('openYesterday'))} ${open.map(c => esc(c.text)).join(' · ')}</div>` : ''}
+      <div class="rectime" id="recTime">${fmtDur(recElapsed())}</div>
+      <canvas id="recWave"></canvas>
+      <p class="live" id="recLive">${esc((R.sttText + R.sttInterim).slice(-300))}</p>
+    </div>
+    <div class="reccontrols">
+      <button class="btn" data-act="rec-pause" style="min-width:110px">${icon(R.paused ? 'mic' : 'pause')} ${esc(R.paused ? t('resume') : t('pause'))}</button>
+      <button class="stopbtn" data-act="rec-stop" aria-label="${esc(t('stopSave'))}">${icon('stop')}</button>
+      <span style="min-width:110px" class="small muted">${esc(t('stopSave'))}</span>
+    </div>`;
+  el.hidden = false; document.body.style.overflow = 'hidden';
+  drawWave();
+}
+
+function openCapture(msg) {
+  S.capBlob = null; S.capDur = 0;
+  openSheet(`${sheetHead(t('record'))}
+    <p class="prompt" style="font-size:19px">${esc(currentPrompt())}</p>
+    <p class="small muted">${esc(msg)}</p>
+    <div class="row wrap">
+      <label class="btn rec" style="cursor:pointer">${icon('mic')} ${esc(t('capRecord'))}<input type="file" id="capFile" accept="audio/*" capture hidden></label>
+      <label class="btn" style="cursor:pointer">${icon('upload')} ${esc(t('capPick'))}<input type="file" id="capFile2" accept="audio/*,video/*" hidden></label>
+    </div>
+    <p class="small" id="capStatus" style="color:var(--calm);font-weight:700"></p>
+    <div class="field"><label for="capText">${esc(t('capNote'))}</label><textarea class="input" id="capText" rows="4" placeholder="${esc(t('capNotePh'))}"></textarea></div>
+    <button class="btn primary" data-act="cap-save" style="justify-self:end">${esc(t('save'))}</button>`);
+}
+function audioDuration(blob) {
+  return new Promise(res => {
+    const a = new Audio(), u = URL.createObjectURL(blob); let done = false;
+    const fin = d => { if (done) return; done = true; URL.revokeObjectURL(u); res(isFinite(d) ? d : 0); };
+    a.preload = 'metadata';
+    a.onloadedmetadata = () => { if (a.duration === Infinity) { a.ondurationchange = () => { if (isFinite(a.duration)) fin(a.duration); }; a.currentTime = 1e101; } else fin(a.duration); };
+    a.onerror = () => fin(0); setTimeout(() => fin(a.duration), 4000); a.src = u;
+  });
+}
+const audible = m => !!m.blob;
+
+/* ---------- dictation for the Socratic composer ---------- */
+let dictSR = null;
+function dictate() {
+  if (dictSR) { try { dictSR.stop(); } catch { /* stopped */ } dictSR = null; render(); return; }
+  if (S.set.openaiKey) {
+    openRecorder({ mode: 'dictate', onDone: async blob => {
+      toast(t('transcribing'));
+      try { const text = await transcribe(blob); S.draft = (S.draft ? S.draft + ' ' : '') + text; render(); }
+      catch (e) { toast(t('aiError') + ': ' + e.message, 'err'); }
+    } });
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+  const r = new SR(); r.lang = S.set.lang === 'de' ? 'de-DE' : 'en-US'; r.interimResults = false; r.continuous = true;
+  r.onresult = e => { for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) S.draft = (S.draft ? S.draft + ' ' : '') + e.results[i][0].transcript.trim(); const ta = $('#socInput'); if (ta) ta.value = S.draft; };
+  r.onend = () => { dictSR = null; render(); };
+  dictSR = r; try { r.start(); } catch { dictSR = null; } render();
+}
+const canDictate = () => !IS_ARTIFACT && !!(S.set.openaiKey || window.SpeechRecognition || window.webkitSpeechRecognition);
+
+/* ---------- player ---------- */
+const P = { audio: new Audio(), queue: [], idx: -1, url: null, showSpeed: false };
+P.audio.preload = 'auto';
+function setSpeed(v) {
+  v = Math.min(5, Math.max(1, Math.round(v * 100) / 100));
+  S.set.speed = v; saveSettings();
+  P.audio.defaultPlaybackRate = v; P.audio.playbackRate = v;
+  renderPlayer();
+}
+function playQueue(ids, start = 0) { P.queue = ids; loadIdx(start); }
+async function loadIdx(i) {
+  const m = S.memos.find(x => x.id === P.queue[i]);
+  if (!m) { stopPlayer(); return; }
+  P.idx = i;
+  if (P.url) URL.revokeObjectURL(P.url);
+  P.url = URL.createObjectURL(m.blob);
+  const a = P.audio; a.src = P.url; a.defaultPlaybackRate = S.set.speed; a.playbackRate = S.set.speed;
+  if ('preservesPitch' in a) a.preservesPitch = true;
+  await new Promise(res => { a.onloadedmetadata = res; a.onerror = res; setTimeout(res, 1500); });
+  // MediaRecorder webm files report an infinite duration until the browser has scanned them once.
+  if (a.duration === Infinity) {
+    P.fixing = true;
+    await new Promise(res => { a.ondurationchange = () => { if (isFinite(a.duration)) res(); }; a.currentTime = 1e101; setTimeout(res, 1500); });
+    a.ondurationchange = null; a.currentTime = 0; P.fixing = false;
+  }
+  a.playbackRate = S.set.speed;
+  try { await a.play(); } catch { /* needs a tap */ }
+  m.plays = (m.plays || 0) + 1; DB.put('memos', m);
+  if (m.day < today()) { const pl = played(), td = today(); pl[td] = pl[td] || []; if (!pl[td].includes(m.id)) { pl[td].push(m.id); LS.set('echo-played', pl); celebrate(); } }
+  if ('mediaSession' in navigator) {
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({ title: memoTitle(m), artist: 'Echo · ' + fmtDate(m.day, { day: 'numeric', month: 'short', year: 'numeric' }) });
+      navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack(1));
+      navigator.mediaSession.setActionHandler('previoustrack', () => nextTrack(-1));
+    } catch { /* partial support */ }
+  }
+  renderPlayer(); render();
+}
+function nextTrack(d) { const j = P.idx + d; if (j >= 0 && j < P.queue.length) loadIdx(j); else if (d > 0) stopPlayer(); }
+function stopPlayer() { P.audio.pause(); P.queue = []; P.idx = -1; if (P.url) { URL.revokeObjectURL(P.url); P.url = null; } renderPlayer(); render(); }
+const currentMemo = () => P.idx >= 0 ? S.memos.find(x => x.id === P.queue[P.idx]) : null;
+P.audio.addEventListener('ended', () => { if (!P.fixing) nextTrack(1); });
+P.audio.addEventListener('play', () => renderPlayer());
+P.audio.addEventListener('pause', () => renderPlayer());
+P.audio.addEventListener('timeupdate', () => {
+  const m = currentMemo(); const bar = $('#plSeek'); if (!m || !bar || P.fixing) return;
+  const d = isFinite(P.audio.duration) && P.audio.duration > 0 ? P.audio.duration : m.dur;
+  if (!P.seeking) bar.value = Math.round(1000 * P.audio.currentTime / d);
+  const tm = $('#plTime'); if (tm) tm.textContent = fmtDur(P.audio.currentTime) + ' / ' + fmtDur(d);
+});
+const SPEEDS = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5];
+function renderPlayer() {
+  const el = $('#player'), m = currentMemo();
+  document.body.classList.toggle('has-player', !!m);
+  if (!m) { el.hidden = true; return; }
+  const sp = S.set.speed;
+  el.hidden = false;
+  el.innerHTML = `<div class="in">
+    <div class="row">
+      <div class="grow"><div class="ttl">${esc(memoTitle(m))}</div><div class="meta mono" id="plTime">0:00 / ${fmtDur(m.dur)}</div></div>
+      <button class="icon-btn" data-act="pl-prev" aria-label="prev" ${P.idx <= 0 ? 'disabled' : ''}>${icon('prev')}</button>
+      <button class="icon-btn big" data-act="pl-toggle" aria-label="play/pause">${icon(P.audio.paused ? 'play' : 'pause')}</button>
+      <button class="icon-btn" data-act="pl-next" aria-label="next" ${P.idx >= P.queue.length - 1 ? 'disabled' : ''}>${icon('next')}</button>
+      <button class="speedbtn" data-act="pl-speed" aria-expanded="${P.showSpeed}">${sp.toFixed(2).replace(/0$/, '').replace(/\.0$/, '')}×</button>
+      <button class="icon-btn" data-act="pl-close" aria-label="${esc(t('close'))}">${icon('x')}</button>
+    </div>
+    <input type="range" id="plSeek" min="0" max="1000" value="0" aria-label="seek">
+    ${P.showSpeed ? `<div class="stack" style="gap:8px">
+      <div class="row spread small"><span>${esc(t('speed'))} · <span class="mono">${sp.toFixed(2)}×</span></span><span class="meta speedhint">${esc(t('speedHint'))}</span></div>
+      <input type="range" id="plRate" min="1" max="5" step="0.05" value="${sp}" aria-label="${esc(t('speed'))}">
+      <div class="speeds">${SPEEDS.map(v => `<button data-act="pl-rate" data-v="${v}" aria-pressed="${Math.abs(v - sp) < 0.001}">${v}×</button>`).join('')}</div>
+    </div>` : ''}
+    ${P.queue.length > 1 ? `<div class="meta mono">${P.idx + 1} / ${P.queue.length}</div>` : ''}
+  </div>`;
+}
+const memoTitle = m => m.title || (m.summary ? m.summary.split(/[.!?]/)[0].slice(0, 60) : '') || t('memoFallback') + ' · ' + fmtTime(m.createdAt);
+
+/* ---------- weekly goals ---------- */
+// Three kinds: a checklist ("check"), one box per weekday ("days"), or a counter ("count"; target 1 = a single checkbox).
+const DAYS_RE = /täglich|jeden tag|pro tag|\/\s*tag|daily|every day|per day|\/\s*day/i;
+const normGoal = it => Object.assign({ kind: 'count', tier: 'small', badge: '', note: '', subs: [], days: [false, false, false, false, false, false, false], target: 1, count: 0 }, it);
+const goalBoxes = it => it.kind === 'days' ? 7 : it.kind === 'check' ? it.subs.length : (it.target || 1);
+const goalTicked = it => it.kind === 'days' ? it.days.filter(Boolean).length : it.kind === 'check' ? it.subs.filter(x => x.done).length : Math.min(it.count || 0, it.target || 1);
+const goalNeed = it => Math.min(goalBoxes(it), it.need || goalBoxes(it));
+const goalDone = it => goalTicked(it) >= goalNeed(it);
+function weekProgress(g) {
+  const items = ((g && g.items) || []).map(normGoal);
+  const total = items.reduce((a, it) => a + goalBoxes(it), 0), done = items.reduce((a, it) => a + goalTicked(it), 0);
+  return { items, total, done, pct: total ? Math.round(100 * done / total) : 0 };
+}
+const todayIdx = () => (new Date().getDay() + 6) % 7;
+const dayNames = () => S.set.lang === 'de' ? ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+const weekLabel = ws => { const a = parseDay(ws), b = addDays(a, 6); return a.toLocaleDateString(locale(), { weekday: 'short', day: 'numeric' }) + ' – ' + b.toLocaleDateString(locale(), { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }); };
+const goalLine = it => {
+  it = normGoal(it);
+  const base = `- ${it.tier === 'big' ? '[MAIN GOAL] ' : ''}${it.text}: ${goalTicked(it)}/${goalNeed(it)}${goalDone(it) ? ' (done)' : ''}`;
+  if (it.kind === 'check') return base + ' | ' + it.subs.map(x => (x.done ? '[x] ' : '[ ] ') + x.text).join('; ');
+  if (it.kind === 'days') return base + ' | days ticked: ' + it.days.map((d, i) => d ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i] : '').filter(Boolean).join(', ');
+  return base;
+};
+function parseGoalsText(text, old = []) {
+  // "! Title [badge]" main goal, "+ Title" important, "3x Title" counter, "- step" sub-step, "> text" note.
+  const items = []; let cur = null;
+  for (const raw of text.split('\n')) {
+    const l = raw.trim(); if (!l) continue;
+    if (/^[-*•]\s+/.test(l) && cur) { cur.subs.push({ id: uid(), text: l.replace(/^[-*•]\s+/, ''), done: false }); continue; }
+    if (/^>/.test(l) && cur) { cur.note = (cur.note ? cur.note + ' ' : '') + l.replace(/^>\s*/, ''); continue; }
+    let x = l.replace(/^\d+[.)]\s+/, ''), tier = 'small';
+    if (x.startsWith('!')) { tier = 'big'; x = x.slice(1).trim(); } else if (x.startsWith('+')) { tier = 'mid'; x = x.slice(1).trim(); }
+    let badge = ''; const bm = x.match(/\s*\[([^\]]+)\]\s*$/); if (bm) { badge = bm[1].trim(); x = x.slice(0, bm.index).trim(); }
+    const cm = x.match(/^(\d+)\s*[x×]\s+(.+)$/i);
+    cur = { id: uid(), text: cm ? cm[2].trim() : x, tier, badge, note: '', kind: cm ? 'count' : DAYS_RE.test(x) ? 'days' : 'count',
+      target: cm ? Math.max(1, Math.min(99, +cm[1])) : 1, count: 0, subs: [], days: [false, false, false, false, false, false, false] };
+    items.push(cur);
+  }
+  for (const it of items) {
+    if (it.subs.length) it.kind = 'check';
+    if (it.subs.length > 1 && /eine reicht|einer reicht|one is enough|either is fine/i.test(it.note)) it.need = 1;
+    const prev = old.map(normGoal).find(o => o.text === it.text); // goals that stay keep their progress
+    if (!prev) continue;
+    it.id = prev.id;
+    if (it.kind === 'days' && prev.kind === 'days') it.days = prev.days.slice();
+    if (it.kind === 'count' && prev.kind === 'count') it.count = Math.min(prev.count || 0, it.target);
+    if (it.kind === 'check') for (const sub of it.subs) { const ps = prev.subs.find(y => y.text === sub.text); if (ps) { sub.id = ps.id; sub.done = ps.done; } }
+  }
+  return items;
+}
+function goalsToText(items) {
+  return items.map(normGoal).map(it => [(it.tier === 'big' ? '! ' : it.tier === 'mid' ? '+ ' : '') + (it.kind === 'count' && it.target > 1 ? it.target + 'x ' : '') + it.text + (it.badge ? ' [' + it.badge + ']' : ''),
+    ...it.subs.map(x => '- ' + x.text), ...(it.note ? ['> ' + it.note] : [])].join('\n')).join('\n');
+}
+function parseGoalsHTML(html) {
+  // Reads the weekly pages from the Growth chat: .goal blocks (big/mid) with .t title, .badge, labels, .days, .note.
+  const doc = new DOMParser().parseFromString(html, 'text/html'), lines = [];
+  for (const g of doc.querySelectorAll('.goal')) {
+    const tEl = g.querySelector('.t'); if (!tEl) continue;
+    const b = tEl.querySelector('.badge'), badge = b ? b.textContent.trim() : ''; if (b) b.remove();
+    const isDays = !!g.querySelector('.days');
+    let title = tEl.textContent.trim(); if (isDays && !DAYS_RE.test(title)) title += ' · täglich';
+    lines.push((g.classList.contains('big') ? '! ' : g.classList.contains('mid') ? '+ ' : '') + title + (badge ? ' [' + badge + ']' : ''));
+    if (!isDays) for (const lab of g.querySelectorAll('label')) lines.push('- ' + lab.textContent.trim());
+    const n = g.querySelector('.note'); if (n) lines.push('> ' + n.textContent.trim());
+  }
+  const m = html.match(/wz-(\d{4}-\d{2}-\d{2})/);
+  return { text: lines.join('\n'), week: m ? weekStart(parseDay(m[1])) : null };
+}
+async function updateGoal(ws, id, fn) {
+  const g = S.goals[ws]; if (!g) return;
+  const i = g.items.findIndex(x => x.id === id); if (i < 0) return;
+  const it = g.items[i] = normGoal(g.items[i]), before = goalDone(it);
+  fn(it);
+  await DB.put('goals', g);
+  if (!before && goalDone(it)) { toast(t('goalReached', it.text), 'ok'); burst(); }
+  afterChange();
+}
+function goalCard(it, idx, ws) {
+  const done = goalDone(it), ti = ws === weekStart() ? todayIdx() : -1, w = `data-w="${ws}" data-id="${it.id}"`;
+  let body;
+  if (it.kind === 'check') body = it.subs.map(x => `<label class="check ${x.done ? 'done' : ''}"><input type="checkbox" data-act="gsub" ${w} data-sub="${x.id}" ${x.done ? 'checked' : ''}><span class="grow">${esc(x.text)}</span></label>`).join('');
+  else if (it.kind === 'days') body = `<div class="days">${dayNames().map((d, i) => `<button class="day ${it.days[i] ? 'on' : ''} ${i === ti ? 'now' : ''}" data-act="gday" ${w} data-v="${i}" aria-pressed="${!!it.days[i]}">${d}</button>`).join('')}</div>`;
+  else if (it.target === 1) body = `<label class="check ${it.count ? 'done' : ''}"><input type="checkbox" data-act="gone" ${w} ${it.count ? 'checked' : ''}><span class="grow">${esc(t('goalDoneLabel'))}</span></label>`;
+  else body = `<div class="row"><span class="stepper"><button data-act="goal-dec" ${w} aria-label="-1">${icon('minus')}</button><span>${it.count || 0}/${it.target}</span><button data-act="goal-inc" ${w} aria-label="+1">${icon('plus')}</button></span></div>`;
+  return `<article class="gcard ${it.tier} ${done ? 'complete' : ''}">
+    <span class="gnum">${done ? icon('check') : idx + 1}</span>
+    <div class="stack grow" style="gap:6px;min-width:0">
+      <div class="gtitle">${esc(it.text)}${it.badge ? ` <span class="gbadge">${esc(it.badge)}</span>` : ''}</div>
+      ${body}
+      ${it.note ? `<p class="small muted">${esc(it.note)}</p>` : ''}
+    </div></article>`;
+}
+function viewGoals() {
+  const cur = weekStart(), ws = S.goalWeek || cur, wp = weekProgress(S.goals[ws]);
+  return `
+  <header class="top"><div class="stack" style="gap:4px"><span class="eyebrow">${esc(weekLabel(ws))}</span><h1>${esc(t('goalsTitle'))}</h1></div>
+    <button class="icon-btn" data-act="settings" aria-label="${esc(t('settings'))}">${icon('settings')}</button></header>
+  <div class="row spread">
+    <button class="icon-btn" data-act="gweek" data-v="-1" aria-label="prev">${icon('left')}</button>
+    <span class="small muted">${esc(ws === cur ? t('thisWeek') : fmtDate(ws, { day: 'numeric', month: 'short' }))}</span>
+    <button class="icon-btn" data-act="gweek" data-v="1" aria-label="next" ${ws >= cur ? 'disabled' : ''}>${icon('right')}</button>
+  </div>
+  ${wp.items.length ? `<section class="stack" style="gap:6px"><div class="bar big"><i style="width:${wp.pct}%"></i></div>
+      <span class="small muted mono">${esc(t('goalsPct', wp.pct, wp.done, wp.total))}</span></section>
+    ${wp.items.map((it, i) => goalCard(it, i, ws)).join('')}
+    ${wp.items.every(goalDone) ? `<p style="color:var(--calm);font-weight:700;text-align:center">🎯 ${esc(t('goalsDone'))}</p>` : ''}`
+    : `<div class="empty">${icon('target')}<p>${esc(t('goalsEmpty'))}</p></div>`}
+  <div class="row wrap">
+    <button class="btn" data-act="goals-edit">${icon('text')} ${esc(wp.items.length ? t('goalsEdit') : t('goalsAdd'))}</button>
+    <label class="btn" style="cursor:pointer">${icon('upload')} ${esc(t('goalsImport'))}<input type="file" id="goalsFile" accept=".html,.htm,.txt,text/html,text/plain" hidden></label>
+  </div>
+  <p class="small muted" style="text-align:center">${esc(t('goalsFooter'))}</p>`;
+}
+function todayGoalsCard(hasCommits) {
+  const ws = weekStart(), wp = weekProgress(S.goals[ws]), ti = todayIdx(), w = id => `data-w="${ws}" data-id="${id}"`;
+  const addCommit = hasCommits ? '' : `<button class="btn ghost sm" data-act="commit-new" style="justify-self:start">${icon('plus')} ${esc(t('commitAdd'))}</button>`;
+  if (!wp.items.length) return `<section class="card"><div class="row spread"><div class="row"><span style="color:var(--calm)">${icon('target')}</span><h3>${esc(t('goalsTitle'))}</h3></div>
+    <button class="btn ghost sm" data-act="tab" data-v="goals">${esc(t('goalsAdd'))}</button></div><p class="muted small">${esc(t('goalsEmpty'))}</p>${addCommit}</section>`;
+  // Daily boxes first (they are due today), then the next open step of the biggest unfinished goals.
+  const rows = wp.items.filter(it => it.kind === 'days').map(it => `<label class="check ${it.days[ti] ? 'done' : ''}"><input type="checkbox" data-act="gtoday" ${w(it.id)} ${it.days[ti] ? 'checked' : ''}><span class="grow">${esc(it.text)}</span><span class="dots">${it.days.map((d, i) => `<i class="${d ? 'on' : ''} ${i === ti ? 'now' : ''}"></i>`).join('')}</span></label>`);
+  for (const it of wp.items.filter(x => x.kind !== 'days' && !goalDone(x)).slice(0, 2)) {
+    if (it.kind === 'check') { const sub = it.subs.find(x => !x.done); rows.push(`<label class="check"><input type="checkbox" data-act="gsub" ${w(it.id)} data-sub="${sub.id}"><span class="grow">${esc(sub.text)} <span class="tag">${esc(it.text)}</span></span></label>`); }
+    else if (it.target === 1) rows.push(`<label class="check"><input type="checkbox" data-act="gone" ${w(it.id)}><span class="grow">${esc(it.text)}</span></label>`);
+    else rows.push(`<div class="row spread"><span class="grow">${esc(it.text)}</span><span class="stepper"><button data-act="goal-dec" ${w(it.id)} aria-label="-1">${icon('minus')}</button><span>${it.count || 0}/${it.target}</span><button data-act="goal-inc" ${w(it.id)} aria-label="+1">${icon('plus')}</button></span></div>`);
+  }
+  return `<section class="card">
+    <div class="row spread"><div class="row"><span style="color:var(--calm)">${icon('target')}</span><h3>${esc(t('goalsToday'))}</h3></div>
+      <button class="btn ghost sm" data-act="tab" data-v="goals"><span class="mono">${wp.pct} %</span> ${icon('right')}</button></div>
+    <div class="bar"><i style="width:${wp.pct}%"></i></div>
+    ${rows.length ? `<div class="stack">${rows.join('')}</div>` : `<p class="small" style="color:var(--calm);font-weight:700">🎯 ${esc(t('goalsDone'))}</p>`}
+    ${addCommit}
+  </section>`;
+}
+
+/* ---------- views ---------- */
+function statStrip(st) {
+  const s = st.streak, pct = Math.round(100 * (st.xp - st.levelBase) / Math.max(1, st.levelNext - st.levelBase));
+  return `<div class="stats">
+    <div class="stat" title="${esc(t('freezeInfo'))}"><span class="eyebrow">${esc(t('streak'))}</span>
+      <b><span class="flame ${s.doneToday ? '' : 'cold'}">${icon('flame')}</span><span class="mono">${s.count}</span></b>
+      <span class="small muted">${esc(s.doneToday ? t('streakDone') : t('streakOpen'))}</span></div>
+    <div class="stat"><span class="eyebrow">${esc(t('level'))} ${st.level}</span>
+      <b style="font-size:17px">${esc(levelName(st.level))}</b>
+      <div class="bar gold" title="${st.xp} XP"><i style="width:${pct}%"></i></div>
+      <span class="small muted mono">${esc(t('xpTo', st.levelNext - st.xp))}</span></div>
+    <div class="stat"><span class="eyebrow">${esc(t('weekMin'))}</span><b class="mono">${st.weekMin}</b>
+      <span class="small muted">${esc(t('memosN', S.memos.filter(m => m.day >= weekStart()).length))}</span></div>
+  </div>`;
+}
+function viewToday() {
+  const st = computeStats(), q = st.quests, h = new Date().getHours();
+  const done = [q.memo, q.socratic, q.recap].filter(Boolean).length;
+  const quest = (k, label, xp, act) => `<button class="quest ${q[k] ? 'done' : ''}" data-act="${act}"><span class="qdot">${icon('check')}</span><span class="grow qlabel">${esc(label)}</span><span class="xp">+${xp}</span></button>`;
+  const echo = pickEcho();
+  const td = today(), ydays = dayKey(addDays(new Date(), -1));
+  const commits = S.commitments.filter(c => !c.done || (c.doneAt && dayKey(new Date(c.doneAt)) === td)).sort((a, b) => a.createdAt - b.createdAt);
+  const earnedN = BADGES.filter(b => earned(b, st)).length;
+  const nextB = BADGES.filter(b => !earned(b, st)).map(b => ({ b, p: b.prog(st) })).sort((x, y) => y.p[0] / y.p[1] - x.p[0] / x.p[1])[0];
+  return `
+  <header class="top">
+    <div class="stack" style="gap:4px"><span class="eyebrow">${esc(fmtDate(td))}</span><h1>${esc(t('greet', h, S.set.name))}</h1></div>
+    <button class="icon-btn" data-act="settings" aria-label="${esc(t('settings'))}">${icon('settings')}</button>
+  </header>
+  ${statStrip(st)}
+  <section class="hero">
+    <canvas id="heroWave" aria-hidden="true"></canvas>
+    <div class="chips" role="group" aria-label="${esc(t('impulseLabel'))}">${IMPULSES.map(k => `<button class="chip" data-act="impulse" data-v="${k}" aria-pressed="${activeImpulse() === k}">${esc(t('imp_' + k))}</button>`).join('')}</div>
+    <p class="prompt">${esc(currentPrompt())}</p>
+    <button class="btn ghost sm" data-act="shuffle" style="position:relative">${icon('shuffle')} ${esc(t('newPrompt'))}</button>
+    <div class="micwrap"><button class="micbtn" data-act="record" aria-label="${esc(t('record'))}">${icon('mic')}</button></div>
+    <p class="small muted" style="position:relative;max-width:34ch">${esc(t('recordHint'))}</p>
+  </section>
+  <section class="card">
+    <div class="row spread"><div class="stack" style="gap:2px"><span class="eyebrow">${esc(t('questsTitle'))}</span><h3>${done === 3 ? esc(t('fullRound')) : done + ' / 3'}</h3></div>
+      <div class="ring" style="--p:${Math.round(done / 3 * 100)}"><span>${done}/3</span></div></div>
+    <div class="stack" style="gap:2px">
+      ${quest('memo', t('q_memo'), 10, 'record')}
+      ${quest('socratic', t('q_socratic'), 20, 'tab-socratic')}
+      ${quest('recap', t('q_recap'), 10, 'tab-recap')}
+      ${echo ? quest('echo', t('q_echo'), 2, 'echo') : ''}
+    </div>
+  </section>
+  ${commits.length ? `<section class="card">
+    <div class="row spread"><h3>${esc(t('commitTitle'))}</h3><button class="icon-btn" data-act="commit-new" aria-label="${esc(t('commitAdd'))}">${icon('plus')}</button></div>
+    <div class="stack">${commits.map(c => `<label class="check ${c.done ? 'done' : ''}"><input type="checkbox" data-act="commit" data-id="${c.id}" ${c.done ? 'checked' : ''}><span class="grow">${esc(c.text)}${c.day < td ? ` <span class="tag">${esc(c.day === ydays ? t('echoAgo', 1) : fmtDate(c.day, { day: 'numeric', month: 'short' }))}</span>` : ''}</span><span class="xp">+5</span></label>`).join('')}</div>
+  </section>` : ''}
+  ${todayGoalsCard(commits.length > 0)}
+  ${echo ? `<section class="card">
+    <div class="row"><button class="playbtn" data-act="echo" aria-label="play">${icon('play')}</button>
+      <div class="grow"><span class="eyebrow">${esc(t('echoTitle'))} · ${esc(echo.label)}</span><div style="font-weight:700">${esc(memoTitle(echo.memo))}</div>
+        <div class="small muted">${esc(t('echoHint'))}</div></div></div>
+  </section>` : ''}
+  <button class="card flat" data-act="badges" style="text-align:left;cursor:pointer">
+    <div class="row spread"><div class="row"><span style="color:var(--gold)">${icon('trophy')}</span><h3>${esc(t('badgesTitle'))}</h3></div><span class="mono muted">${earnedN}/${BADGES.length}</span></div>
+    ${nextB ? `<div class="row"><span style="font-size:22px">${nextB.b.em}</span><div class="grow stack" style="gap:4px"><span class="small"><b>${esc(t('nextBadge'))}:</b> ${esc(badgeName(nextB.b))} · ${esc(badgeDesc(nextB.b))}</span>
+      <div class="bar gold"><i style="width:${Math.round(100 * Math.min(1, nextB.p[0] / nextB.p[1]))}%"></i></div></div><span class="small mono muted">${Math.min(nextB.p[0], nextB.p[1])}/${nextB.p[1]}</span></div>` : ''}
+  </button>
+  ${S.memos.length < 2 ? `<p class="small muted" style="text-align:center">${esc(t('install'))}</p>` : ''}`;
+}
+function pickEcho() {
+  const td = today(), older = S.memos.filter(m => m.day < td && m.blob);
+  if (!older.length) return null;
+  for (const n of [365, 30, 7, 1]) {
+    const k = dayKey(addDays(new Date(), -n)), f = older.filter(m => m.day === k);
+    if (f.length) return { memo: f[hash(td) % f.length], label: n === 365 ? t('echoYear') : t('echoAgo', n) };
+  }
+  return { memo: older[hash(td) % older.length], label: t('echoRandom') };
+}
+function heatmap() {
+  const st = computeStats(), weeks = 18, td = today();
+  const start = addDays(parseDay(weekStart()), -7 * (weeks - 1));
+  let cells = '';
+  for (let i = 0; i < weeks * 7; i++) {
+    const k = dayKey(addDays(start, i)), mins = st.dayMin.get(k) || 0;
+    const l = !st.dayMin.has(k) ? 0 : mins < 2 ? 1 : mins < 5 ? 2 : mins < 10 ? 3 : 4;
+    cells += `<i data-l="${l}" class="${k > td ? 'future' : ''} ${k === td ? 'today' : ''}" title="${esc(fmtDate(k, { day: 'numeric', month: 'short' }))}: ${Math.round(mins)} min"></i>`;
+  }
+  return `<div class="heat" data-noswipe>${cells}</div>
+    <div class="row spread small muted"><span>${esc(fmtDate(dayKey(start), { day: 'numeric', month: 'short' }))}</span>
+    <span class="row" style="gap:4px">${esc(t('heatLess'))} ${[0, 1, 2, 3, 4].map(l => `<i data-l="${l}" style="width:10px;height:10px;border-radius:2px;display:inline-block" class="heatkey"></i>`).join('')} ${esc(t('heatMore'))}</span></div>`;
+}
+function memoCard(m) {
+  const playing = currentMemo() && currentMemo().id === m.id && !P.audio.paused;
+  const canProcess = (!m.transcript && m.blob && S.set.openaiKey && !IS_ARTIFACT) || (m.transcript && !m.summary && hasAI());
+  const status = m.status === 'transcribing' ? t('transcribing') : m.status === 'summarizing' ? t('summarizing') : '';
+  return `<article class="memo ${playing ? 'playing' : ''}">
+    <div class="row">
+      ${m.blob ? `<button class="playbtn" data-act="play" data-id="${m.id}" aria-label="play">${icon(playing ? 'pause' : 'play')}</button>` : `<span class="playbtn" style="background:var(--surface-2);color:var(--muted)">${icon('text')}</span>`}
+      <div class="grow"><div class="title">${esc(memoTitle(m))}</div>
+        <div class="small muted mono">${fmtTime(m.createdAt)} · ${m.blob ? fmtDur(m.dur) : esc(t('textMemo'))}</div></div>
+      <button class="icon-btn" data-act="memo-del" data-id="${m.id}" aria-label="${esc(t('del'))}">${icon('trash')}</button>
+    </div>
+    ${m.summary ? `<p>${esc(m.summary)}</p>` : ''}
+    ${(m.tags && m.tags.length) || m.impulse ? `<div class="row wrap" style="gap:6px">${m.impulse ? `<span class="tag" style="background:var(--rec-soft);color:var(--rec)">${esc(t('imp_' + m.impulse))}</span>` : ''}${(m.tags || []).map(x => `<span class="tag">${esc(x)}</span>`).join('')}</div>` : ''}
+    ${m.prompt && !m.summary ? `<p class="small muted">„${esc(m.prompt)}“</p>` : ''}
+    ${status ? `<div class="status"><span class="spin"></span>${esc(status)}</div>` : ''}
+    ${m.status === 'error' ? `<div class="status err">${esc(t('aiError'))}: ${esc(m.error)} <button class="btn sm" data-act="memo-ai" data-id="${m.id}">${esc(t('retry'))}</button></div>` : ''}
+    ${!status && m.status !== 'error' && canProcess ? `<button class="btn sm" data-act="memo-ai" data-id="${m.id}" style="justify-self:start">${icon('sparkles')} ${esc(t('aiProcess'))}</button>` : ''}
+    ${m.transcript ? `<details><summary>${esc(m.transcriptSource === 'live' ? t('liveText') : m.transcriptSource === 'note' ? t('noteLabel') : t('transcript'))}</summary><p>${esc(m.transcript)}</p></details>` : ''}
+  </article>`;
+}
+function filteredMemos() {
+  const q = S.histQuery.trim().toLowerCase();
+  return S.memos.filter(m => (S.histImp === 'all' || m.impulse === S.histImp) && (!q || [m.title, m.summary, m.transcript, m.prompt, (m.tags || []).join(' ')].join(' ').toLowerCase().includes(q)));
+}
+function viewHistory() {
+  const list = filteredMemos().sort((a, b) => b.createdAt - a.createdAt);
+  const byDay = new Map(); for (const m of list) { if (!byDay.has(m.day)) byDay.set(m.day, []); byDay.get(m.day).push(m); }
+  return `
+  <header class="top"><h1>${esc(t('tabHistory'))}</h1><button class="icon-btn" data-act="settings" aria-label="${esc(t('settings'))}">${icon('settings')}</button></header>
+  <section class="card">${heatmap()}</section>
+  <input class="input" id="histSearch" type="search" placeholder="${esc(t('search'))}" value="${esc(S.histQuery)}">
+  ${(() => { const used = IMPULSES.slice(1).filter(k => S.memos.some(m => m.impulse === k)); return used.length > 1 || S.histImp !== 'all' ? `<div class="chips">${['all', ...used].map(k => `<button class="chip" data-act="himp" data-v="${k}" aria-pressed="${S.histImp === k}">${esc(k === 'all' ? t('all') : t('imp_' + k))}</button>`).join('')}</div>` : ''; })()}
+  ${list.some(audible) ? `<button class="btn primary" data-act="play-all" style="flex-wrap:wrap">${icon('headphones')} ${esc(t('playAll'))} <span class="small" style="opacity:.7">· ${esc(t('playAllHint', list.filter(audible).length))}</span></button>` : ''}
+  ${!S.memos.length ? `<div class="empty">${icon('mic')}<p>${esc(t('emptyHistory'))}</p><button class="btn rec" data-act="record">${icon('mic')} ${esc(t('record'))}</button></div>`
+    : !list.length ? `<div class="empty"><p>${esc(t('noMatch'))}</p></div>` : ''}
+  ${[...byDay.entries()].map(([day, ms]) => {
+    const mins = Math.round(ms.reduce((a, m) => a + m.dur, 0) / 60);
+    return `<div class="dayhead"><h3>${esc(fmtDate(day))}</h3>
+      <button class="btn ghost sm" data-act="play-day" data-v="${day}">${icon('headphones')} ${esc(t('playDay'))}</button></div>
+      <div class="small muted mono" style="margin-top:-8px">${esc(t('memosN', ms.length))} · ${mins} ${esc(t('minShort'))}</div>
+      ${ms.map(memoCard).join('')}`;
+  }).join('')}
+  ${S.memos.length && !S.set.openaiKey && !S.set.liveStt ? `<p class="small muted">${esc(t('noAI'))}</p>` : ''}`;
+}
+function md(text) {
+  const lines = esc(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').split('\n');
+  let html = '', inList = false;
+  for (const l of lines) {
+    const li = /^\s*[-*•] /.test(l);
+    if (li && !inList) { html += '<ul>'; inList = true; }
+    if (!li && inList) { html += '</ul>'; inList = false; }
+    if (li) html += '<li>' + l.replace(/^\s*[-*•] /, '') + '</li>';
+    else if (/^#{1,4} /.test(l)) html += '<h4>' + l.replace(/^#{1,4} /, '') + '</h4>';
+    else if (l.trim()) html += '<p>' + l + '</p>';
+  }
+  return html + (inList ? '</ul>' : '');
+}
+
+/* Socratic */
+function socSystem(d) {
+  if (d.mode === 'talk') return `You are the audience in the discussion after a student's talk. Speak ${langName()}.
+Talk topic: ${d.topic}
+${d.material ? 'Material from the speaker:\n' + d.material.slice(0, 6000) + '\n' : ''}How to run it:
+- Ask exactly ONE question per turn, the way a sharp but fair audience member would: comprehension, methods and quality of evidence, limitations, alternative explanations, practical consequences, and now and then a devil's-advocate challenge.
+- After each answer give one short sentence of feedback on the answer (clarity, precision, whether it answered the question), then ask the next question, building on what was said.
+- If an answer dodges the question, say so politely and ask again more pointedly.
+- Never lecture and never answer your own questions. Keep each turn under 80 words.
+- Do not invent facts or numbers about the topic; challenge claims by asking, not by asserting.`;
+  const past = S.dialogs.filter(x => x.completed && x.id !== d.id).sort((a, b) => b.createdAt - a.createdAt).slice(0, 10)
+    .map(x => `- ${x.topic || '?'} (${x.rating || 'unrated'})`).join('\n') || '- none yet';
+  return `You are a Socratic tutor in nutritional medicine for a medical student. Speak ${langName()}.
+Method:
+- Ask exactly ONE question per turn and build on what the student just said.
+- If an answer is wrong or vague, do not correct it outright; ask a question that exposes the gap. Give a small hint only after two unsuccessful tries or when asked.
+- When an answer is right, confirm in one short sentence and go one level deeper (mechanism, consequence, clinical decision).
+- Keep each turn under 90 words. No lectures, no lists of facts.
+Content:
+- Alternate between mechanism questions (physiology, biochemistry, micronutrients, energy and protein metabolism, gut hormones, pharmaco-nutrient interactions) and short clinical vignettes (e.g. refeeding risk, malnutrition screening, enteral vs parenteral nutrition, nutrition in kidney/liver disease, diabetes, pregnancy, older adults).
+- Name guidelines (DGEM, ESPEN, DGE) only when you are confident. Never invent numbers or thresholds; if a figure matters and you are unsure, say so and ask the student how they would look it up.
+- Pick a topic that is not in the recent list. Adjust difficulty: harder after "easy" ratings, gentler after "hard".
+Recent rounds (topic, self-rated difficulty):
+${past}`;
+}
+async function socStart() {
+  const talk = S.socMode === 'talk', topic = LS.get('echo-soc-topic', '').trim();
+  if (talk && !topic) { toast(t('socTalkNeed'), 'err'); return; }
+  const opener = talk ? 'I just finished my talk. Open the discussion with your first question.' : 'Start today\'s round. Begin your reply with the line "TOPIC: <topic in 2-5 words>", then a blank line, then your opening vignette or question.';
+  const d = { id: uid(), day: today(), createdAt: Date.now(), mode: talk ? 'talk' : 'nutri', topic: talk ? topic : '', material: talk ? LS.get('echo-soc-material', '') : '', messages: [{ role: 'user', content: opener, hidden: true }], completed: false };
+  S.dialogs.push(d); S.activeDialog = d.id; await DB.put('dialogs', d);
+  await socAsk(d);
+}
+async function socAsk(d) {
+  S.socBusy = true; render();
+  try {
+    let reply = await askClaude({ system: socSystem(d), messages: d.messages.map(({ role, content }) => ({ role, content })), maxTokens: 600 });
+    const m = reply.match(/^\s*TOPIC:\s*(.+)/);
+    if (m) { if (!d.topic) d.topic = m[1].trim(); reply = reply.replace(/^\s*TOPIC:.*(\n|$)/, '').trim(); }
+    d.messages.push({ role: 'assistant', content: reply });
+  } catch (e) {
+    toast(t('aiError') + ': ' + e.message, 'err');
+    const last = d.messages[d.messages.length - 1];
+    if (last && last.role === 'user' && !last.hidden) { d.messages.pop(); S.draft = last.content; }
+    if (!d.messages.some(x => x.role === 'assistant')) { S.dialogs = S.dialogs.filter(x => x.id !== d.id); S.activeDialog = null; DB.del('dialogs', d.id); }
+  }
+  S.socBusy = false; if (S.dialogs.includes(d)) await DB.put('dialogs', d); render();
+}
+async function socSend(text) {
+  const d = S.dialogs.find(x => x.id === S.activeDialog);
+  if (!d || !text.trim() || S.socBusy) return;
+  d.messages.push({ role: 'user', content: text.trim() }); S.draft = '';
+  await socAsk(d);
+}
+async function socFinish() {
+  const d = S.dialogs.find(x => x.id === S.activeDialog); if (!d || S.socBusy) return;
+  S.socBusy = true; render();
+  try {
+    const msgs = d.messages.map(({ role, content }) => ({ role, content }));
+    msgs.push({ role: 'user', content: `Close the round now. Return ONLY JSON in ${langName()}: {"topic": "2-5 words", "keyPoints": ["3-5 short points the student worked out or should keep"], "gap": "one thing worth reviewing", "next": "a suggested topic for next time"}` });
+    const r = parseJSON(await askClaude({ system: socSystem(d), messages: msgs, maxTokens: 500 }));
+    d.summary = { keyPoints: (r.keyPoints || []).map(String), gap: String(r.gap || ''), next: String(r.next || '') };
+    if (r.topic) d.topic = String(r.topic);
+    d.completed = true; d.completedAt = Date.now();
+    await DB.put('dialogs', d); toast(t('socDone'), 'ok'); burst();
+  } catch (e) { toast(t('aiError') + ': ' + e.message, 'err'); }
+  S.socBusy = false; afterChange();
+}
+function socSummary(d) {
+  if (!d.summary) return '';
+  return `<div class="md"><h4>${esc(t('keyPoints'))}</h4><ul>${d.summary.keyPoints.map(k => `<li>${esc(k)}</li>`).join('')}</ul>
+    ${d.summary.gap ? `<h4>${esc(t('gap'))}</h4><p>${esc(d.summary.gap)}</p>` : ''}
+    ${d.summary.next ? `<h4>${esc(t('nextTopic'))}</h4><p>${esc(d.summary.next)}</p>` : ''}</div>`;
+}
+function viewSocratic() {
+  const head = `<header class="top"><div class="stack" style="gap:4px"><span class="eyebrow">${esc(t(S.socMode === 'talk' ? 'socModeTalk' : 'socSub'))}</span><h1>${esc(t('socTitle'))}</h1></div>
+    <button class="icon-btn" data-act="settings" aria-label="${esc(t('settings'))}">${icon('settings')}</button></header>`;
+  const past = S.dialogs.filter(d => d.completed && d.id !== S.activeDialog).sort((a, b) => b.createdAt - a.createdAt);
+  const pastHTML = past.length ? `<h3 style="margin-top:6px">${esc(t('socPast'))}</h3>${past.slice(0, 30).map(d => `<details class="card flat"><summary class="row spread" style="cursor:pointer"><b>${esc(d.topic || '?')}</b><span class="small muted mono">${esc(fmtDate(d.day, { day: 'numeric', month: 'short' }))}${d.rating ? ' · ' + esc(t(d.rating)) : ''}</span></summary>${socSummary(d)}</details>`).join('')}` : '';
+  if (!hasAI()) return head + `<section class="card"><p>${esc(t('socIntro'))}</p><p class="muted">${esc(t('socNeedKey'))}</p><button class="btn primary" data-act="settings" style="justify-self:start">${icon('settings')} ${esc(t('settings'))}</button></section>` + pastHTML;
+  const d = S.dialogs.find(x => x.id === S.activeDialog);
+  if (!d) {
+    const doneToday = S.dialogs.some(x => x.completed && x.day === today());
+    const talk = S.socMode === 'talk';
+    return head + `<section class="card">
+      <div class="seg" style="justify-self:start">${[['nutri', 'socModeNutri'], ['talk', 'socModeTalk']].map(([k, l]) => `<button data-act="soc-mode" data-v="${k}" aria-pressed="${S.socMode === k}">${esc(t(l))}</button>`).join('')}</div>
+      <p>${esc(t(talk ? 'socTalkIntro' : 'socIntro'))}</p>
+      ${talk ? `<div class="field"><label for="socTopic">${esc(t('socTalkTopic'))}</label><input class="input" id="socTopic" value="${esc(LS.get('echo-soc-topic', ''))}"></div>
+        <div class="field"><label for="socMaterial">${esc(t('socTalkMaterial'))}</label><textarea class="input" id="socMaterial" rows="4">${esc(LS.get('echo-soc-material', ''))}</textarea></div>` : ''}
+      <button class="btn primary" data-act="soc-start" style="justify-self:start" ${S.socBusy ? 'disabled' : ''}>${icon('socrates')} ${esc(talk ? t('socTalkStart') : doneToday ? t('socAnother') : t('socStart'))}</button>
+      ${S.socBusy ? `<div class="status"><span class="spin"></span>${esc(t('thinking'))}</div>` : ''}</section>` + pastHTML;
+  }
+  const visible = d.messages.filter(m => !m.hidden);
+  const answers = visible.filter(m => m.role === 'user').length;
+  return head + `${d.topic ? `<div class="row spread"><span class="chip" aria-pressed="true" style="white-space:normal">${esc(d.topic)}</span><span class="small muted mono">${Math.max(1, Math.round((Date.now() - d.createdAt) / 60000))} min</span></div>` : ''}
+  <div class="chat">${visible.map(m => m.role === 'assistant' ? `<div class="bubble a md">${md(m.content)}</div>` : `<div class="bubble u">${esc(m.content)}</div>`).join('')}
+    ${S.socBusy ? `<div class="status"><span class="spin"></span>${esc(t('thinking'))}</div>` : ''}</div>
+  ${d.completed ? `<section class="card"><h3>✓ ${esc(t('socDone'))}</h3>${socSummary(d)}
+      ${d.rating ? '' : `<div class="stack" style="gap:8px"><span class="small muted">${esc(t('socRate'))}</span><div class="row wrap">${['easy', 'okay', 'hard'].map(r => `<button class="btn sm" data-act="soc-rate" data-v="${r}">${esc(t(r))}</button>`).join('')}</div></div>`}
+      <button class="btn" data-act="soc-close" style="justify-self:start">${esc(t('close'))}</button></section>`
+    : `<div class="composer">
+      <textarea class="input" id="socInput" placeholder="${esc(t('socPlaceholder'))}" ${S.socBusy ? 'disabled' : ''}>${esc(S.draft)}</textarea>
+      <div class="row wrap">
+        ${canDictate() ? `<button class="btn sm ${dictSR ? 'rec' : ''}" data-act="dictate">${icon('mic')} ${esc(dictSR ? t('dictating') : t('dictate'))}</button>` : ''}
+        <button class="btn sm ghost" data-act="soc-hint" ${S.socBusy ? 'disabled' : ''}>${icon('bulb')} ${esc(t('socHint'))}</button>
+        <button class="btn sm ghost" data-act="soc-finish" ${S.socBusy || answers < 2 ? 'disabled' : ''} title="${esc(answers < 2 ? t('socMin') : '')}">${icon('check')} ${esc(t('socFinish'))}</button>
+        <span class="grow"></span>
+        <button class="btn sm primary" data-act="soc-send" ${S.socBusy ? 'disabled' : ''}>${icon('send')} ${esc(t('socSend'))}</button>
+      </div></div>`}
+  ${pastHTML}`;
+}
+
+/* Recap */
+function recapMaterial(day) {
+  const memos = S.memos.filter(m => m.day === day).sort((a, b) => a.createdAt - b.createdAt);
+  const out = [`Date: ${fmtDate(day)}`, '', 'VOICE MEMOS:'];
+  for (const m of memos) out.push(`[${fmtTime(m.createdAt)} | ${fmtDur(m.dur)}] ${(m.transcript || m.summary || '(no transcript)').slice(0, 3500)}`);
+  const ds = S.dialogs.filter(d => d.day === day && d.completed);
+  if (ds.length) { out.push('', 'SOCRATIC STUDY ROUNDS (nutritional medicine):'); for (const d of ds) out.push(`- ${d.topic}: ${(d.summary && d.summary.keyPoints || []).join('; ')}`); }
+  const cDone = S.commitments.filter(c => c.done && c.doneAt && dayKey(new Date(c.doneAt)) === day);
+  const cOpen = S.commitments.filter(c => !c.done && c.day <= day);
+  if (cDone.length) out.push('', 'COMMITMENTS COMPLETED TODAY:', ...cDone.map(c => '- ' + c.text));
+  if (cOpen.length) out.push('', 'OPEN COMMITMENTS:', ...cOpen.map(c => '- ' + c.text));
+  const g = S.goals[weekStart(parseDay(day))];
+  if (g && g.items.length) out.push('', 'WEEKLY GOALS (progress so far, ordered from biggest to smallest):', ...g.items.map(goalLine));
+  const ref = (S.recaps[day] || {}).reflection || {};
+  if (Object.values(ref).some(v => v && v.trim())) out.push('', 'OWN NOTES:', `did: ${ref.did || ''}`, `went well: ${ref.good || ''}`, `next: ${ref.next || ''}`);
+  return out.join('\n');
+}
+async function makeRecap(day) {
+  S.recapBusy = day; render();
+  try {
+    const system = `Write a short daily recap for a person's private journal, in ${langName()}, addressed to them as "you". Warm, concrete, no clichés, no judgement, no diagnosis, no advice beyond their own plans. ` +
+      `Use only the material provided. Use exactly these markdown headings: "## ${t('H_did')}", "## ${t('H_proud')}", "## ${t('H_open')}", "## ${t('H_tomorrow')}". Bullet points under each. Under 180 words. Skip a section's bullets only if there is truly nothing for it.`;
+    const text = await askClaude({ system, messages: [{ role: 'user', content: recapMaterial(day) }], maxTokens: 700 });
+    S.recaps[day] = Object.assign({ day }, S.recaps[day], { text, createdAt: Date.now() });
+    await DB.put('recaps', S.recaps[day]);
+  } catch (e) { toast(t('aiError') + ': ' + e.message, 'err'); }
+  S.recapBusy = null; afterChange();
+}
+async function makeWeekRecap(ws) {
+  const key = 'week:' + ws; S.recapBusy = key; render();
+  try {
+    const days = [...Array(7)].map((_, i) => dayKey(addDays(parseDay(ws), i)));
+    const parts = [`Week starting ${fmtDate(ws)}`];
+    for (const d of days) {
+      const ms = S.memos.filter(m => m.day === d);
+      const ds = S.dialogs.filter(x => x.day === d && x.completed);
+      if (!ms.length && !ds.length && !S.recaps[d]) continue;
+      parts.push('', `## ${fmtDate(d)}`);
+      for (const m of ms) parts.push(`- memo (${fmtDur(m.dur)}): ${(m.summary || m.transcript || '(no transcript)').slice(0, 600)}`);
+      for (const x of ds) parts.push(`- study round: ${x.topic}`);
+      if (S.recaps[d] && S.recaps[d].text) parts.push('- daily recap: ' + S.recaps[d].text.slice(0, 700));
+    }
+    const g = S.goals[ws];
+    parts.push('', 'WEEKLY GOALS (ordered from biggest to smallest):', ...(g && g.items.length ? g.items.map(goalLine) : ['- none set']));
+    parts.push('', 'COMMITMENTS:', ...S.commitments.filter(c => c.day >= ws && c.day <= days[6]).map(c => `- [${c.done ? 'x' : ' '}] ${c.text}`));
+    const system = `Write a weekly review for a person's private journal, in ${langName()}, addressed as "you". Warm, specific, honest, never shaming, no diagnosis. ` +
+      `Use only the material. Headings exactly: "## ${t('H_wdid')}", "## ${t('H_goals')}", "## ${t('H_notice')}", "## ${t('H_next')}". Bullets. Under 230 words. Under the goals heading, state progress per goal plainly.`;
+    const text = await askClaude({ system, messages: [{ role: 'user', content: parts.join('\n') }], maxTokens: 900 });
+    S.recaps[key] = { day: key, text, createdAt: Date.now() }; await DB.put('recaps', S.recaps[key]);
+  } catch (e) { toast(t('aiError') + ': ' + e.message, 'err'); }
+  S.recapBusy = null; render();
+}
+function viewRecap() {
+  const day = S.recapDay || today(), td = today();
+  const memos = S.memos.filter(m => m.day === day).sort((a, b) => a.createdAt - b.createdAt);
+  const mins = Math.round(memos.reduce((a, m) => a + m.dur, 0) / 60);
+  const r = S.recaps[day] || {}, ref = r.reflection || {};
+  const ds = S.dialogs.filter(d => d.day === day && d.completed);
+  const ws = weekStart(parseDay(day)), wr = S.recaps['week:' + ws], g = S.goals[ws];
+  const busy = S.recapBusy === day, wbusy = S.recapBusy === 'week:' + ws;
+  return `
+  <header class="top"><h1>${esc(t('recapTitle'))}</h1><button class="icon-btn" data-act="settings" aria-label="${esc(t('settings'))}">${icon('settings')}</button></header>
+  <div class="row spread">
+    <button class="icon-btn" data-act="rday" data-v="-1" aria-label="prev">${icon('left')}</button>
+    <div style="text-align:center"><h2>${esc(day === td ? t('tabToday') : fmtDate(day, { weekday: 'long' }))}</h2><span class="small muted">${esc(fmtDate(day, { day: 'numeric', month: 'long', year: 'numeric' }))}</span></div>
+    <button class="icon-btn" data-act="rday" data-v="1" aria-label="next" ${day >= td ? 'disabled' : ''}>${icon('right')}</button>
+  </div>
+  <section class="card">
+    <div class="row wrap small mono muted" style="gap:14px"><span>${esc(t('memosN', memos.length))}</span><span>${esc(t('minutesN', mins))}</span>${ds.length ? `<span>🦉 ${ds.map(d => esc(d.topic)).join(', ')}</span>` : ''}</div>
+    ${memos.length ? `<div class="stack" style="gap:8px">${memos.map(m => `<div class="row" style="align-items:flex-start">${m.blob ? `<button class="playbtn" style="width:34px;height:34px" data-act="play" data-id="${m.id}" aria-label="play">${icon('play')}</button>` : `<span class="playbtn" style="width:34px;height:34px;background:var(--surface-2);color:var(--muted)">${icon('text')}</span>`}
+      <div class="grow"><div style="font-weight:700">${esc(memoTitle(m))} <span class="small muted mono">${fmtTime(m.createdAt)}</span></div>${m.summary ? `<div class="small muted">${esc(m.summary)}</div>` : ''}</div></div>`).join('')}
+      <button class="btn ghost sm" data-act="play-day" data-v="${day}" style="justify-self:start">${icon('headphones')} ${esc(t('playDay'))}</button></div>`
+      : `<p class="muted">${esc(t('noMemosDay'))}</p>`}
+  </section>
+  <section class="card">
+    <div class="row spread"><div class="row"><span style="color:var(--calm)">${icon('sparkles')}</span><h3>${esc(t('recapHeading'))}</h3></div>
+      ${hasAI() && (memos.length || ds.length || Object.values(ref).some(Boolean)) ? `<button class="btn sm ${r.text ? '' : 'primary'}" data-act="recap-make" ${busy ? 'disabled' : ''}>${esc(r.text ? t('recapRedo') : t('recapMake'))}</button>` : ''}</div>
+    ${busy ? `<div class="status"><span class="spin"></span>${esc(t('thinking'))}</div>` : r.text ? `<div class="md">${md(r.text)}</div>` : !hasAI() ? `<p class="small muted">${esc(t('recapNoKey'))}</p>` : ''}
+  </section>
+  <section class="card">
+    <h3>${esc(t('reflectTitle'))}</h3>
+    ${[['did', 'refDid'], ['good', 'refGood'], ['next', 'refNext']].map(([k, lab]) => `<div class="field"><label for="ref-${k}">${esc(t(lab))}</label><textarea class="input" id="ref-${k}" data-ref="${k}" rows="2">${esc(ref[k] || '')}</textarea></div>`).join('')}
+  </section>
+  <section class="card">
+    <div class="row spread"><h3>${esc(t('weekTitle'))} · ${esc(fmtDate(ws, { day: 'numeric', month: 'short' }))}</h3>
+      ${hasAI() ? `<button class="btn sm" data-act="week-make" data-v="${ws}" ${wbusy ? 'disabled' : ''}>${esc(t('weekMake'))}</button>` : ''}</div>
+    ${g && g.items.length ? weekProgress(g).items.map(it => `<div class="goal"><div class="row spread small"><span>${goalDone(it) ? '✓ ' : ''}${esc(it.text)}</span><span class="mono">${goalTicked(it)}/${goalNeed(it)}</span></div><div class="bar"><i style="width:${Math.min(100, Math.round(100 * goalTicked(it) / goalNeed(it)))}%"></i></div></div>`).join('') : `<p class="small muted">${esc(t('goalsEmpty'))}</p>`}
+    ${wbusy ? `<div class="status"><span class="spin"></span>${esc(t('thinking'))}</div>` : wr && wr.text ? `<hr><div class="md">${md(wr.text)}</div>` : ''}
+  </section>`;
+}
+
+/* ---------- sheets ---------- */
+function openSheet(html) {
+  const el = $('#sheet');
+  el.innerHTML = `<div class="panel" role="dialog" aria-modal="true">${html}</div>`;
+  el.hidden = false;
+}
+function closeSheet() { $('#sheet').hidden = true; $('#sheet').innerHTML = ''; }
+function sheetHead(title) { return `<div class="row spread"><h2>${esc(title)}</h2><button class="icon-btn" data-act="sheet-close" aria-label="${esc(t('close'))}">${icon('x')}</button></div>`; }
+function openSettings() {
+  const s = S.set;
+  const seg = (key, opts) => `<div class="seg">${opts.map(([v, l]) => `<button data-act="set-seg" data-k="${key}" data-v="${v}" aria-pressed="${s[key] === v}">${esc(l)}</button>`).join('')}</div>`;
+  openSheet(`${sheetHead(t('settings'))}
+    <div class="field"><label>${esc(t('language'))}</label>${seg('lang', [['de', 'Deutsch'], ['en', 'English']])}</div>
+    <div class="field"><label>${esc(t('theme'))}</label>${seg('theme', [['system', t('themeSystem')], ['light', t('light')], ['dark', t('dark')]])}</div>
+    <div class="field"><label for="set-name">${esc(t('yourName'))}</label><input class="input" id="set-name" data-set="name" value="${esc(s.name)}" autocomplete="given-name"></div>
+    <hr><h3>${esc(t('aiSection'))}</h3>${IS_ARTIFACT ? `<p class="small muted">${esc(t('aiBuiltin'))}</p>` : `<p class="small muted">${esc(t('aiNote'))}</p>
+    <div class="field"><label for="set-ak">${esc(t('anthropicKey'))}</label><input class="input mono" id="set-ak" data-set="anthropicKey" type="password" value="${esc(s.anthropicKey)}" placeholder="sk-ant-…" autocomplete="off"></div>
+    <div class="field"><label for="set-model">${esc(t('model'))}</label><input class="input mono" id="set-model" data-set="model" value="${esc(s.model)}"></div>
+    <div class="field"><label for="set-fmodel">${esc(t('fastModel'))}</label><input class="input mono" id="set-fmodel" data-set="fastModel" value="${esc(s.fastModel)}"></div>
+    <div class="field"><label for="set-ok">${esc(t('openaiKey'))}</label><input class="input mono" id="set-ok" data-set="openaiKey" type="password" value="${esc(s.openaiKey)}" placeholder="sk-…" autocomplete="off"></div>
+    <div class="field"><label for="set-stt">${esc(t('sttModel'))}</label><input class="input mono" id="set-stt" data-set="sttModel" value="${esc(s.sttModel)}"></div>
+`}
+    <label class="check"><input type="checkbox" data-set="autoAI" ${s.autoAI ? 'checked' : ''}><span>${esc(t('autoAI'))}</span></label>
+    ${IS_ARTIFACT ? '' : `${(window.SpeechRecognition || window.webkitSpeechRecognition) ? `<label class="check"><input type="checkbox" data-set="liveStt" ${s.liveStt ? 'checked' : ''}><span>${esc(t('liveStt'))}</span></label>` : ''}`}
+    <hr><h3>${esc(t('dataSection'))}</h3><p class="small muted">${esc(t('privacy'))}</p><p class="small muted mono" id="usage"></p>
+    <div class="row wrap"><button class="btn" data-act="export">${icon('download')} ${esc(t('exportBtn'))}</button>
+      <label class="btn" style="cursor:pointer">${icon('upload')} ${esc(t('importBtn'))}<input type="file" id="importFile" accept="application/json,.json" hidden></label></div>
+    <div id="wipeBox"><button class="btn ghost sm" data-act="wipe" style="color:var(--rec)">${icon('trash')} ${esc(t('wipe'))}</button></div>`);
+  if (navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(e => { const u = $('#usage'); if (u) u.textContent = t('used', (e.usage / 1048576).toFixed(1) + ' MB'); }).catch(() => {});
+}
+function openGoals() {
+  const ws = S.editWeek = S.tab === 'goals' ? (S.goalWeek || weekStart()) : weekStart();
+  const g = S.goals[ws], prev = S.goals[dayKey(addDays(parseDay(ws), -7))];
+  openSheet(`${sheetHead(t('goalsTitle') + ' · ' + fmtDate(ws, { day: 'numeric', month: 'short' }))}<p class="small muted">${esc(t('goalsHelp'))}</p>
+    <textarea class="input mono" id="goalsText" rows="12" style="font-size:14px" placeholder="! Vortrag [Hauptziel]&#10;- Fertig & clean&#10;- Geübt #1&#10;+ Meditation täglich&#10;3x Sport">${esc(g ? goalsToText(g.items) : '')}</textarea>
+    <div class="row wrap">${prev && prev.items.length ? `<button class="btn" data-act="goals-carry">${esc(t('goalsCarry'))}</button>` : ''}<span class="grow"></span>
+      <button class="btn primary" data-act="goals-save">${esc(t('save'))}</button></div>`);
+}
+async function saveGoals(text, ws = S.editWeek || weekStart()) {
+  if (text.trim().startsWith('<')) { const h = parseGoalsHTML(text); text = h.text; if (h.week) ws = h.week; }
+  const items = parseGoalsText(text, (S.goals[ws] || { items: [] }).items);
+  S.goals[ws] = { week: ws, items }; await DB.put('goals', S.goals[ws]);
+  closeSheet(); afterChange();
+  return { ws, n: items.length };
+}
+async function importGoalsFile(file) {
+  const raw = await file.text(), isHTML = /<\w/.test(raw);
+  const h = isHTML ? parseGoalsHTML(raw) : { text: raw, week: null };
+  if (!h.text.trim()) { toast(t('goalsImportFail'), 'err'); return; }
+  const r = await saveGoals(h.text, h.week || S.goalWeek || weekStart());
+  S.goalWeek = r.ws; S.tab = 'goals'; render();
+  toast(t('goalsImported', r.n, weekLabel(r.ws)), 'ok');
+}
+function openBadges() {
+  const st = computeStats();
+  openSheet(`${sheetHead(t('badgesTitle'))}<p class="small muted">${st.xp} XP · ${esc(t('level'))} ${st.level} ${esc(levelName(st.level))} · ${esc(t('freezeInfo'))}</p>
+    <div class="badges">${BADGES.map(b => { const [v, n] = b.prog(st), ok = v >= n; return `<div class="badge ${ok ? '' : 'locked'}"><span class="em">${b.em}</span><b>${esc(badgeName(b))}</b><span class="small muted">${esc(badgeDesc(b))}</span>${ok ? '' : `<div class="bar gold"><i style="width:${Math.round(100 * v / n)}%"></i></div><span class="small mono muted">${Math.min(v, n)}/${n}</span>`}</div>`; }).join('')}</div>`);
+}
+function openCommitNew() {
+  openSheet(`${sheetHead(t('commitAdd'))}<p class="small muted">${esc(t('commitHint'))}</p>
+    <input class="input" id="commitText" placeholder="${esc(t('commitPlaceholder'))}">
+    <button class="btn primary" data-act="commit-save" style="justify-self:end">${esc(t('save'))}</button>`);
+  setTimeout(() => { const i = $('#commitText'); if (i) i.focus(); }, 50);
+}
+
+/* ---------- backup ---------- */
+const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
+async function exportBackup() {
+  const memos = [];
+  for (const m of S.memos) memos.push(Object.assign({}, m, { blob: m.blob ? await blobToDataURL(m.blob) : null, status: '' }));
+  const data = { app: 'echo-journal', version: 1, exportedAt: new Date().toISOString(), memos, dialogs: S.dialogs, recaps: Object.values(S.recaps), goals: Object.values(S.goals), commitments: S.commitments, played: played() };
+  const out = new Blob([JSON.stringify(data)], { type: 'application/json' }), name = 'echo-backup-' + today() + '.json';
+  if (IS_ARTIFACT) {
+    try { const dl = await window.claude.use('downloads'); if (!dl) throw new Error('unavailable'); await dl.save({ filename: name, data: out }); toast(t('exported'), 'ok'); }
+    catch (e) { if (!(e && /cancel|declin/.test(String(e.code || '')))) toast(t('exportFail'), 'err'); }
+    return;
+  }
+  const url = URL.createObjectURL(out);
+  const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000); toast(t('exported'), 'ok');
+}
+async function importBackup(file) {
+  try {
+    const data = JSON.parse(await file.text());
+    if (data.app !== 'echo-journal') throw new Error('format');
+    let n = 0;
+    for (const m of data.memos || []) { if (m.blob) m.blob = await (await fetch(m.blob)).blob(); await DB.put('memos', m); n++; }
+    for (const [store, list] of [['dialogs', data.dialogs], ['recaps', data.recaps], ['goals', data.goals], ['commitments', data.commitments]]) for (const x of list || []) { await DB.put(store, x); n++; }
+    if (data.played) { const pl = played(); for (const [d, ids] of Object.entries(data.played)) pl[d] = [...new Set([...(pl[d] || []), ...ids])]; LS.set('echo-played', pl); }
+    await loadAll(); toast(t('imported', n), 'ok'); closeSheet(); afterChange();
+  } catch { toast(t('importFail'), 'err'); }
+}
+
+/* ---------- render + events ---------- */
+function applyTheme() {
+  const r = document.documentElement;
+  if (S.set.theme === 'system') delete r.dataset.theme; else r.dataset.theme = S.set.theme;
+  r.lang = S.set.lang;
+  const meta = document.querySelector('meta[name=theme-color]');
+  if (meta) meta.content = getComputedStyle(r).getPropertyValue('--bg').trim();
+}
+function renderTabs() {
+  const tabs = [['today', 'home', 'tabToday'], ['goals', 'target', 'tabGoals'], ['history', 'history', 'tabHistory'], ['socratic', 'socrates', 'tabSocratic'], ['recap', 'book', 'tabRecap']];
+  $('#tabs').innerHTML = `<div class="in">${tabs.map(([k, ic, lab]) => `<button data-act="tab" data-v="${k}" ${S.tab === k ? 'aria-current="page"' : ''}>${icon(ic)}<span>${esc(t(lab))}</span></button>`).join('')}</div>`;
+}
+function render() {
+  const active = document.activeElement, id = active && active.id, sel = active && 'selectionStart' in active ? [active.selectionStart, active.selectionEnd] : null;
+  const views = { today: viewToday, goals: viewGoals, history: viewHistory, socratic: viewSocratic, recap: viewRecap };
+  $('#app').innerHTML = views[S.tab]();
+  renderTabs();
+  if (id) { const el = document.getElementById(id); if (el && el !== active) { el.focus(); if (sel && el.setSelectionRange) try { el.setSelectionRange(sel[0], sel[1]); } catch { /* type without selection */ } } }
+  if (S.tab === 'today') heroWave();
+}
+function afterChange() { render(); celebrate(); }
+
+let heroRaf = 0;
+function heroWave() {
+  // Slow drifting waveform at the foot of the record card: the "voice" breathing while idle.
+  cancelAnimationFrame(heroRaf);
+  const c = $('#heroWave'); if (!c) return;
+  const g = c.getContext('2d'), dpr = devicePixelRatio || 1;
+  const cols = ['--rec', '--calm'].map(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim());
+  let last = 0;
+  const step = ts => {
+    if (!c.isConnected) return;
+    heroRaf = requestAnimationFrame(step);
+    if (ts - last < 33) return; last = ts;
+    const w = c.clientWidth, h = c.clientHeight;
+    if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+    g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    const s = ts / 1000;
+    [[0.16, 22, 0.011, 11, cols[0]], [0.10, 30, 0.007, 17, cols[1]]].forEach(([alpha, amp, k, period, col], j) => {
+      g.beginPath(); g.moveTo(0, h);
+      for (let x = 0; x <= w; x += 6) {
+        const y = h * 0.62 + Math.sin(x * k + s * (2 * Math.PI / period) + j * 2) * amp * (0.6 + 0.4 * Math.sin(s * 2 * Math.PI / 21 + x * 0.003));
+        g.lineTo(x, y);
+      }
+      g.lineTo(w, h); g.closePath(); g.globalAlpha = alpha; g.fillStyle = col; g.fill();
+    });
+    g.globalAlpha = 1;
+  };
+  heroRaf = requestAnimationFrame(step);
+}
+
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const act = b.dataset.act, v = b.dataset.v, id = b.dataset.id;
+  if (b.tagName === 'INPUT' && b.type === 'checkbox') return; // handled on change
+  switch (act) {
+    case 'tab': S.tab = v; if (v === 'recap' && !S.recapDay) S.recapDay = today(); if (v === 'goals') S.goalWeek = null; render(); scrollTo(0, 0); break;
+    case 'gweek': { const nw = dayKey(addDays(parseDay(S.goalWeek || weekStart()), 7 * +v)); if (nw <= weekStart()) { S.goalWeek = nw; render(); } break; }
+    case 'gday': updateGoal(b.dataset.w, id, it => { it.days[+v] = !it.days[+v]; }); break;
+    case 'tab-socratic': S.tab = 'socratic'; render(); scrollTo(0, 0); break;
+    case 'tab-recap': S.tab = 'recap'; S.recapDay = today(); render(); scrollTo(0, 0); break;
+    case 'shuffle': S.promptShift++; render(); break;
+    case 'impulse': S.impulse = v; S.promptShift = 0; render(); break;
+    case 'himp': S.histImp = v; render(); break;
+    case 'record': openRecorder(); break;
+    case 'rec-pause': togglePause(); break;
+    case 'rec-stop': stopRecorder(true); break;
+    case 'rec-discard': stopRecorder(false); break;
+    case 'play': {
+      const cm = currentMemo();
+      if (cm && cm.id === id) { if (P.audio.paused) P.audio.play(); else P.audio.pause(); render(); break; }
+      const ctx = S.tab === 'history' ? filteredMemos().filter(audible).sort((a, c) => a.createdAt - c.createdAt).map(m => m.id) : S.memos.filter(m => m.blob && m.day === (S.memos.find(x => x.id === id) || {}).day).sort((a, c) => a.createdAt - c.createdAt).map(m => m.id);
+      playQueue(ctx, Math.max(0, ctx.indexOf(id))); break;
+    }
+    case 'play-all': playQueue(filteredMemos().filter(audible).sort((a, c) => a.createdAt - c.createdAt).map(m => m.id)); break;
+    case 'play-day': playQueue(S.memos.filter(m => m.blob && m.day === v).sort((a, c) => a.createdAt - c.createdAt).map(m => m.id)); break;
+    case 'echo': { const ec = pickEcho(); if (ec) playQueue([ec.memo.id]); break; }
+    case 'pl-toggle': if (P.audio.paused) P.audio.play().catch(() => {}); else P.audio.pause(); render(); break;
+    case 'pl-prev': nextTrack(-1); break;
+    case 'pl-next': nextTrack(1); break;
+    case 'pl-close': stopPlayer(); break;
+    case 'pl-speed': P.showSpeed = !P.showSpeed; renderPlayer(); break;
+    case 'pl-rate': setSpeed(+v); break;
+    case 'memo-del': {
+      const card = b.closest('.memo');
+      if (!card.querySelector('.confirm')) { card.insertAdjacentHTML('beforeend', `<div class="row confirm"><span class="grow small">${esc(t('confirmDel'))}</span><button class="btn sm" data-act="memo-del-no">${esc(t('cancel'))}</button><button class="btn sm rec" data-act="memo-del-yes" data-id="${id}">${esc(t('yes'))}</button></div>`); }
+      break;
+    }
+    case 'memo-del-no': b.closest('.confirm').remove(); break;
+    case 'memo-del-yes': {
+      if (currentMemo() && currentMemo().id === id) stopPlayer();
+      S.memos = S.memos.filter(m => m.id !== id); await DB.del('memos', id); afterChange(); break;
+    }
+    case 'memo-ai': { const m = S.memos.find(x => x.id === id); if (m) { m.status = ''; processMemo(m); } break; }
+    case 'settings': openSettings(); break;
+    case 'sheet-close': closeSheet(); break;
+    case 'set-seg': S.set[b.dataset.k] = v; saveSettings(); applyTheme(); openSettings(); render(); renderPlayer(); break;
+    case 'export': exportBackup(); break;
+    case 'wipe': $('#wipeBox').innerHTML = `<div class="card flat"><p class="small">${esc(t('wipeConfirm'))}</p><div class="row"><button class="btn sm" data-act="sheet-close">${esc(t('cancel'))}</button><button class="btn sm rec" data-act="wipe-yes">${esc(t('yes'))}</button></div></div>`; break;
+    case 'wipe-yes':
+      stopPlayer();
+      for (const s of Object.keys(STORES)) await DB.clear(s);
+      ['echo-played', 'echo-seen', 'echo-best'].forEach(k => { try { localStorage.removeItem(k); } catch { /* blocked */ } });
+      await loadAll(); closeSheet(); render(); break;
+    case 'goals-edit': openGoals(); break;
+    case 'goals-carry': { const prev = S.goals[dayKey(addDays(parseDay(S.editWeek || weekStart()), -7))]; $('#goalsText').value = goalsToText(prev.items); break; }
+    case 'goals-save': saveGoals($('#goalsText').value); break;
+    case 'goal-inc': case 'goal-dec':
+      updateGoal(b.dataset.w || weekStart(), id, it => { it.count = Math.max(0, Math.min(it.target, (it.count || 0) + (act === 'goal-inc' ? 1 : -1))); }); break;
+    case 'commit-new': openCommitNew(); break;
+    case 'commit-save': {
+      const txt = $('#commitText').value.trim(); if (!txt) break;
+      const c = { id: uid(), text: txt, day: today(), createdAt: Date.now(), memoId: null, done: false };
+      S.commitments.push(c); await DB.put('commitments', c); closeSheet(); afterChange(); break;
+    }
+    case 'badges': openBadges(); break;
+    case 'cap-save': {
+      const note = ($('#capText') || {}).value || '';
+      if (!S.capBlob && !note.trim()) break;
+      const blob = S.capBlob; S.capBlob = null; closeSheet();
+      await saveMemo({ prompt: currentPrompt(), impulse: pickPrompt().k, dur: blob ? S.capDur : 0, blob, transcript: note.trim(), source: note.trim() ? 'note' : '' });
+      break;
+    }
+    case 'soc-start': socStart(); break;
+    case 'soc-mode': S.socMode = v; LS.set('echo-soc-mode', v); render(); break;
+    case 'soc-send': socSend(($('#socInput') || {}).value || ''); break;
+    case 'soc-hint': socSend(t('hintMsg')); break;
+    case 'soc-finish': socFinish(); break;
+    case 'soc-rate': { const d = S.dialogs.find(x => x.id === S.activeDialog); if (d) { d.rating = v; await DB.put('dialogs', d); render(); } break; }
+    case 'soc-close': S.activeDialog = null; render(); break;
+    case 'dictate': dictate(); break;
+    case 'rday': { const nd = dayKey(addDays(parseDay(S.recapDay || today()), +v)); if (nd <= today()) { S.recapDay = nd; render(); } break; }
+    case 'recap-make': makeRecap(S.recapDay || today()); break;
+    case 'week-make': makeWeekRecap(v); break;
+  }
+});
+$('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') closeSheet(); });
+document.addEventListener('change', async e => {
+  const el = e.target;
+  if (el.dataset.act === 'commit') {
+    const c = S.commitments.find(x => x.id === el.dataset.id); if (!c) return;
+    c.done = el.checked; c.doneAt = el.checked ? Date.now() : null; await DB.put('commitments', c);
+    if (el.checked) burst();
+    afterChange();
+  } else if (el.dataset.set) {
+    S.set[el.dataset.set] = el.type === 'checkbox' ? el.checked : el.value.trim(); saveSettings(); render();
+  } else if (['gsub', 'gone', 'gtoday'].includes(el.dataset.act)) {
+    const on = el.checked, act = el.dataset.act;
+    updateGoal(el.dataset.w, el.dataset.id, it => {
+      if (act === 'gsub') { const sub = it.subs.find(x => x.id === el.dataset.sub); if (sub) sub.done = on; }
+      else if (act === 'gone') it.count = on ? 1 : 0;
+      else it.days[todayIdx()] = on;
+    });
+  } else if (el.id === 'goalsFile' && el.files[0]) importGoalsFile(el.files[0]);
+  else if (el.id === 'importFile' && el.files[0]) importBackup(el.files[0]);
+  else if ((el.id === 'capFile' || el.id === 'capFile2') && el.files[0]) {
+    S.capBlob = el.files[0]; S.capDur = await audioDuration(S.capBlob);
+    const st = $('#capStatus'); if (st) st.textContent = '✓ ' + t('capReady', fmtDur(S.capDur));
+  }
+  else if (el.dataset.ref) {
+    const day = S.recapDay || today(); const r = S.recaps[day] || { day };
+    r.reflection = Object.assign({}, r.reflection, { [el.dataset.ref]: el.value }); S.recaps[day] = r;
+    await DB.put('recaps', r); toast(t('reflectSaved')); celebrate();
+  }
+});
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.id === 'histSearch') { S.histQuery = el.value; render(); }
+  else if (el.id === 'socInput') S.draft = el.value;
+  else if (el.id === 'socTopic') LS.set('echo-soc-topic', el.value);
+  else if (el.id === 'socMaterial') LS.set('echo-soc-material', el.value);
+  else if (el.id === 'plRate') setSpeedLive(+el.value);
+  else if (el.id === 'plSeek') {
+    const m = currentMemo(); if (!m) return; P.seeking = true;
+    const d = isFinite(P.audio.duration) && P.audio.duration > 0 ? P.audio.duration : m.dur;
+    P.audio.currentTime = d * el.value / 1000; setTimeout(() => { P.seeking = false; }, 200);
+  }
+});
+function setSpeedLive(v) {
+  // Slider drag: apply immediately without rebuilding the player (keeps the thumb under the finger).
+  S.set.speed = v; saveSettings(); P.audio.defaultPlaybackRate = v; P.audio.playbackRate = v;
+  const btn = $('#player .speedbtn'); if (btn) btn.textContent = v.toFixed(2).replace(/0$/, '').replace(/\.0$/, '') + '×';
+  $$('#player .speeds button').forEach(x => x.setAttribute('aria-pressed', String(Math.abs(+x.dataset.v - v) < 0.001)));
+  const lab = $('#player .row.spread .mono'); if (lab) lab.textContent = v.toFixed(2) + '×';
+}
+document.addEventListener('keydown', e => {
+  if (e.target.id === 'socInput' && e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); socSend(e.target.value); }
+  if (e.target.id === 'commitText' && e.key === 'Enter') { e.preventDefault(); $('[data-act="commit-save"]').click(); }
+  if (e.key === 'Escape' && !$('#sheet').hidden) closeSheet();
+});
+addEventListener('beforeunload', e => { if (R.rec) { e.preventDefault(); e.returnValue = ''; } });
+if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { applyTheme(); render(); });
+
+(async function boot() {
+  applyTheme();
+  try { await DB.open(); await loadAll(); }
+  catch (e) { $('#app').innerHTML = `<div class="card"><h2>IndexedDB</h2><p>${esc(String(e && e.message || e))}</p></div>`; return; }
+  const seed = window.ECHO_SEED;
+  for (const sg of (seed && seed.goals) || []) {
+    const flag = 'echo-seed-' + sg.week;
+    if (!S.goals[sg.week] && !LS.get(flag, false)) { S.goals[sg.week] = { week: sg.week, items: parseGoalsText(sg.text) }; await DB.put('goals', S.goals[sg.week]); }
+    LS.set(flag, true);
+  }
+  render(); celebrate();
+  if (IS_ARTIFACT) window.claude.use('sample').then(fn => { SAMPLE = fn; render(); }).catch(() => {});
+  if (!IS_ARTIFACT && 'serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
