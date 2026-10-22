@@ -369,7 +369,7 @@ const I18N = {
     socStart: 'Heutige Runde starten', socAnother: 'Noch eine Runde', socHint: 'Hinweis', socFinish: 'Abschließen', socSend: 'Senden',
     socPlaceholder: 'Deine Antwort … (Diktat über die Tastatur geht auch)', socNeedKey: 'Für den Dialog braucht Echo einen Anthropic-API-Key (Einstellungen).',
     socDone: 'Runde abgeschlossen · +20 XP', socRate: 'Wie schwer war es?', easy: 'Leicht', okay: 'Passend', hard: 'Schwer',
-    socPast: 'Frühere Runden', keyPoints: 'Kernpunkte', gap: 'Nochmal anschauen', nextTopic: 'Nächstes Mal', socMin: 'Beantworte erst zwei Fragen, dann kannst du abschließen.',
+    socPast: 'Frühere Runden', keyPoints: 'Kernpunkte', gap: 'Nochmal anschauen', nextTopic: 'Nächstes Mal', socMin: 'Beantworte erst zwei Fragen, dann kannst du abschließen.', socSumFail: 'Zusammenfassung fehlgeschlagen, die Runde zählt trotzdem.', socLeft: n => 'Noch ' + n + ' ' + (n === 1 ? 'Antwort' : 'Antworten') + ', dann kannst du abschließen und bekommst +20 XP.',
     thinking: 'Claude denkt nach …', hintMsg: 'Ich komme nicht weiter. Gib mir bitte einen kleinen Hinweis, nicht die Lösung.', dictate: 'Diktieren', dictating: 'Hört zu … tippen zum Stoppen',
     recapTitle: 'Rückblick', memosN: n => n + ' ' + plural(n, 'Memo', 'Memos'), minutesN: n => n + ' min gesprochen',
     recapHeading: 'Tageszusammenfassung', recapMake: 'Tagesrückblick mit Claude', recapRedo: 'Neu schreiben', reflectTitle: 'Selbst reflektieren',
@@ -443,7 +443,7 @@ const I18N = {
     socStart: "Start today's round", socAnother: 'One more round', socHint: 'Hint', socFinish: 'Finish', socSend: 'Send',
     socPlaceholder: 'Your answer … (keyboard dictation works too)', socNeedKey: 'The dialogue needs an Anthropic API key (Settings).',
     socDone: 'Round complete · +20 XP', socRate: 'How hard was it?', easy: 'Easy', okay: 'About right', hard: 'Hard',
-    socPast: 'Earlier rounds', keyPoints: 'Key points', gap: 'Review again', nextTopic: 'Next time', socMin: 'Answer two questions first, then you can finish.',
+    socPast: 'Earlier rounds', keyPoints: 'Key points', gap: 'Review again', nextTopic: 'Next time', socMin: 'Answer two questions first, then you can finish.', socSumFail: 'Summary failed, the round still counts.', socLeft: n => n + ' more ' + (n === 1 ? 'answer' : 'answers') + ', then you can finish and earn +20 XP.',
     thinking: 'Claude is thinking …', hintMsg: "I'm stuck. Please give me a small hint, not the answer.", dictate: 'Dictate', dictating: 'Listening … tap to stop',
     recapTitle: 'Recap', memosN: n => n + ' ' + plural(n, 'memo', 'memos'), minutesN: n => n + ' min spoken',
     recapHeading: 'Daily summary', recapMake: 'Daily recap with Claude', recapRedo: 'Rewrite', reflectTitle: 'Reflect yourself',
@@ -1293,20 +1293,25 @@ async function socSend(text) {
 async function socFinish() {
   const d = S.dialogs.find(x => x.id === S.activeDialog); if (!d || S.socBusy) return;
   S.socBusy = true; render();
+  // The summary comes from a separate call: the tutor prompt insists on asking questions and would ignore a JSON request.
+  // The round counts as done (XP) even if the summary fails; the work was the dialogue, not the summary.
+  let r = {};
   try {
-    const msgs = d.messages.map(({ role, content }) => ({ role, content }));
-    msgs.push({ role: 'user', content: `Close the round now. Return ONLY JSON in ${langName()}: {"topic": "2-5 words", "keyPoints": ["3-5 short points the student worked out or should keep"], "gap": "one thing worth reviewing", "next": "a suggested topic for next time"}` });
-    const r = parseJSON(await askClaude({ system: socSystem(d), messages: msgs, maxTokens: 500 }));
-    d.summary = { keyPoints: (r.keyPoints || []).map(String), gap: String(r.gap || ''), next: String(r.next || '') };
-    if (r.topic) d.topic = String(r.topic);
-    d.completed = true; d.completedAt = Date.now();
-    await DB.put('dialogs', d); toast(t('socDone'), 'ok'); burst();
-  } catch (e) { toast(t('aiError') + ': ' + e.message, 'err'); }
+    const transcript = d.messages.filter(m => !m.hidden).map(m => (m.role === 'assistant' ? (d.mode === 'talk' ? 'AUDIENCE: ' : 'TUTOR: ') : 'STUDENT: ') + m.content).join('\n\n');
+    const system = `You summarize a finished ${d.mode === 'talk' ? 'discussion practice after a student\'s talk' + (d.topic ? ' on "' + d.topic + '"' : '') : 'Socratic study round in nutritional medicine'}. ` +
+      `Return ONLY a JSON object, no other text, all values in ${langName()}: {"topic": "2-5 words", "keyPoints": ["3-5 short points the student worked out or should keep"], "gap": "one thing worth reviewing", "next": "a suggested topic or question for next time"}`;
+    r = parseJSON(await askClaude({ system, messages: [{ role: 'user', content: transcript.slice(-15000) }], maxTokens: 600, model: S.set.fastModel, quick: true }));
+  } catch (e) { toast(t('socSumFail'), 'err'); }
+  d.summary = { keyPoints: (Array.isArray(r.keyPoints) ? r.keyPoints : []).map(String), gap: String(r.gap || ''), next: String(r.next || '') };
+  if (r.topic && !d.topic) d.topic = String(r.topic);
+  if (!d.topic) d.topic = t(d.mode === 'talk' ? 'socModeTalk' : 'socSub');
+  d.completed = true; d.completedAt = Date.now();
+  await DB.put('dialogs', d); toast(t('socDone'), 'ok'); burst();
   S.socBusy = false; afterChange();
 }
 function socSummary(d) {
   if (!d.summary) return '';
-  return `<div class="md"><h4>${esc(t('keyPoints'))}</h4><ul>${d.summary.keyPoints.map(k => `<li>${esc(k)}</li>`).join('')}</ul>
+  return `<div class="md">${d.summary.keyPoints.length ? `<h4>${esc(t('keyPoints'))}</h4><ul>${d.summary.keyPoints.map(k => `<li>${esc(k)}</li>`).join('')}</ul>` : ''}
     ${d.summary.gap ? `<h4>${esc(t('gap'))}</h4><p>${esc(d.summary.gap)}</p>` : ''}
     ${d.summary.next ? `<h4>${esc(t('nextTopic'))}</h4><p>${esc(d.summary.next)}</p>` : ''}</div>`;
 }
@@ -1344,7 +1349,8 @@ function viewSocratic() {
         <button class="btn sm ghost" data-act="soc-finish" ${S.socBusy || answers < 2 ? 'disabled' : ''} title="${esc(answers < 2 ? t('socMin') : '')}">${icon('check')} ${esc(t('socFinish'))}</button>
         <span class="grow"></span>
         <button class="btn sm primary" data-act="soc-send" ${S.socBusy ? 'disabled' : ''}>${icon('send')} ${esc(t('socSend'))}</button>
-      </div></div>`}
+      </div>
+      ${answers < 2 ? `<span class="small muted">${esc(t('socLeft', 2 - answers))}</span>` : ''}</div>`}
   ${pastHTML}`;
 }
 
