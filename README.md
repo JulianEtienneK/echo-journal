@@ -6,3 +6,4 @@ Persönliches Sprachtagebuch mit Tageszielen, Sokrates-Dialog und Rückblick.
 - Mikrofon braucht HTTPS – GitHub Pages erfüllt das.
 - KI-Funktionen: Anthropic-API-Key (und optional OpenAI-Key für Transkription) in den Einstellungen eintragen. Die Keys bleiben auf dem Gerät.
 - Umzug/Sicherung: Einstellungen → Backup exportieren / importieren.
+- Automatische Sicherung (Edge/Chrome am Computer): Einstellungen → Sicherungsdatei wählen, z. B. in OneDrive. Echo schreibt nach jeder Änderung hinein. Ist der Browser leer, bietet Echo auf der Startseite „Sicherung wiederherstellen“ an.
