@@ -187,6 +187,20 @@ i[data-l="0"] { background: var(--surface-2); }
 
 /* Socratic */
 .chat { display: grid; gap: 10px; }
+.chars { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.charbtn { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 12px; display: grid; gap: 4px; color: inherit; font: inherit; cursor: pointer; transition: transform .12s; }
+.charbtn:hover { transform: translateY(-1px); }
+.charbtn[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.charbtn .em { font-size: 30px; line-height: 1.1; }
+.charbtn .small { line-height: 1.35; }
+.esrow { display: flex; gap: 8px; align-items: flex-start; }
+.esrow .av { font-size: 24px; line-height: 1; padding-top: 8px; }
+.esrow .bubble { max-width: 100%; }
+.saybtn { border: 0; background: none; padding: 2px 4px; font-size: 13px; color: var(--muted, inherit); opacity: .75; cursor: pointer; }
+.saybtn:hover { opacity: 1; }
+.btn.talk { font-size: 16px; padding: 10px 18px; }
+.bubble em { opacity: .7; }
+.fix { font-size: 13.5px; opacity: .85; border-left: 3px solid var(--line); padding-left: 8px; }
 .bubble { padding: 12px 14px; border-radius: 16px; max-width: 92%; overflow-wrap: anywhere; line-height: 1.5; }
 .bubble.a { background: var(--surface); border: 1px solid var(--line); justify-self: start; border-bottom-left-radius: 6px; }
 .bubble.u { background: var(--calm-soft); justify-self: end; border-bottom-right-radius: 6px; white-space: pre-wrap; }
@@ -349,6 +363,9 @@ const I18N = {
     tabGoals: 'Ziele', goalsToday: 'Heute dran', thisWeek: 'Diese Woche', goalsPct: (p, d, n) => p + ' % erledigt (' + d + '/' + n + ')',
     goalsImport: 'Wochenseite importieren', goalsImported: (n, w) => n + ' Ziele übernommen · ' + w, goalsFooter: 'Jeder erledigte Tag ist ein Schritt Richtung der großen Ziele.',
     goalDoneLabel: 'Erledigt', goalReached: n => 'Ziel erreicht: ' + n, goalsImportFail: 'In der Datei wurden keine Ziele gefunden.',
+    socModeEs: 'Español', esIntro: 'Sprich Spanisch mit einer sehr seltsamen Figur. Sie bleibt in ihrer Rolle, korrigiert kurz und spricht ihre Antworten laut.', esChar: 'Wer soll heute mit dir reden?', esLevel: 'Niveau', esVoice: 'Stimme', esVoiceBrowser: 'Browser (kostenlos)', esVoiceAI: 'OpenAI (lebendiger)',
+    esAutoSay: 'Antworten automatisch vorlesen', esStart: '¡Vamos!', esTalk: 'Hablar', esListening: 'Escuchando … tippen zum Senden', esSay: 'Vorlesen', esStop: 'Stopp',
+    esThinking: n => n + ' denkt nach …', esHint: '¡Ayuda! Gib mir bitte auf Deutsch zwei, drei Wörter oder einen Satzanfang, mit dem ich antworten kann.', esPlaceholder: 'Escribe … oder tippe auf Hablar', esNoVoice: 'Dieser Browser kann nicht vorlesen.', esNoMic: 'Spracheingabe geht hier nicht – schreib einfach.',
     socModeNutri: 'Ernährungsmedizin', socModeTalk: 'Vortrag & Diskussion', socTalkTopic: 'Thema deines Vortrags', socTalkMaterial: 'Material (optional): Gliederung, Abstract, Kernaussagen',
     socTalkIntro: 'Claude spielt das kritische Publikum: eine Frage nach der anderen, wie in der Diskussion nach dem Vortrag. Du antwortest, Claude gibt kurzes Feedback und hakt nach.', socTalkNeed: 'Gib zuerst das Thema ein.', socTalkStart: 'Diskussion starten',
     goalsCarry: 'Ziele der Vorwoche übernehmen', goalsDone: 'Alle Wochenziele erreicht',
@@ -454,6 +471,9 @@ const I18N = {
     tabGoals: 'Goals', goalsToday: 'Up today', thisWeek: 'This week', goalsPct: (p, d, n) => p + ' % done (' + d + '/' + n + ')',
     goalsImport: 'Import weekly page', goalsImported: (n, w) => n + ' goals imported · ' + w, goalsFooter: 'Every day done is a step toward the big goals.',
     goalDoneLabel: 'Done', goalReached: n => 'Goal reached: ' + n, goalsImportFail: 'No goals found in this file.',
+    socModeEs: 'Español', esIntro: 'Speak Spanish with a very strange character. It stays in role, corrects you briefly and speaks its replies out loud.', esChar: 'Who should talk to you today?', esLevel: 'Level', esVoice: 'Voice', esVoiceBrowser: 'Browser (free)', esVoiceAI: 'OpenAI (more lively)',
+    esAutoSay: 'Read replies aloud automatically', esStart: '¡Vamos!', esTalk: 'Hablar', esListening: 'Escuchando … tap to send', esSay: 'Read aloud', esStop: 'Stop',
+    esThinking: n => n + ' is thinking …', esHint: '¡Ayuda! Please give me two or three words in English or the start of a sentence I can answer with.', esPlaceholder: 'Escribe … or tap Hablar', esNoVoice: 'This browser cannot read aloud.', esNoMic: 'Voice input does not work here – just type.',
     socModeNutri: 'Nutritional medicine', socModeTalk: 'Talk & discussion', socTalkTopic: 'Topic of your talk', socTalkMaterial: 'Material (optional): outline, abstract, key claims',
     socTalkIntro: 'Claude plays the critical audience: one question at a time, like the discussion after a talk. You answer, Claude gives brief feedback and follows up.', socTalkNeed: 'Enter the topic first.', socTalkStart: 'Start discussion',
     goalsCarry: "Copy last week's goals", goalsDone: 'All weekly goals reached',
@@ -775,8 +795,9 @@ function parseJSON(text) {
   return JSON.parse(a >= 0 && b > a ? text.slice(a, b + 1) : text);
 }
 const extFor = mime => mime.includes('mp4') ? 'mp4' : mime.includes('ogg') ? 'ogg' : mime.includes('wav') ? 'wav' : 'webm';
-async function transcribe(blob) {
+async function transcribe(blob, language) {
   const fd = new FormData();
+  if (language) fd.append('language', language);
   const type = (blob.type || 'audio/webm').split(';')[0];
   fd.append('file', new File([blob], 'memo.' + extFor(type), { type }));
   fd.append('model', S.set.sttModel || 'whisper-1');
@@ -1328,7 +1349,7 @@ function viewHistory() {
   ${S.memos.length && !S.set.openaiKey && !S.set.liveStt ? `<p class="small muted">${esc(t('noAI'))}</p>` : ''}`;
 }
 function md(text) {
-  const lines = esc(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').split('\n');
+  const lines = esc(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/(^|[\s(¡¿])\*([^*\n]+?)\*(?=$|[\s.,!?;:)])/gm, '$1<em>$2</em>').split('\n');
   let html = '', inList = false;
   for (const l of lines) {
     const li = /^\s*[-*•] /.test(l);
@@ -1341,8 +1362,123 @@ function md(text) {
   return html + (inList ? '</ul>' : '');
 }
 
+/* Español: a voice sparring partner with far too much personality */
+const ES_CHARS = {
+  pulpo: { em: '🐙', name: 'Don Pulpo Ramírez', lang: 'es-ES', voice: 'ash', pitch: 0.75, rate: 0.95,
+    de: 'Pensionierter Flamenco-Krake aus Cádiz. Betreibt eine Churrería auf dem Meeresgrund. Acht Arme, acht Meinungen.',
+    en: 'Retired flamenco octopus from Cádiz. Runs a churro stand on the sea floor. Eight arms, eight opinions.',
+    persona: 'Don Pulpo Ramírez, a retired flamenco-dancing octopus from Cádiz who now runs a churrería at the bottom of the sea. Theatrical, nostalgic, deeply offended by bad churros and by people who say "pulpo a la gallega" near him. Each of his eight arms has its own opinion and sometimes they interrupt each other. Castilian Spanish from Andalucía (vosotros, a little "ozú", "illo", "qué arte").',
+    tts: 'You are Don Pulpo, an old theatrical Andalusian octopus and former flamenco dancer. Warm, raspy, dramatic pauses, rolls the r with pride, sighs nostalgically. Speak Spanish with an Andalusian accent, at a calm learner-friendly pace.' },
+  espina: { em: '🌵', name: 'Doña Espina', lang: 'es-MX', voice: 'coral', pitch: 1.15, rate: 0.92,
+    de: '312 Jahre alter Kaktus aus Oaxaca. Erlebt jedes Gespräch als Telenovela. Weiß über alle Eidechsen Bescheid.',
+    en: '312-year-old cactus from Oaxaca. Experiences every conversation as a telenovela. Knows every lizard\'s secrets.',
+    persona: 'Doña Espina, a 312-year-old cactus from the desert of Oaxaca who narrates everything as a melodramatic telenovela, gasps at plot twists ("¡No puede ser!"), gossips about the lizards and the one cloud that never rains on her, and has strong opinions about tequila tourists. Mexican Spanish (ustedes, "¿mande?", "qué padre", "ándale").',
+    tts: 'You are Doña Espina, an ancient, gossipy Mexican cactus narrating a telenovela. Dramatic gasps, juicy whispers, then loud surprise. Speak Mexican Spanish, clearly, at a learner-friendly pace.' },
+  tinto: { em: '☕', name: 'Tinto', lang: 'es-CO', voice: 'verse', pitch: 1.35, rate: 1.08,
+    de: 'Hyperaktive Kaffeebohne aus dem Eje Cafetero. Hat zu viel von sich selbst getrunken. Hält Tee für eine Verschwörung.',
+    en: 'Hyperactive coffee bean from the Eje Cafetero. Drank too much of himself. Thinks tea is a conspiracy.',
+    persona: 'Tinto, a hyperactive coffee bean from a finca in the Colombian Eje Cafetero who accidentally drank too much of himself. Talks with enormous enthusiasm, gets excited about everything, suspects tea of a global conspiracy and is terrified of grinders. Colombian paisa Spanish ("parce", "¡qué chimba!", "bacano", "¿sí o qué?", usted with friends).',
+    tts: 'You are Tinto, an over-caffeinated Colombian coffee bean. Bubbly, excited, fast bursts of energy but still understandable, laughs a lot. Speak Colombian paisa Spanish at a learner-friendly pace.' },
+};
+const ES_LEVELS = ['A2', 'B1', 'B2', 'C1'];
+const esChar = d => ES_CHARS[(d && d.char) || LS.get('echo-es-char', 'pulpo')] || ES_CHARS.pulpo;
+const esLevel = () => LS.get('echo-es-level', 'B1');
+const esVoiceMode = () => (S.set.openaiKey && !IS_ARTIFACT && LS.get('echo-es-voice', 'openai') === 'openai') ? 'openai' : 'browser';
+function esSystem(d) {
+  const c = esChar(d);
+  const past = S.dialogs.filter(x => x.mode === 'es' && x.completed && x.id !== d.id).sort((a, b) => b.createdAt - a.createdAt).slice(0, 6)
+    .map(x => `- ${x.topic || '?'}${x.summary && x.summary.gap ? ' | weak spot: ' + x.summary.gap : ''}`).join('\n') || '- none yet';
+  return `You are ${c.persona}
+You are the Spanish conversation partner of a German student (level ${d.level || esLevel()}). This is spoken practice: your replies are read aloud.
+Rules:
+- Stay in character the whole time. Be vivid, absurd and funny, but keep the conversation going: end every turn with exactly ONE question the student can answer.
+- Speak only Spanish at level ${d.level || esLevel()}: ${({ A2: 'short simple sentences, present and simple past, very common words', B1: 'everyday language, mix of tenses, explain rare words through context', B2: 'natural speed and idioms, subjunctive welcome', C1: 'rich, idiomatic, regional flavour, wordplay' })[d.level || esLevel()] || ''}.
+- Keep the spoken part under 60 words. Stage directions are allowed sparingly in *asterisks* (they are not read aloud).
+- Corrections: if the student's last message had mistakes, start your turn with ONE line beginning with "✏️ " that shows the corrected version of the most important part (max two fixes, no explanations unless the mistake repeats). If it had no mistakes, skip that line. Then a blank line, then your in-character reply.
+- When a useful new word comes up, you may add one final line "💡 palabra = ${S.set.lang === 'de' ? 'deutsches Wort' : 'English word'}". At most one per turn.
+- If the student writes in ${langName()} or asks for help, help briefly in ${langName()} (two or three words or a sentence starter), then continue in Spanish.
+- Keep it friendly and suitable for anyone. Never break character to talk about being an AI.
+- Reuse the student's weak spots from earlier rounds naturally, and invent a new absurd scene each round.
+Earlier rounds (scene | weak spot):
+${past}`;
+}
+const ES_CACHE = new Map();
+let ES_AUDIO = null, esSpeakingId = null;
+function esSpeechText(text) {
+  return text.split('\n').filter(l => !/^\s*(✏️|💡)/.test(l)).join(' ')
+    .replace(/\*[^*\n]+\*/g, ' ').replace(/[#_>`]/g, '').replace(/\p{Extended_Pictographic}|️/gu, '').replace(/\s+/g, ' ').trim();
+}
+function esStop() {
+  try { window.speechSynthesis && speechSynthesis.cancel(); } catch { /* none */ }
+  if (ES_AUDIO) { try { ES_AUDIO.pause(); } catch { /* none */ } ES_AUDIO = null; }
+  const was = esSpeakingId; esSpeakingId = null; if (was) render();
+}
+function esPickVoice(lang) {
+  const vs = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
+  const score = v => (v.lang === lang ? 4 : v.lang.slice(0, 2) === 'es' ? 2 : 0) + (/natural|online|neural|premium|enhanced/i.test(v.name) ? 2 : 0);
+  return vs.filter(v => /^es/i.test(v.lang)).sort((a, b) => score(b) - score(a))[0] || null;
+}
+async function esSay(d, msgIndex) {
+  const m = d.messages[msgIndex]; if (!m) return;
+  const key = d.id + ':' + msgIndex;
+  if (esSpeakingId === key) { esStop(); return; }
+  esStop();
+  const text = esSpeechText(m.content), c = esChar(d); if (!text) return;
+  esSpeakingId = key; render();
+  const done = () => { if (esSpeakingId === key) { esSpeakingId = null; render(); } };
+  if (esVoiceMode() === 'openai') {
+    try {
+      let url = ES_CACHE.get(key);
+      if (!url) {
+        const r = await fetch('https://api.openai.com/v1/audio/speech', {
+          method: 'POST', headers: { Authorization: 'Bearer ' + S.set.openaiKey.trim(), 'content-type': 'application/json' },
+          body: JSON.stringify({ model: 'gpt-4o-mini-tts', voice: c.voice, input: text, instructions: c.tts, response_format: 'mp3' }),
+        });
+        if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error((j.error && j.error.message) || ('HTTP ' + r.status)); }
+        url = URL.createObjectURL(await r.blob()); ES_CACHE.set(key, url);
+      }
+      if (esSpeakingId !== key) return;
+      ES_AUDIO = new Audio(url); ES_AUDIO.onended = done; ES_AUDIO.onerror = done; await ES_AUDIO.play();
+      return;
+    } catch (e) { toast(t('aiError') + ': ' + e.message + ' → Browser', 'err'); }
+  }
+  if (!window.speechSynthesis) { toast(t('esNoVoice'), 'err'); done(); return; }
+  const u = new SpeechSynthesisUtterance(text), v = esPickVoice(c.lang);
+  u.lang = v ? v.lang : c.lang; if (v) u.voice = v;
+  u.pitch = c.pitch; u.rate = c.rate; u.onend = done; u.onerror = done;
+  speechSynthesis.speak(u);
+}
+if (window.speechSynthesis) { try { speechSynthesis.getVoices(); speechSynthesis.addEventListener('voiceschanged', () => {}); } catch { /* none */ } }
+let esSR = null;
+function esTalk() {
+  const d = S.dialogs.find(x => x.id === S.activeDialog); if (!d || S.socBusy) return;
+  if (esSR) { try { esSR.stop(); } catch { /* stopped */ } return; } // onend sends
+  esStop();
+  if (S.set.openaiKey && !IS_ARTIFACT) {
+    openRecorder({ mode: 'dictate', onDone: async blob => {
+      toast(t('transcribing'));
+      try { const text = await transcribe(blob, 'es'); if (text) socSend(((S.draft || '') + ' ' + text).trim()); }
+      catch (e) { toast(t('aiError') + ': ' + e.message, 'err'); }
+    } });
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { toast(t('esNoMic'), 'err'); return; }
+  const r = new SR(); r.lang = esChar(d).lang; r.interimResults = true; r.continuous = true;
+  let finalText = '';
+  r.onresult = e => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) { const x = e.results[i]; if (x.isFinal) finalText += x[0].transcript.trim() + ' '; else interim += x[0].transcript; }
+    const ta = $('#socInput'); if (ta) ta.value = ((S.draft ? S.draft + ' ' : '') + finalText + interim).trim();
+  };
+  r.onerror = ev => { if (ev && ev.error === 'not-allowed') toast(t('esNoMic'), 'err'); };
+  r.onend = () => { esSR = null; const text = ((S.draft ? S.draft + ' ' : '') + finalText).trim(); if (text) socSend(text); else render(); };
+  esSR = r; try { r.start(); } catch { esSR = null; } render();
+}
+
 /* Socratic */
 function socSystem(d) {
+  if (d.mode === 'es') return esSystem(d);
   if (d.mode === 'talk') return `You are the audience in the discussion after a student's talk. Speak ${langName()}.
 Talk topic: ${d.topic}
 ${d.material ? 'Material from the speaker:\n' + d.material.slice(0, 6000) + '\n' : ''}How to run it:
@@ -1367,6 +1503,11 @@ Recent rounds (topic, self-rated difficulty):
 ${past}`;
 }
 async function socStart() {
+  if (S.socMode === 'es') {
+    const d = { id: uid(), day: today(), createdAt: Date.now(), mode: 'es', char: LS.get('echo-es-char', 'pulpo'), level: esLevel(), topic: '', messages: [{ role: 'user', content: 'Start the round. First line: "TOPIC: <the absurd scene in 2-5 Spanish words>", then a blank line, then open the scene in character: greet me, set the scene in one or two vivid sentences and ask me your first question.', hidden: true }], completed: false };
+    S.dialogs.push(d); S.activeDialog = d.id; await DB.put('dialogs', d);
+    await socAsk(d); return;
+  }
   const talk = S.socMode === 'talk', topic = LS.get('echo-soc-topic', '').trim();
   if (talk && !topic) { toast(t('socTalkNeed'), 'err'); return; }
   const opener = talk ? 'I just finished my talk. Open the discussion with your first question.' : 'Start today\'s round. Begin your reply with the line "TOPIC: <topic in 2-5 words>", then a blank line, then your opening vignette or question.';
@@ -1381,6 +1522,7 @@ async function socAsk(d) {
     const m = reply.match(/^\s*TOPIC:\s*(.+)/);
     if (m) { if (!d.topic) d.topic = m[1].trim(); reply = reply.replace(/^\s*TOPIC:.*(\n|$)/, '').trim(); }
     d.messages.push({ role: 'assistant', content: reply });
+    if (d.mode === 'es' && LS.get('echo-es-autosay', true)) setTimeout(() => esSay(d, d.messages.length - 1), 50);
   } catch (e) {
     toast(t('aiError') + ': ' + e.message, 'err');
     const last = d.messages[d.messages.length - 1];
@@ -1402,14 +1544,16 @@ async function socFinish() {
   // The round counts as done (XP) even if the summary fails; the work was the dialogue, not the summary.
   let r = {};
   try {
-    const transcript = d.messages.filter(m => !m.hidden).map(m => (m.role === 'assistant' ? (d.mode === 'talk' ? 'AUDIENCE: ' : 'TUTOR: ') : 'STUDENT: ') + m.content).join('\n\n');
-    const system = `You summarize a finished ${d.mode === 'talk' ? 'discussion practice after a student\'s talk' + (d.topic ? ' on "' + d.topic + '"' : '') : 'Socratic study round in nutritional medicine'}. ` +
+    const transcript = d.messages.filter(m => !m.hidden).map(m => (m.role === 'assistant' ? (d.mode === 'talk' ? 'AUDIENCE: ' : d.mode === 'es' ? 'PARTNER: ' : 'TUTOR: ') : 'STUDENT: ') + m.content).join('\n\n');
+    const system = d.mode === 'es' ? `You summarize a finished Spanish conversation practice (level ${d.level || 'B1'}) between a German student and a role-play character. ` +
+      `Return ONLY a JSON object, no other text: {"topic": "the scene in 2-5 Spanish words", "keyPoints": ["3-5 useful Spanish words or phrases from the round, each as 'español = ${langName()}'"], "gap": "the student's most important mistake, written as 'wrong → right' plus a 5-word reason in ${langName()}; or a praise line if there were none", "next": "one idea in ${langName()} for what to practise next round"}` : `You summarize a finished ${d.mode === 'talk' ? 'discussion practice after a student\'s talk' + (d.topic ? ' on "' + d.topic + '"' : '') : 'Socratic study round in nutritional medicine'}. ` +
       `Return ONLY a JSON object, no other text, all values in ${langName()}: {"topic": "2-5 words", "keyPoints": ["3-5 short points the student worked out or should keep"], "gap": "one thing worth reviewing", "next": "a suggested topic or question for next time"}`;
     r = parseJSON(await askClaude({ system, messages: [{ role: 'user', content: transcript.slice(-15000) }], maxTokens: 600, model: S.set.fastModel, quick: true }));
   } catch (e) { toast(t('socSumFail'), 'err'); }
   d.summary = { keyPoints: (Array.isArray(r.keyPoints) ? r.keyPoints : []).map(String), gap: String(r.gap || ''), next: String(r.next || '') };
   if (r.topic && !d.topic) d.topic = String(r.topic);
-  if (!d.topic) d.topic = t(d.mode === 'talk' ? 'socModeTalk' : 'socSub');
+  if (!d.topic) d.topic = d.mode === 'es' ? esChar(d).name : t(d.mode === 'talk' ? 'socModeTalk' : 'socSub');
+  if (d.mode === 'es') esStop();
   d.completed = true; d.completedAt = Date.now();
   await DB.put('dialogs', d); toast(t('socDone'), 'ok'); burst();
   S.socBusy = false; afterChange();
@@ -1421,17 +1565,30 @@ function socSummary(d) {
     ${d.summary.next ? `<h4>${esc(t('nextTopic'))}</h4><p>${esc(d.summary.next)}</p>` : ''}</div>`;
 }
 function viewSocratic() {
-  const head = `<header class="top"><div class="stack" style="gap:4px"><span class="eyebrow">${esc(t(S.socMode === 'talk' ? 'socModeTalk' : 'socSub'))}</span><h1>${esc(t('socTitle'))}</h1></div>
+  const head = `<header class="top"><div class="stack" style="gap:4px"><span class="eyebrow">${esc(t(S.socMode === 'talk' ? 'socModeTalk' : S.socMode === 'es' ? 'socModeEs' : 'socSub'))}</span><h1>${esc(S.socMode === 'es' ? '¡Hablemos!' : t('socTitle'))}</h1></div>
     <button class="icon-btn" data-act="settings" aria-label="${esc(t('settings'))}">${icon('settings')}</button></header>`;
-  const past = S.dialogs.filter(d => d.completed && d.id !== S.activeDialog).sort((a, b) => b.createdAt - a.createdAt);
-  const pastHTML = past.length ? `<h3 style="margin-top:6px">${esc(t('socPast'))}</h3>${past.slice(0, 30).map(d => `<details class="card flat"><summary class="row spread" style="cursor:pointer"><b>${esc(d.topic || '?')}</b><span class="small muted mono">${esc(fmtDate(d.day, { day: 'numeric', month: 'short' }))}${d.rating ? ' · ' + esc(t(d.rating)) : ''}</span></summary>${socSummary(d)}</details>`).join('')}` : '';
+  const past = S.dialogs.filter(d => d.completed && d.id !== S.activeDialog && (S.socMode === 'es') === (d.mode === 'es')).sort((a, b) => b.createdAt - a.createdAt);
+  const pastHTML = past.length ? `<h3 style="margin-top:6px">${esc(t('socPast'))}</h3>${past.slice(0, 30).map(d => `<details class="card flat"><summary class="row spread" style="cursor:pointer"><b>${d.mode === 'es' ? esChar(d).em + ' ' : ''}${esc(d.topic || '?')}</b><span class="small muted mono">${esc(fmtDate(d.day, { day: 'numeric', month: 'short' }))}${d.rating ? ' · ' + esc(t(d.rating)) : ''}</span></summary>${socSummary(d)}</details>`).join('')}` : '';
   if (!hasAI()) return head + `<section class="card"><p>${esc(t('socIntro'))}</p><p class="muted">${esc(t('socNeedKey'))}</p><button class="btn primary" data-act="settings" style="justify-self:start">${icon('settings')} ${esc(t('settings'))}</button></section>` + pastHTML;
   const d = S.dialogs.find(x => x.id === S.activeDialog);
   if (!d) {
     const doneToday = S.dialogs.some(x => x.completed && x.day === today());
     const talk = S.socMode === 'talk';
+    const modes = `<div class="seg" style="justify-self:start">${[['nutri', 'socModeNutri'], ['talk', 'socModeTalk'], ['es', 'socModeEs']].map(([k, l]) => `<button data-act="soc-mode" data-v="${k}" aria-pressed="${S.socMode === k}">${esc(t(l))}</button>`).join('')}</div>`;
+    if (S.socMode === 'es') {
+      const ck = LS.get('echo-es-char', 'pulpo'), lv = esLevel(), vm = esVoiceMode();
+      return head + `<section class="card">${modes}
+        <p>${esc(t('esIntro'))}</p>
+        <b>${esc(t('esChar'))}</b>
+        <div class="chars">${Object.entries(ES_CHARS).map(([k, c]) => `<button class="charbtn" data-act="es-char" data-v="${k}" aria-pressed="${ck === k}"><span class="em">${c.em}</span><b>${esc(c.name)}</b><span class="small muted">${esc(c[S.set.lang] || c.en)}</span></button>`).join('')}</div>
+        <div class="row wrap"><span class="small muted">${esc(t('esLevel'))}</span><div class="seg">${ES_LEVELS.map(l => `<button data-act="es-level" data-v="${l}" aria-pressed="${lv === l}">${l}</button>`).join('')}</div></div>
+        ${S.set.openaiKey && !IS_ARTIFACT ? `<div class="row wrap"><span class="small muted">${esc(t('esVoice'))}</span><div class="seg">${[['browser', 'esVoiceBrowser'], ['openai', 'esVoiceAI']].map(([k, l]) => `<button data-act="es-voice" data-v="${k}" aria-pressed="${vm === k}">${esc(t(l))}</button>`).join('')}</div></div>` : ''}
+        <label class="check"><input type="checkbox" id="esAutoSay" ${LS.get('echo-es-autosay', true) ? 'checked' : ''}><span>${esc(t('esAutoSay'))}</span></label>
+        <button class="btn primary talk" data-act="soc-start" style="justify-self:start" ${S.socBusy ? 'disabled' : ''}>${ES_CHARS[ck].em} ${esc(t('esStart'))}</button>
+        ${S.socBusy ? `<div class="status"><span class="spin"></span>${esc(t('esThinking', ES_CHARS[ck].name))}</div>` : ''}</section>` + pastHTML;
+    }
     return head + `<section class="card">
-      <div class="seg" style="justify-self:start">${[['nutri', 'socModeNutri'], ['talk', 'socModeTalk']].map(([k, l]) => `<button data-act="soc-mode" data-v="${k}" aria-pressed="${S.socMode === k}">${esc(t(l))}</button>`).join('')}</div>
+      <div class="seg" style="justify-self:start">${[['nutri', 'socModeNutri'], ['talk', 'socModeTalk'], ['es', 'socModeEs']].map(([k, l]) => `<button data-act="soc-mode" data-v="${k}" aria-pressed="${S.socMode === k}">${esc(t(l))}</button>`).join('')}</div>
       <p>${esc(t(talk ? 'socTalkIntro' : 'socIntro'))}</p>
       ${talk ? `<div class="field"><label for="socTopic">${esc(t('socTalkTopic'))}</label><input class="input" id="socTopic" value="${esc(LS.get('echo-soc-topic', ''))}"></div>
         <div class="field"><label for="socMaterial">${esc(t('socTalkMaterial'))}</label><textarea class="input" id="socMaterial" rows="4">${esc(LS.get('echo-soc-material', ''))}</textarea></div>` : ''}
@@ -1440,16 +1597,25 @@ function viewSocratic() {
   }
   const visible = d.messages.filter(m => !m.hidden);
   const answers = visible.filter(m => m.role === 'user').length;
-  return head + `${d.topic ? `<div class="row spread"><span class="chip" aria-pressed="true" style="white-space:normal">${esc(d.topic)}</span><span class="small muted mono">${Math.max(1, Math.round((Date.now() - d.createdAt) / 60000))} min</span></div>` : ''}
-  <div class="chat">${visible.map(m => m.role === 'assistant' ? `<div class="bubble a md">${md(m.content)}</div>` : `<div class="bubble u">${esc(m.content)}</div>`).join('')}
-    ${S.socBusy ? `<div class="status"><span class="spin"></span>${esc(t('thinking'))}</div>` : ''}</div>
+  const es = d.mode === 'es', ec = es ? esChar(d) : null;
+  const bubble = m => {
+    if (m.role !== 'assistant') return `<div class="bubble u">${esc(m.content)}</div>`;
+    if (!es) return `<div class="bubble a md">${md(m.content)}</div>`;
+    const i = d.messages.indexOf(m), key = d.id + ':' + i;
+    const fix = m.content.split('\n').filter(l => /^\s*✏️/.test(l)).join('\n'), rest = m.content.split('\n').filter(l => !/^\s*✏️/.test(l)).join('\n').trim();
+    return `<div class="esrow"><span class="av" aria-hidden="true">${ec.em}</span><div class="bubble a md">${fix ? `<p class="fix">${esc(fix)}</p>` : ''}${md(rest)}
+      <button class="saybtn" data-act="es-say" data-v="${i}">${esSpeakingId === key ? '⏹ ' + esc(t('esStop')) : '🔊 ' + esc(t('esSay'))}</button></div></div>`;
+  };
+  return head + `${d.topic || es ? `<div class="row spread"><span class="chip" aria-pressed="true" style="white-space:normal">${es ? ec.em + ' ' + esc(ec.name) + (d.topic ? ' · ' : '') : ''}${esc(d.topic || '')}</span><span class="small muted mono">${Math.max(1, Math.round((Date.now() - d.createdAt) / 60000))} min</span></div>` : ''}
+  <div class="chat">${visible.map(bubble).join('')}
+    ${S.socBusy ? `<div class="status"><span class="spin"></span>${esc(es ? t('esThinking', ec.name) : t('thinking'))}</div>` : ''}</div>
   ${d.completed ? `<section class="card"><h3>✓ ${esc(t('socDone'))}</h3>${socSummary(d)}
       ${d.rating ? '' : `<div class="stack" style="gap:8px"><span class="small muted">${esc(t('socRate'))}</span><div class="row wrap">${['easy', 'okay', 'hard'].map(r => `<button class="btn sm" data-act="soc-rate" data-v="${r}">${esc(t(r))}</button>`).join('')}</div></div>`}
       <button class="btn" data-act="soc-close" style="justify-self:start">${esc(t('close'))}</button></section>`
     : `<div class="composer">
-      <textarea class="input" id="socInput" placeholder="${esc(t('socPlaceholder'))}" ${S.socBusy ? 'disabled' : ''}>${esc(S.draft)}</textarea>
+      <textarea class="input" id="socInput" placeholder="${esc(es ? t('esPlaceholder') : t('socPlaceholder'))}" ${S.socBusy ? 'disabled' : ''}>${esc(S.draft)}</textarea>
       <div class="row wrap">
-        ${canDictate() ? `<button class="btn sm ${dictSR ? 'rec' : ''}" data-act="dictate">${icon('mic')} ${esc(dictSR ? t('dictating') : t('dictate'))}</button>` : ''}
+        ${es ? `<button class="btn talk ${esSR ? 'rec' : 'primary'}" data-act="es-talk" ${S.socBusy ? 'disabled' : ''}>${icon('mic')} ${esc(esSR ? t('esListening') : t('esTalk'))}</button>` : canDictate() ? `<button class="btn sm ${dictSR ? 'rec' : ''}" data-act="dictate">${icon('mic')} ${esc(dictSR ? t('dictating') : t('dictate'))}</button>` : ''}
         <button class="btn sm ghost" data-act="soc-hint" ${S.socBusy ? 'disabled' : ''}>${icon('bulb')} ${esc(t('socHint'))}</button>
         <button class="btn sm ghost" data-act="soc-finish" ${S.socBusy || answers < 2 ? 'disabled' : ''} title="${esc(answers < 2 ? t('socMin') : '')}">${icon('check')} ${esc(t('socFinish'))}</button>
         <span class="grow"></span>
@@ -1917,10 +2083,15 @@ document.addEventListener('click', async e => {
     case 'soc-start': socStart(); break;
     case 'soc-mode': S.socMode = v; LS.set('echo-soc-mode', v); render(); break;
     case 'soc-send': socSend(($('#socInput') || {}).value || ''); break;
-    case 'soc-hint': socSend(t('hintMsg')); break;
+    case 'soc-hint': { const d = S.dialogs.find(x => x.id === S.activeDialog); socSend(d && d.mode === 'es' ? t('esHint') : t('hintMsg')); break; }
+    case 'es-char': LS.set('echo-es-char', v); render(); break;
+    case 'es-level': LS.set('echo-es-level', v); render(); break;
+    case 'es-voice': LS.set('echo-es-voice', v); render(); break;
+    case 'es-talk': esTalk(); break;
+    case 'es-say': { const d = S.dialogs.find(x => x.id === S.activeDialog); if (d) esSay(d, +v); break; }
     case 'soc-finish': socFinish(); break;
     case 'soc-rate': { const d = S.dialogs.find(x => x.id === S.activeDialog); if (d) { d.rating = v; await DB.put('dialogs', d); render(); } break; }
-    case 'soc-close': S.activeDialog = null; render(); break;
+    case 'soc-close': esStop(); S.activeDialog = null; render(); break;
     case 'dictate': dictate(); break;
     case 'rday': { const nd = dayKey(addDays(parseDay(S.recapDay || today()), +v)); if (nd <= today()) { S.recapDay = nd; render(); } break; }
     case 'recap-make': makeRecap(S.recapDay || today()); break;
@@ -1930,6 +2101,7 @@ document.addEventListener('click', async e => {
 $('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') closeSheet(); });
 document.addEventListener('change', async e => {
   const el = e.target;
+  if (el.id === 'esAutoSay') { LS.set('echo-es-autosay', el.checked); return; }
   if (el.dataset.act === 'commit') {
     const c = S.commitments.find(x => x.id === el.dataset.id); if (!c) return;
     c.done = el.checked; c.doneAt = el.checked ? Date.now() : null; await DB.put('commitments', c);
