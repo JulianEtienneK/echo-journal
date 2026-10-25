@@ -408,6 +408,8 @@ const I18N = {
     wipeConfirm: 'Alle Memos, Dialoge, Ziele und Rückblicke auf diesem Gerät löschen? Das lässt sich nicht rückgängig machen.',
     imported: n => n + ' Einträge importiert', exported: 'Backup erstellt', importFail: 'Die Datei ist kein Echo-Backup.',
     privacy: 'Alles liegt lokal in diesem Browser. Mach ab und zu ein Backup: Browserdaten löschen heißt Memos löschen.',
+    homeTitle: 'Das ist nicht deine Echo', homeText: 'Diese Kopie speichert getrennt von deiner echten Echo und bekommt keine Updates. Exportiere hier ein Backup und spiel es in deiner Echo ein.', homeGo: 'Zur echten Echo',
+    installTitle: 'Echo als App installieren', installText: 'Eigenes Fenster, immer dieselbe Adresse, Updates kommen von selbst. Deine Einträge bleiben dabei, wo sie sind.', installBtn: 'Installieren', updated: 'Echo wurde aktualisiert',
     autoTitle: 'Automatische Sicherung', autoHelp: 'Echo schreibt nach jeder Änderung in eine Datei auf deinem Gerät, am besten in OneDrive. Sind die Browserdaten weg, holst du damit alles zurück. API-Keys landen nicht in der Datei.',
     autoPick: 'Sicherungsdatei wählen', autoChange: 'Andere Datei', autoOff: 'Ausschalten', autoOn: n => 'Aktiv: ' + n,
     autoLast: s => 'Zuletzt gesichert: ' + s, autoNever: 'Noch nicht gesichert', autoDone: 'Automatische Sicherung eingerichtet',
@@ -513,6 +515,8 @@ const I18N = {
     liveStt: 'Live transcript in the browser (free, less accurate; on Android it may not run alongside recording)',
     autoAI: 'Transcribe and summarize new memos automatically', dataSection: 'Data',
     exportBtn: 'Export backup', importBtn: 'Import backup', used: s => 'Used: ' + s, wipe: 'Delete everything',
+    homeTitle: 'This is not your Echo', homeText: 'This copy stores data separately from your real Echo and gets no updates. Export a backup here and import it in your Echo.', homeGo: 'Go to the real Echo',
+    installTitle: 'Install Echo as an app', installText: 'Its own window, always the same address, updates arrive by themselves. Your entries stay where they are.', installBtn: 'Install', updated: 'Echo was updated',
     autoTitle: 'Automatic backup', autoHelp: 'After every change Echo writes to a file on your device, ideally in OneDrive. If the browser data is ever gone, that file brings everything back. API keys are not included.',
     autoPick: 'Choose backup file', autoChange: 'Other file', autoOff: 'Turn off', autoOn: n => 'Active: ' + n,
     autoLast: s => 'Last backup: ' + s, autoNever: 'Not backed up yet', autoDone: 'Automatic backup set up',
@@ -1925,13 +1929,21 @@ function abSettingsHTML() {
   else body = `${last}<div class="row wrap"><button class="btn primary sm" data-act="ab-pick">${icon('download')} ${esc(t('autoPick'))}</button></div>`;
   return `<div id="abBox" class="card flat"><b>${esc(t('autoTitle'))}</b><p class="small muted">${esc(t('autoHelp'))}</p>${body}</div>`;
 }
+const HOME_URL = 'https://julianetiennek.github.io/echo-journal/';
+const IS_HOME = location.hostname === 'julianetiennek.github.io' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+const IS_STANDALONE = () => !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+let INSTALL_EVT = null;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); INSTALL_EVT = e; if (S.tab === 'today') render(); });
+addEventListener('appinstalled', () => { INSTALL_EVT = null; if (S.tab === 'today') render(); });
 function abBannerHTML() {
   const card = (title, text, btns) => `<section class="card flat" style="border-color:var(--accent, var(--line))"><b>${esc(title)}</b><p class="small muted">${esc(text)}</p><div class="row wrap">${btns}</div></section>`;
+  if (!IS_HOME && !IS_ARTIFACT) return card('⚠️ ' + t('homeTitle'), t('homeText'), `<button class="btn primary sm" data-act="export">${icon('download')} ${esc(t('exportBtn'))}</button><a class="btn sm" href="${HOME_URL}">${esc(t('homeGo'))}</a>`);
   if (journalEmpty() && !LS.get('echo-restore-hide', false)) {
     const btn = FS_OK ? `<button class="btn primary sm" data-act="ab-restore">${icon('upload')} ${esc(t('restoreBtn'))}</button>`
       : `<label class="btn primary sm" style="cursor:pointer">${icon('upload')} ${esc(t('restoreBtn'))}<input type="file" id="importFile" accept="application/json,.json" hidden></label>`;
     return card(t('restoreTitle'), t('restoreText'), btn + `<button class="btn ghost sm" data-act="ab-hide">${esc(t('restoreHide'))}</button>`);
   }
+  if (INSTALL_EVT && !IS_STANDALONE() && Date.now() >= LS.get('echo-install-snooze', 0)) return card('📲 ' + t('installTitle'), t('installText'), `<button class="btn primary sm" data-act="install">${esc(t('installBtn'))}</button><button class="btn ghost sm" data-act="install-later">${esc(t('later'))}</button>`);
   if (AB.state === 'paused') return card(t('autoPaused'), t('autoPausedHint'), `<button class="btn primary sm" data-act="ab-resume">${esc(t('autoResume'))}</button>`);
   if (journalEmpty() || Date.now() < LS.get('echo-ab-snooze', 0)) return '';
   if (AB.state === 'off') return card(t('autoSetupTitle'), t('autoSetupText'), `<button class="btn primary sm" data-act="ab-pick">${icon('download')} ${esc(t('autoPick'))}</button><button class="btn ghost sm" data-act="ab-snooze">${esc(t('later'))}</button>`);
@@ -2054,6 +2066,8 @@ document.addEventListener('click', async e => {
     case 'set-seg': S.set[b.dataset.k] = v; saveSettings(); applyTheme(); openSettings(); render(); renderPlayer(); break;
     case 'export': await exportBackup(); render(); break;
     case 'ab-pick': abPick(); break;
+    case 'install': if (INSTALL_EVT) { INSTALL_EVT.prompt(); try { await INSTALL_EVT.userChoice; } catch { /* dismissed */ } INSTALL_EVT = null; render(); } break;
+    case 'install-later': LS.set('echo-install-snooze', Date.now() + 7 * 864e5); render(); break;
     case 'ab-resume': abResume(); break;
     case 'ab-off': abOff(); break;
     case 'ab-restore': abRestore(); break;
@@ -2186,7 +2200,22 @@ if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListen
   if (!journalEmpty()) LS.set('echo-restore-hide', false);
   render(); celebrate();
   if (IS_ARTIFACT) window.claude.use('sample').then(fn => { SAMPLE = fn; render(); }).catch(() => {});
-  if (!IS_ARTIFACT && 'serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch { /* optional */ }
+  if (LS.get('echo-just-updated', false)) { LS.set('echo-just-updated', false); toast(t('updated'), 'ok'); }
+  if (!IS_ARTIFACT && 'serviceWorker' in navigator && window.isSecureContext && location.protocol !== 'file:') {
+    // Updates install themselves: check on start and whenever Echo comes back to the foreground; when a new version
+    // takes over, reload at the next quiet moment (never mid-recording or while Claude is answering).
+    const hadController = !!navigator.serviceWorker.controller;
+    let pending = false;
+    const quiet = () => !R.rec && !S.socBusy && !esSR && !dictSR && $('#sheet').hidden && !(document.activeElement && /TEXTAREA|INPUT/.test(document.activeElement.tagName) && document.activeElement.value);
+    const tryReload = () => { if (pending && quiet()) { pending = false; LS.set('echo-just-updated', true); location.reload(); } };
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (!hadController) return; pending = true; tryReload(); });
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { reg.update().catch(() => {}); tryReload(); } });
+      setInterval(() => { reg.update().catch(() => {}); tryReload(); }, 30 * 60 * 1000);
+    }).catch(() => {});
+    setInterval(tryReload, 20000);
+  }
 })();
 </script>
 </body>
