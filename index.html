@@ -594,7 +594,7 @@ const PROMPTS = {
 /* ---------- state ---------- */
 const DEFAULTS = {
   lang: (navigator.language || 'de').toLowerCase().startsWith('de') ? 'de' : 'en', theme: 'system', name: '',
-  anthropicKey: '', model: 'claude-sonnet-5-5', fastModel: 'claude-haiku-5-5',
+  anthropicKey: '', model: 'claude-haiku-5-5', fastModel: 'claude-haiku-5-5',
   openaiKey: '', sttModel: 'gpt-4o-mini-transcribe', liveStt: false, autoAI: true, speed: 1.5,
 };
 const S = {
@@ -784,7 +784,11 @@ async function askClaude({ system, messages, maxTokens = 800, model, quick = fal
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': S.set.anthropicKey.trim(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-    body: JSON.stringify({ model: model || S.set.model, max_tokens: maxTokens, system, messages }),
+    // Prompt caching: the instructions and the conversation so far are resent every turn. Marking them lets Anthropic
+    // reuse them at a fraction of the price (applies once the prompt passes the model's minimum cacheable length).
+    body: JSON.stringify({ model: model || S.set.model, max_tokens: maxTokens,
+      system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
+      messages: messages.map((m, i) => i === messages.length - 1 && typeof m.content === 'string' ? { role: m.role, content: [{ type: 'text', text: m.content, cache_control: { type: 'ephemeral' } }] } : m) }),
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error((j.error && j.error.message) || ('HTTP ' + r.status));
@@ -2162,6 +2166,8 @@ if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListen
   catch (e) { $('#app').innerHTML = `<div class="card"><h2>IndexedDB</h2><p>${esc(String(e && e.message || e))}</p></div>`; return; }
   // Free browser speech recognition fills in the transcript while recording. Turned on once by default on desktop;
   // on phones it can fight the recorder for the microphone, so it stays opt-in there.
+  // Oct 2026: Haiku for everything (cost). Older installs saved Sonnet into their settings; switch them once.
+  if (!LS.get('echo-mig-haiku', false)) { if (/sonnet/i.test(S.set.model || '')) { S.set.model = 'claude-haiku-5-5'; saveSettings(); } LS.set('echo-mig-haiku', true); }
   if (!LS.get('echo-mig-livestt', false)) {
     if (!IS_ARTIFACT && (window.SpeechRecognition || window.webkitSpeechRecognition) && !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { S.set.liveStt = true; saveSettings(); }
     LS.set('echo-mig-livestt', true);
