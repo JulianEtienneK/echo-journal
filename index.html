@@ -360,7 +360,7 @@ const I18N = {
     commitHint: 'Kommen automatisch aus deinen Memos, wenn du sagst, was du vorhast.',
     goalsTitle: 'Wochenziele', goalsEmpty: 'Noch keine Ziele für diese Woche.', goalsEdit: 'Bearbeiten', goalsAdd: 'Ziele eintragen',
     goalsHelp: 'Von groß nach klein, ein Ziel pro Zeile. "! Titel" = Hauptziel, "+ Titel" = wichtig, darunter "- Schritt" = Teilschritt, "> Text" = Notiz, "[Text]" am Ende = Abzeichen, "3x Titel" = Zähler, "täglich" oder "/ Tag" im Titel = Kästchen Mo bis So. Eine Wochenseite (HTML) aus dem Growth-Chat kannst du auch einfügen oder importieren.',
-    tabGoals: 'Ziele', goalsToday: 'Heute dran', thisWeek: 'Diese Woche', goalsPct: (p, d, n) => p + ' % erledigt (' + d + '/' + n + ')',
+    tabGoals: 'Ziele', goalsToday: 'Heute dran', thisWeek: 'Diese Woche', nextWeek: 'Nächste Woche', goalsPct: (p, d, n) => p + ' % erledigt (' + d + '/' + n + ')',
     goalsImport: 'Wochenseite importieren', goalsImported: (n, w) => n + ' Ziele übernommen · ' + w, goalsFooter: 'Jeder erledigte Tag ist ein Schritt Richtung der großen Ziele.',
     goalDoneLabel: 'Erledigt', goalReached: n => 'Ziel erreicht: ' + n, goalsImportFail: 'In der Datei wurden keine Ziele gefunden.',
     socModeEs: 'Español', esIntro: 'Sprich Spanisch mit einer sehr seltsamen Figur. Sie bleibt in ihrer Rolle, korrigiert kurz und spricht ihre Antworten laut.', esChar: 'Wer soll heute mit dir reden?', esLevel: 'Niveau', esVoice: 'Stimme', esVoiceBrowser: 'Browser (kostenlos)', esVoiceAI: 'OpenAI (lebendiger)',
@@ -470,7 +470,7 @@ const I18N = {
     commitHint: 'Picked up from your memos automatically when you say what you plan to do.',
     goalsTitle: 'Weekly goals', goalsEmpty: 'No goals for this week yet.', goalsEdit: 'Edit', goalsAdd: 'Add goals',
     goalsHelp: 'Big to small, one goal per line. "! Title" = main goal, "+ Title" = important, "- step" below = sub-step, "> text" = note, "[text]" at the end = badge, "3x Title" = counter, "daily" or "/ day" in the title = boxes Mon to Sun. You can also paste or import a weekly page (HTML) from the Growth chat.',
-    tabGoals: 'Goals', goalsToday: 'Up today', thisWeek: 'This week', goalsPct: (p, d, n) => p + ' % done (' + d + '/' + n + ')',
+    tabGoals: 'Goals', goalsToday: 'Up today', thisWeek: 'This week', nextWeek: 'Next week', goalsPct: (p, d, n) => p + ' % done (' + d + '/' + n + ')',
     goalsImport: 'Import weekly page', goalsImported: (n, w) => n + ' goals imported · ' + w, goalsFooter: 'Every day done is a step toward the big goals.',
     goalDoneLabel: 'Done', goalReached: n => 'Goal reached: ' + n, goalsImportFail: 'No goals found in this file.',
     socModeEs: 'Español', esIntro: 'Speak Spanish with a very strange character. It stays in role, corrects you briefly and speaks its replies out loud.', esChar: 'Who should talk to you today?', esLevel: 'Level', esVoice: 'Voice', esVoiceBrowser: 'Browser (free)', esVoiceAI: 'OpenAI (more lively)',
@@ -1188,8 +1188,8 @@ function viewGoals() {
     <button class="icon-btn" data-act="settings" aria-label="${esc(t('settings'))}">${icon('settings')}</button></header>
   <div class="row spread">
     <button class="icon-btn" data-act="gweek" data-v="-1" aria-label="prev">${icon('left')}</button>
-    <span class="small muted">${esc(ws === cur ? t('thisWeek') : fmtDate(ws, { day: 'numeric', month: 'short' }))}</span>
-    <button class="icon-btn" data-act="gweek" data-v="1" aria-label="next" ${ws >= cur ? 'disabled' : ''}>${icon('right')}</button>
+    <span class="small muted">${esc(ws === cur ? t('thisWeek') : ws > cur ? t('nextWeek') : fmtDate(ws, { day: 'numeric', month: 'short' }))}</span>
+    <button class="icon-btn" data-act="gweek" data-v="1" aria-label="next" ${ws > cur ? 'disabled' : ''}>${icon('right')}</button>
   </div>
   ${wp.items.length ? `<section class="stack" style="gap:6px"><div class="bar big"><i style="width:${wp.pct}%"></i></div>
       <span class="small muted mono">${esc(t('goalsPct', wp.pct, wp.done, wp.total))}</span></section>
@@ -2011,7 +2011,7 @@ document.addEventListener('click', async e => {
   switch (act) {
     case 'tab': { const tv = LS.get('echo-tabs', []); if (!tv.includes(v)) { LS.set('echo-tabs', [...tv, v]); setTimeout(celebrate, 400); } }
       S.tab = v; if (v === 'recap' && !S.recapDay) S.recapDay = today(); if (v === 'goals') S.goalWeek = null; render(); scrollTo(0, 0); break;
-    case 'gweek': { const nw = dayKey(addDays(parseDay(S.goalWeek || weekStart()), 7 * +v)); if (nw <= weekStart()) { S.goalWeek = nw; render(); } break; }
+    case 'gweek': { const nw = dayKey(addDays(parseDay(S.goalWeek || weekStart()), 7 * +v)); if (nw <= dayKey(addDays(parseDay(weekStart()), 7))) { S.goalWeek = nw; render(); } break; }  // one week ahead for planning
     case 'gday': updateGoal(b.dataset.w, id, it => { it.days[+v] = !it.days[+v]; }); break;
     case 'tab-socratic': S.tab = 'socratic'; render(); scrollTo(0, 0); break;
     case 'tab-recap': S.tab = 'recap'; S.recapDay = today(); render(); scrollTo(0, 0); break;
