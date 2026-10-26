@@ -424,11 +424,12 @@ const I18N = {
     wipeConfirm: 'Alle Memos, Dialoge, Ziele und Rückblicke auf diesem Gerät löschen? Das lässt sich nicht rückgängig machen.',
     imported: n => n + ' Einträge importiert', exported: 'Backup erstellt', importFail: 'Die Datei ist kein Echo-Backup.',
     privacy: 'Alles liegt lokal in diesem Browser. Mach ab und zu ein Backup: Browserdaten löschen heißt Memos löschen.',
-    q_bonus: 'Bonus · freiwillig', q_es: 'Español mit deinem Sparringspartner', q_xw: d => 'Kreuzworträtsel · ' + d,
+    q_bonus: 'Bonus · freiwillig', q_es: 'Español mit deinem Sparringspartner', q_xw: 'Ein Kreuzworträtsel lösen',
     xwErn: 'Ernährungsmedizin', xwAw: 'Allgemeinwissen', xwBack: 'Zurück', xwLevel: n => 'Stufe ' + n, xwAcross: 'Waagerecht', xwDown: 'Senkrecht',
     xwHelp: 'Umlaute als AE, OE, UE, ß als SS. Feld antippen, nochmal tippen wechselt die Richtung.', xwCheck: 'Prüfen', xwReveal: 'Lösung zeigen', xwRevealIn: s => 'Lösung in ' + s,
     xwSolved: 'Gelöst · +15 XP', xwRevealed: 'Mit Lösung beendet · +5 XP', xwWrong: n => n + ' Buchstaben stimmen noch nicht', xwAllOk: 'Bisher alles richtig',
-    xwArchive: 'Frühere Rätsel', xwToday: 'Heute', xwNone: 'Noch nichts eingetragen',
+    xwHub: 'Kreuzworträtsel', xwHubSub: n => n + ' Rätsel im Pool · lös so viele du magst', xwAll: 'Alle', xwStarted: 'Angefangen', xwOpenL: 'Neu', xwRepeat: 'Wiederholen', xwEmpty: 'Hier ist gerade nichts.',
+    xwAgain: 'Nochmal lösen', xwTimes: n => n + '× gelöst', xwRepeatXP: 'Wiederholung · +5 XP', xwAllDone: 'Alle Rätsel geschafft. Unter „Wiederholen“ kannst du sie nochmal lösen.',
     homeTitle: 'Das ist nicht deine Echo', homeText: 'Diese Kopie speichert getrennt von deiner echten Echo und bekommt keine Updates. Exportiere hier ein Backup und spiel es in deiner Echo ein.', homeGo: 'Zur echten Echo',
     installTitle: 'Echo als App installieren', installText: 'Eigenes Fenster, immer dieselbe Adresse, Updates kommen von selbst. Deine Einträge bleiben dabei, wo sie sind.', installBtn: 'Installieren', updated: 'Echo wurde aktualisiert',
     autoTitle: 'Automatische Sicherung', autoHelp: 'Echo schreibt nach jeder Änderung in eine Datei auf deinem Gerät, am besten in OneDrive. Sind die Browserdaten weg, holst du damit alles zurück. API-Keys landen nicht in der Datei.',
@@ -536,11 +537,12 @@ const I18N = {
     liveStt: 'Live transcript in the browser (free, less accurate; on Android it may not run alongside recording)',
     autoAI: 'Transcribe and summarize new memos automatically', dataSection: 'Data',
     exportBtn: 'Export backup', importBtn: 'Import backup', used: s => 'Used: ' + s, wipe: 'Delete everything',
-    q_bonus: 'Bonus · optional', q_es: 'Español with your sparring partner', q_xw: d => 'Crossword · ' + d,
+    q_bonus: 'Bonus · optional', q_es: 'Español with your sparring partner', q_xw: 'Solve a crossword',
     xwErn: 'Nutritional medicine', xwAw: 'General knowledge', xwBack: 'Back', xwLevel: n => 'Level ' + n, xwAcross: 'Across', xwDown: 'Down',
     xwHelp: 'Umlauts as AE, OE, UE, ß as SS. Tap a square, tap again to switch direction.', xwCheck: 'Check', xwReveal: 'Show solution', xwRevealIn: s => 'Solution in ' + s,
     xwSolved: 'Solved · +15 XP', xwRevealed: 'Finished with solution · +5 XP', xwWrong: n => n + ' letters are not right yet', xwAllOk: 'All correct so far',
-    xwArchive: 'Earlier puzzles', xwToday: 'Today', xwNone: 'Nothing filled in yet',
+    xwHub: 'Crosswords', xwHubSub: n => n + ' puzzles in the pool · solve as many as you like', xwAll: 'All', xwStarted: 'In progress', xwOpenL: 'New', xwRepeat: 'Repeat', xwEmpty: 'Nothing here right now.',
+    xwAgain: 'Solve again', xwTimes: n => 'solved ' + n + '×', xwRepeatXP: 'Repeat · +5 XP', xwAllDone: 'All puzzles done. Under “Repeat” you can solve them again.',
     homeTitle: 'This is not your Echo', homeText: 'This copy stores data separately from your real Echo and gets no updates. Export a backup here and import it in your Echo.', homeGo: 'Go to the real Echo',
     installTitle: 'Install Echo as an app', installText: 'Its own window, always the same address, updates arrive by themselves. Your entries stay where they are.', installBtn: 'Install', updated: 'Echo was updated',
     autoTitle: 'Automatic backup', autoHelp: 'After every change Echo writes to a file on your device, ideally in OneDrive. If the browser data is ever gone, that file brings everything back. API keys are not included.',
@@ -699,8 +701,9 @@ function computeStats() {
   xp += socDone.length * 20;
   const esDone = S.dialogs.filter(d => d.completed && d.mode === 'es');
   xp += esDone.length * 15;
-  const xwAll = Object.values(S.xw);
-  xp += xwAll.filter(x => x.solvedAt).length * 15 + xwAll.filter(x => x.revealedAt && !x.solvedAt).length * 5;
+  // Crosswords: first completion +15 (+5 with solution), each repeat solved on your own +5.
+  const xwDoneDays = new Set();
+  for (const x of Object.values(S.xw)) xwCompletions(x).forEach((c, i) => { xp += i === 0 ? (c.rev ? 5 : 15) : (c.rev ? 0 : 5); xwDoneDays.add(dayKey(new Date(c.at))); });
   const recapDays = Object.values(S.recaps).filter(r => !r.day.includes(':') && isRecapDone(r)).map(r => r.day);
   xp += recapDays.length * 10;
   const commitDone = S.commitments.filter(c => c.done).length;
@@ -720,9 +723,8 @@ function computeStats() {
   const best = Math.max(st.count, LS.get('echo-best', 0));
   if (best > LS.get('echo-best', 0)) LS.set('echo-best', best);
   const level = levelFrom(xp);
-  const xwT = xwToday(), xwRec = xwT && S.xw[xwT.id];
   const quests = { memo: dayMin.has(td), socratic: socDays.has(td), recap: recapSet.has(td), echo: (pl[td] || []).length > 0,
-    es: esDone.some(d => d.day === td), xw: !!(xwRec && (xwRec.solvedAt || xwRec.revealedAt)) };
+    es: esDone.some(d => d.day === td), xw: xwDoneDays.has(td) };
   // Extra counters for badges.
   const perDay = new Map(), imps = new Set(); let longest = 0, night = 0, early = 0, pi = 0, mirror = 0, holiday = 0;
   for (const m of S.memos) {
@@ -1308,7 +1310,7 @@ function viewToday() {
     <span class="eyebrow" style="margin-top:4px">${esc(t('q_bonus'))}</span>
     <div class="stack" style="gap:2px">
       ${quest('es', '🗣️ ' + t('q_es'), 15, 'quest-es')}
-      ${xwToday() ? quest('xw', '🧩 ' + t('q_xw', xwCatName(xwToday())), 15, 'xw-open') : ''}
+      ${XW.puzzles.length ? quest('xw', '🧩 ' + t('q_xw'), 15, 'xw-hub') : ''}
     </div>
   </section>
   ${commits.length ? `<section class="card">
@@ -1411,9 +1413,8 @@ function md(text) {
 
 /* Crossword: one puzzle a day from puzzles.js, alternating Ernmed / Allgemeinwissen and German / English. */
 const XW = window.ECHO_XW || { start: today(), puzzles: [] };
-const xwDayIndex = (day = today()) => Math.round((parseDay(day) - parseDay(XW.start)) / 864e5);
-const xwPuzzleFor = (day = today()) => { const n = XW.puzzles.length, i = xwDayIndex(day); return n && i >= 0 ? XW.puzzles[i % n] : null; };
-const xwToday = () => xwPuzzleFor();
+const xwCompletions = x => (x.history || []).concat(x.solvedAt || x.revealedAt ? [{ at: x.solvedAt || x.revealedAt, rev: !x.solvedAt }] : []);
+const xwStatus = pz => { const x = S.xw[pz.id]; if (!x) return 'new'; if (x.solvedAt || x.revealedAt) return 'done'; if (Object.keys(x.cells || {}).length) return 'started'; return xwCompletions(x).length ? 'done' : 'new'; };
 const xwCatName = pz => (pz.cat === 'ern' ? t('xwErn') : t('xwAw')) + ' · ' + (pz.lang === 'de' ? 'DE' : 'EN');
 const xwFind = id => XW.puzzles.find(p => p.id === id);
 const XS = { dir: 'a', r: -1, c: -1, timer: 0, saveT: 0, wrong: false };
@@ -1435,7 +1436,7 @@ function xwRecord(pz) {
   return x;
 }
 function xwOpen(id) {
-  const pz = xwFind(id) || xwToday(); if (!pz) return;
+  const pz = xwFind(id); if (!pz) return;
   S.xwId = pz.id; S.tab = 'xw'; xwRecord(pz);
   // No auto-focus: the first tap picks the cell (and opens the phone keyboard); across is preferred where possible.
   XS.dir = 'a'; XS.r = -1; XS.c = -1; XS.wrong = false;
@@ -1446,8 +1447,8 @@ function xwEntryAt(pz, r, c, dir) {
 }
 function xwRevealLeft(x) { return Math.max(0, 120 - Math.floor((Date.now() - x.openedAt) / 1000)); }
 function viewXw() {
-  const pz = xwFind(S.xwId) || xwToday();
-  if (!pz) { S.tab = 'today'; return viewToday(); }
+  const pz = xwFind(S.xwId);
+  if (!pz) return viewXwHub();
   const x = xwRecord(pz), cells = xwCells(pz), done = x.solvedAt || x.revealedAt, left = xwRevealLeft(x);
   const grid = [];
   for (let r = 0; r < pz.h; r++) for (let c = 0; c < pz.w; c++) {
@@ -1457,19 +1458,36 @@ function viewXw() {
     grid.push(`<div class="xwcell">${cell.n ? `<span class="num">${cell.n}</span>` : ''}<input data-xw="${k}" data-r="${r}" data-c="${c}" value="${esc(v)}" maxlength="2" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text" class="${cls}" aria-label="${r + 1}/${c + 1}" ${done ? 'readonly' : ''}></div>`);
   }
   const list = d => pz.entries.map((e, i) => e.d !== d ? '' : `<button data-act="xw-clue" data-v="${i}" class="${xwEntryDone(pz, x, e) ? 'solved' : ''}"><b>${e.n}</b> ${esc(e.q)} <span class="muted mono small">(${e.a.length})</span></button>`).join('');
-  const past = XW.puzzles.map((p, i) => ({ p, day: dayKey(addDays(parseDay(XW.start), i)) })).filter(o => o.day <= today() && o.p.id !== pz.id).reverse();
-  const status = x.solvedAt ? t('xwSolved') : x.revealedAt ? t('xwRevealed') : '';
+  const reps = (x.history || []).length, times = xwCompletions(x).length;
+  const status = x.solvedAt ? (reps ? t('xwRepeatXP') : t('xwSolved')) : x.revealedAt ? t('xwRevealed') : '';
   return `<header class="top"><div class="stack" style="gap:4px"><span class="eyebrow">🧩 ${esc(xwCatName(pz))} · ${esc(t('xwLevel', pz.level))}</span><h1>${esc(pz.title)}</h1></div>
     <button class="btn ghost sm" data-act="xw-back">${icon('left')} ${esc(t('xwBack'))}</button></header>
-  ${status ? `<section class="card flat"><b>✓ ${esc(status)}</b></section>` : `<p class="small muted">${esc(t('xwHelp'))}</p>`}
+  ${status ? `<section class="card flat"><div class="row spread wrap"><b>✓ ${esc(status)}</b><span class="small muted mono">${esc(t('xwTimes', times))}</span></div><button class="btn sm" data-act="xw-again" style="justify-self:start">${icon('shuffle')} ${esc(t('xwAgain'))}</button></section>` : `<p class="small muted">${esc(t('xwHelp'))}${reps ? ' · ' + esc(t('xwTimes', reps)) : ''}</p>`}
   <div class="xwclue" id="xwClue"></div>
   <div class="xwgrid" style="grid-template-columns:repeat(${pz.w},1fr);max-width:${pz.w * 38}px">${grid.join('')}</div>
   ${done ? '' : `<div class="row wrap"><button class="btn sm" data-act="xw-check">${icon('check')} ${esc(t('xwCheck'))}</button>
     <button class="btn sm ${left ? 'ghost' : ''}" data-act="xw-reveal" id="xwReveal" ${left ? 'disabled' : ''}>${esc(left ? t('xwRevealIn', fmtDur(left)) : t('xwReveal'))}</button>
     <span class="small muted" id="xwMsg"></span></div>`}
   <div class="xwcols"><div class="stack" style="gap:6px"><h3>${esc(t('xwAcross'))}</h3><div class="xwlist">${list('a')}</div></div>
-    <div class="stack" style="gap:6px"><h3>${esc(t('xwDown'))}</h3><div class="xwlist">${list('d')}</div></div></div>
-  ${past.length ? `<h3 style="margin-top:6px">${esc(t('xwArchive'))}</h3><div class="stack" style="gap:6px">${past.slice(0, 40).map(o => { const r = S.xw[o.p.id]; return `<button class="card flat" data-act="xw-open" data-v="${o.p.id}" style="text-align:left;cursor:pointer"><div class="row spread"><b>${esc(o.p.title)}</b><span class="small muted mono">${esc(fmtDate(o.day, { day: 'numeric', month: 'short' }))}</span></div><span class="small muted">${esc(xwCatName(o.p))} · ${r && r.solvedAt ? '✓' : r && r.revealedAt ? '👁' : r ? '…' : esc(t('xwNone'))}</span></button>`; }).join('')}</div>` : ''}`;
+    <div class="stack" style="gap:6px"><h3>${esc(t('xwDown'))}</h3><div class="xwlist">${list('d')}</div></div></div>`;
+}
+function viewXwHub() {
+  const f = LS.get('echo-xw-cat', 'all'), lg = LS.get('echo-xw-lang', 'all'), sec = LS.get('echo-xw-sec', 'new');
+  const pool = XW.puzzles.filter(p => (f === 'all' || p.cat === f) && (lg === 'all' || p.lang === lg));
+  const by = st => pool.filter(p => xwStatus(p) === st);
+  const groups = { started: by('started'), new: by('new'), done: by('done') };
+  const cur = groups[sec] || groups.new;
+  const seg = (key, val, opts) => `<div class="seg">${opts.map(([v, l]) => `<button data-act="xw-filter" data-k="${key}" data-v="${v}" aria-pressed="${val === v}">${esc(l)}</button>`).join('')}</div>`;
+  const card = p => { const x = S.xw[p.id], n = x ? xwCompletions(x).length : 0;
+    return `<button class="card flat" data-act="xw-open" data-v="${p.id}" style="text-align:left;cursor:pointer"><div class="row spread"><b>${p.cat === 'ern' ? '🥗' : '🌍'} ${esc(p.title)}</b><span class="small muted mono">${esc(t('xwLevel', p.level))}</span></div>
+      <span class="small muted">${esc(xwCatName(p))}${n ? ' · ✓ ' + esc(t('xwTimes', n)) : ''}${xwStatus(p) === 'started' ? ' · ' + Object.keys(x.cells).length + '/' + Object.keys(xwCells(p)).length : ''}</span></button>`; };
+  const allDone = !groups.new.length && !groups.started.length && XW.puzzles.every(p => xwStatus(p) === 'done');
+  return `<header class="top"><div class="stack" style="gap:4px"><span class="eyebrow">🧩 ${esc(t('xwHubSub', XW.puzzles.length))}</span><h1>${esc(t('xwHub'))}</h1></div>
+    <button class="btn ghost sm" data-act="xw-back">${icon('left')} ${esc(t('xwBack'))}</button></header>
+  <div class="row wrap">${seg('cat', f, [['all', t('xwAll')], ['ern', t('xwErn')], ['aw', t('xwAw')]])}${seg('lang', lg, [['all', t('xwAll')], ['de', 'DE'], ['en', 'EN']])}</div>
+  ${seg('sec', sec, [['new', t('xwOpenL') + ' · ' + groups.new.length], ['started', t('xwStarted') + ' · ' + groups.started.length], ['done', t('xwRepeat') + ' · ' + groups.done.length]])}
+  ${allDone ? `<p class="small muted">${esc(t('xwAllDone'))}</p>` : ''}
+  <div class="stack" style="gap:8px">${cur.length ? cur.map(card).join('') : `<p class="muted">${esc(t('xwEmpty'))}</p>`}</div>`;
 }
 const xwEntryDone = (pz, x, e) => [...e.a].every((ch, i) => x.cells[(e.r + (e.d === 'd' ? i : 0)) + '_' + (e.c + (e.d === 'a' ? i : 0))] === ch);
 function xwPaint() {
@@ -2189,7 +2207,14 @@ document.addEventListener('click', async e => {
     case 'tab-socratic': S.tab = 'socratic'; render(); scrollTo(0, 0); break;
     case 'quest-es': S.tab = 'socratic'; S.socMode = 'es'; LS.set('echo-soc-mode', 'es'); render(); scrollTo(0, 0); break;
     case 'xw-open': xwOpen(v); break;
-    case 'xw-back': S.tab = 'today'; render(); scrollTo(0, 0); break;
+    case 'xw-back': if (S.tab === 'xw' && S.xwId) { S.xwId = null; } else S.tab = 'today'; render(); scrollTo(0, 0); break;
+    case 'xw-hub': S.tab = 'xw'; S.xwId = null; { const st = XW.puzzles.some(p => xwStatus(p) === 'started'); if (st && LS.get('echo-xw-sec', 'new') === 'new' && !XW.puzzles.some(p => xwStatus(p) === 'new')) LS.set('echo-xw-sec', 'started'); } render(); scrollTo(0, 0); break;
+    case 'xw-filter': LS.set('echo-xw-' + b.dataset.k, v); render(); break;
+    case 'xw-again': {
+      const pz = xwFind(S.xwId), x = pz && S.xw[pz.id]; if (!x) break;
+      x.history = xwCompletions(x); x.cells = {}; x.revealed = {}; delete x.solvedAt; delete x.revealedAt; x.openedAt = Date.now();
+      await DB.put('xw', x); XS.r = -1; XS.c = -1; XS.dir = 'a'; render(); scrollTo(0, 0); break;
+    }
     case 'xw-clue': { const pz = xwFind(S.xwId), e = pz && pz.entries[+v]; if (e) { XS.dir = e.d; xwFocus(e.r, e.c); } break; }
     case 'xw-check': {
       const pz = xwFind(S.xwId), x = pz && S.xw[pz.id]; if (!x) break;
