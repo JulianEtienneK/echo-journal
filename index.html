@@ -187,6 +187,21 @@ i[data-l="0"] { background: var(--surface-2); }
 
 /* Socratic */
 .chat { display: grid; gap: 10px; }
+.xwgrid { display: grid; gap: 2px; margin: 0 auto; width: 100%; touch-action: manipulation; }
+.xwcell { position: relative; aspect-ratio: 1; }
+.xwcell input { position: absolute; inset: 0; width: 100%; height: 100%; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); color: var(--ink); text-align: center; text-transform: uppercase; font: 700 clamp(12px, 3.6vw, 19px)/1 var(--f-mono, monospace); padding: 10% 0 0; caret-color: transparent; outline: none; }
+.xwcell input.inword { background: var(--calm-soft); }
+.xwcell input:focus { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink) inset; }
+.xwcell input.wrong { color: #c0392b; background: #fbe3df; }
+.xwcell input.rev { color: var(--muted, #888); }
+.xwcell input.ok { border-color: var(--calm); }
+.xwcell .num { position: absolute; top: 1px; left: 3px; font-size: 8.5px; line-height: 1; color: var(--muted, #888); pointer-events: none; z-index: 1; }
+.xwclue { position: sticky; top: 0; z-index: 3; background: var(--bg); padding: 8px 0; font-weight: 600; min-height: 2.6em; }
+.xwlist { display: grid; gap: 4px; }
+.xwlist button { text-align: left; border: 0; background: none; padding: 4px 6px; border-radius: 8px; color: inherit; font: inherit; font-size: 14.5px; cursor: pointer; }
+.xwlist button.on { background: var(--calm-soft); }
+.xwlist button.solved { color: var(--muted, #888); text-decoration: line-through; text-decoration-color: var(--line); }
+.xwcols { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 .chars { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
 .charbtn { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 12px; display: grid; gap: 4px; color: inherit; font: inherit; cursor: pointer; transition: transform .12s; }
 .charbtn:hover { transform: translateY(-1px); }
@@ -287,6 +302,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
 <div id="sheet" hidden></div>
 <div id="toasts"></div>
 
+<script src="puzzles.js"></script>
 <script>window.ECHO_SEED = {"goals": [{"week": "2026-10-26", "text": "! 🎤 JournalClub: großartiger Vortrag am Donnerstag [Hauptziel]\n- Mo · 4 Durchläufe\n- Di · 3 Durchläufe\n- Mi · 2 Durchläufe\n- Do · 1 Durchlauf, dann rocken\n> 10 Durchläufe bis Donnerstag. Jeder macht den nächsten leichter.\n+ 🦉 Sokratisches Teaching · mind. 45 min\n- Mo\n- Di\n- Mi\n- Do\n> Diskussion simulieren, bis keine Frage mehr überrascht.\n+ 🔬 Scoping Review\n- Datenextraktion fertig (Mo)\n- Gender-Papers: Aufgabe 1\n- Gender-Papers: Aufgabe 2 (Bonus)\n+ 🥗 NM · täglich\n+ 🧘 Meditation · täglich [Serie halten]\n+ 📵 Gesunde Beziehung zum Handy · täglich\n> Abends ehrlich abhaken: Hatte ich heute das Handy im Griff?\n🏋️ 1 Gym-Session (Mo)\n> Mehr geht wegen der CK-Werte gerade nicht. Eine gute Session zählt.\n🏐 Volleyball am Montag\n🎹 Fr: „Don't Stop Me Now\" (Queen) anfangen [Bonus-Fun]\n🍻 Eine soziale Sache am Wochenende\n🗓️ Monat zusammenfassen\n📈 Anchor: TikTok-Ads Runde 3 starten"}]};</script>
 <script>
 'use strict';
@@ -408,6 +424,11 @@ const I18N = {
     wipeConfirm: 'Alle Memos, Dialoge, Ziele und Rückblicke auf diesem Gerät löschen? Das lässt sich nicht rückgängig machen.',
     imported: n => n + ' Einträge importiert', exported: 'Backup erstellt', importFail: 'Die Datei ist kein Echo-Backup.',
     privacy: 'Alles liegt lokal in diesem Browser. Mach ab und zu ein Backup: Browserdaten löschen heißt Memos löschen.',
+    q_bonus: 'Bonus · freiwillig', q_es: 'Español mit deinem Sparringspartner', q_xw: d => 'Kreuzworträtsel · ' + d,
+    xwErn: 'Ernährungsmedizin', xwAw: 'Allgemeinwissen', xwBack: 'Zurück', xwLevel: n => 'Stufe ' + n, xwAcross: 'Waagerecht', xwDown: 'Senkrecht',
+    xwHelp: 'Umlaute als AE, OE, UE, ß als SS. Feld antippen, nochmal tippen wechselt die Richtung.', xwCheck: 'Prüfen', xwReveal: 'Lösung zeigen', xwRevealIn: s => 'Lösung in ' + s,
+    xwSolved: 'Gelöst · +15 XP', xwRevealed: 'Mit Lösung beendet · +5 XP', xwWrong: n => n + ' Buchstaben stimmen noch nicht', xwAllOk: 'Bisher alles richtig',
+    xwArchive: 'Frühere Rätsel', xwToday: 'Heute', xwNone: 'Noch nichts eingetragen',
     homeTitle: 'Das ist nicht deine Echo', homeText: 'Diese Kopie speichert getrennt von deiner echten Echo und bekommt keine Updates. Exportiere hier ein Backup und spiel es in deiner Echo ein.', homeGo: 'Zur echten Echo',
     installTitle: 'Echo als App installieren', installText: 'Eigenes Fenster, immer dieselbe Adresse, Updates kommen von selbst. Deine Einträge bleiben dabei, wo sie sind.', installBtn: 'Installieren', updated: 'Echo wurde aktualisiert',
     autoTitle: 'Automatische Sicherung', autoHelp: 'Echo schreibt nach jeder Änderung in eine Datei auf deinem Gerät, am besten in OneDrive. Sind die Browserdaten weg, holst du damit alles zurück. API-Keys landen nicht in der Datei.',
@@ -515,6 +536,11 @@ const I18N = {
     liveStt: 'Live transcript in the browser (free, less accurate; on Android it may not run alongside recording)',
     autoAI: 'Transcribe and summarize new memos automatically', dataSection: 'Data',
     exportBtn: 'Export backup', importBtn: 'Import backup', used: s => 'Used: ' + s, wipe: 'Delete everything',
+    q_bonus: 'Bonus · optional', q_es: 'Español with your sparring partner', q_xw: d => 'Crossword · ' + d,
+    xwErn: 'Nutritional medicine', xwAw: 'General knowledge', xwBack: 'Back', xwLevel: n => 'Level ' + n, xwAcross: 'Across', xwDown: 'Down',
+    xwHelp: 'Umlauts as AE, OE, UE, ß as SS. Tap a square, tap again to switch direction.', xwCheck: 'Check', xwReveal: 'Show solution', xwRevealIn: s => 'Solution in ' + s,
+    xwSolved: 'Solved · +15 XP', xwRevealed: 'Finished with solution · +5 XP', xwWrong: n => n + ' letters are not right yet', xwAllOk: 'All correct so far',
+    xwArchive: 'Earlier puzzles', xwToday: 'Today', xwNone: 'Nothing filled in yet',
     homeTitle: 'This is not your Echo', homeText: 'This copy stores data separately from your real Echo and gets no updates. Export a backup here and import it in your Echo.', homeGo: 'Go to the real Echo',
     installTitle: 'Install Echo as an app', installText: 'Its own window, always the same address, updates arrive by themselves. Your entries stay where they are.', installBtn: 'Install', updated: 'Echo was updated',
     autoTitle: 'Automatic backup', autoHelp: 'After every change Echo writes to a file on your device, ideally in OneDrive. If the browser data is ever gone, that file brings everything back. API keys are not included.',
@@ -603,18 +629,18 @@ const DEFAULTS = {
 };
 const S = {
   set: Object.assign({}, DEFAULTS, LS.get('echo-settings', {})),
-  memos: [], dialogs: [], recaps: {}, goals: {}, commitments: [],
+  memos: [], dialogs: [], recaps: {}, goals: {}, commitments: [], xw: {}, xwId: null,
   tab: 'today', socMode: LS.get('echo-soc-mode', 'nutri'), goalWeek: null, editWeek: null, impulse: null, promptShift: 0, recapDay: null, histQuery: '', histImp: 'all', activeDialog: null, draft: '', socBusy: false,
 };
 const saveSettings = () => LS.set('echo-settings', S.set);
 
 /* ---------- IndexedDB ---------- */
-const STORES = { memos: 'id', dialogs: 'id', recaps: 'day', goals: 'week', commitments: 'id' };
+const STORES = { memos: 'id', dialogs: 'id', recaps: 'day', goals: 'week', commitments: 'id', xw: 'id' };
 const DB = {
   db: null,
   open() {
     return new Promise((res, rej) => {
-      const r = indexedDB.open('echo-journal', 1);
+      const r = indexedDB.open('echo-journal', 2);
       r.onupgradeneeded = () => { for (const [s, key] of Object.entries(STORES)) if (!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s, { keyPath: key }); };
       r.onsuccess = () => { this.db = r.result; res(); };
       r.onerror = () => rej(r.error);
@@ -634,6 +660,7 @@ async function loadAll() {
   S.commitments = await DB.all('commitments');
   S.recaps = Object.fromEntries((await DB.all('recaps')).map(r => [r.day, r]));
   S.goals = Object.fromEntries((await DB.all('goals')).map(g => [g.week, g]));
+  S.xw = Object.fromEntries((await DB.all('xw')).map(x => [x.id, x]));
 }
 
 /* ---------- gamification ---------- */
@@ -667,8 +694,13 @@ function computeStats() {
     seconds += m.dur || 0; xp += memoXP(m);
     if (m.day >= ws) weekSec += m.dur || 0;
   }
-  const socDone = S.dialogs.filter(d => d.completed);
+  // Spanish rounds are an optional bonus task of their own, not the daily Socratic round.
+  const socDone = S.dialogs.filter(d => d.completed && d.mode !== 'es');
   xp += socDone.length * 20;
+  const esDone = S.dialogs.filter(d => d.completed && d.mode === 'es');
+  xp += esDone.length * 15;
+  const xwAll = Object.values(S.xw);
+  xp += xwAll.filter(x => x.solvedAt).length * 15 + xwAll.filter(x => x.revealedAt && !x.solvedAt).length * 5;
   const recapDays = Object.values(S.recaps).filter(r => !r.day.includes(':') && isRecapDone(r)).map(r => r.day);
   xp += recapDays.length * 10;
   const commitDone = S.commitments.filter(c => c.done).length;
@@ -688,7 +720,9 @@ function computeStats() {
   const best = Math.max(st.count, LS.get('echo-best', 0));
   if (best > LS.get('echo-best', 0)) LS.set('echo-best', best);
   const level = levelFrom(xp);
-  const quests = { memo: dayMin.has(td), socratic: socDays.has(td), recap: recapSet.has(td), echo: (pl[td] || []).length > 0 };
+  const xwT = xwToday(), xwRec = xwT && S.xw[xwT.id];
+  const quests = { memo: dayMin.has(td), socratic: socDays.has(td), recap: recapSet.has(td), echo: (pl[td] || []).length > 0,
+    es: esDone.some(d => d.day === td), xw: !!(xwRec && (xwRec.solvedAt || xwRec.revealedAt)) };
   // Extra counters for badges.
   const perDay = new Map(), imps = new Set(); let longest = 0, night = 0, early = 0, pi = 0, mirror = 0, holiday = 0;
   for (const m of S.memos) {
@@ -1271,6 +1305,11 @@ function viewToday() {
       ${quest('recap', t('q_recap'), 10, 'tab-recap')}
       ${echo ? quest('echo', t('q_echo'), 2, 'echo') : ''}
     </div>
+    <span class="eyebrow" style="margin-top:4px">${esc(t('q_bonus'))}</span>
+    <div class="stack" style="gap:2px">
+      ${quest('es', '🗣️ ' + t('q_es'), 15, 'quest-es')}
+      ${xwToday() ? quest('xw', '🧩 ' + t('q_xw', xwCatName(xwToday())), 15, 'xw-open') : ''}
+    </div>
   </section>
   ${commits.length ? `<section class="card">
     <div class="row spread"><h3>${esc(t('commitTitle'))}</h3><button class="icon-btn" data-act="commit-new" aria-label="${esc(t('commitAdd'))}">${icon('plus')}</button></div>
@@ -1369,6 +1408,139 @@ function md(text) {
   }
   return html + (inList ? '</ul>' : '');
 }
+
+/* Crossword: one puzzle a day from puzzles.js, alternating Ernmed / Allgemeinwissen and German / English. */
+const XW = window.ECHO_XW || { start: today(), puzzles: [] };
+const xwDayIndex = (day = today()) => Math.round((parseDay(day) - parseDay(XW.start)) / 864e5);
+const xwPuzzleFor = (day = today()) => { const n = XW.puzzles.length, i = xwDayIndex(day); return n && i >= 0 ? XW.puzzles[i % n] : null; };
+const xwToday = () => xwPuzzleFor();
+const xwCatName = pz => (pz.cat === 'ern' ? t('xwErn') : t('xwAw')) + ' · ' + (pz.lang === 'de' ? 'DE' : 'EN');
+const xwFind = id => XW.puzzles.find(p => p.id === id);
+const XS = { dir: 'a', r: -1, c: -1, timer: 0, saveT: 0, wrong: false };
+function xwCells(pz) {
+  // cell map "r_c" -> { ch, n, ents: [entry indexes] }
+  const m = {};
+  pz.entries.forEach((e, ei) => {
+    for (let i = 0; i < e.a.length; i++) {
+      const r = e.r + (e.d === 'd' ? i : 0), c = e.c + (e.d === 'a' ? i : 0), k = r + '_' + c;
+      m[k] = m[k] || { ch: e.a[i], ents: [] }; m[k].ents.push(ei);
+      if (i === 0) m[k].n = e.n;
+    }
+  });
+  return m;
+}
+function xwRecord(pz) {
+  let x = S.xw[pz.id];
+  if (!x) { x = S.xw[pz.id] = { id: pz.id, cells: {}, openedAt: Date.now(), day: today() }; DB.put('xw', x); }
+  return x;
+}
+function xwOpen(id) {
+  const pz = xwFind(id) || xwToday(); if (!pz) return;
+  S.xwId = pz.id; S.tab = 'xw'; xwRecord(pz);
+  // No auto-focus: the first tap picks the cell (and opens the phone keyboard); across is preferred where possible.
+  XS.dir = 'a'; XS.r = -1; XS.c = -1; XS.wrong = false;
+  render(); scrollTo(0, 0);
+}
+function xwEntryAt(pz, r, c, dir) {
+  return pz.entries.find(e => e.d === dir && (dir === 'a' ? e.r === r && c >= e.c && c < e.c + e.a.length : e.c === c && r >= e.r && r < e.r + e.a.length));
+}
+function xwRevealLeft(x) { return Math.max(0, 120 - Math.floor((Date.now() - x.openedAt) / 1000)); }
+function viewXw() {
+  const pz = xwFind(S.xwId) || xwToday();
+  if (!pz) { S.tab = 'today'; return viewToday(); }
+  const x = xwRecord(pz), cells = xwCells(pz), done = x.solvedAt || x.revealedAt, left = xwRevealLeft(x);
+  const grid = [];
+  for (let r = 0; r < pz.h; r++) for (let c = 0; c < pz.w; c++) {
+    const k = r + '_' + c, cell = cells[k];
+    if (!cell) { grid.push('<div></div>'); continue; }
+    const v = x.cells[k] || '', cls = [x.revealedAt && v === cell.ch && x.revealed && x.revealed[k] ? 'rev' : '', done && v === cell.ch ? 'ok' : '', XS.wrong && v && v !== cell.ch ? 'wrong' : ''].filter(Boolean).join(' ');
+    grid.push(`<div class="xwcell">${cell.n ? `<span class="num">${cell.n}</span>` : ''}<input data-xw="${k}" data-r="${r}" data-c="${c}" value="${esc(v)}" maxlength="2" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text" class="${cls}" aria-label="${r + 1}/${c + 1}" ${done ? 'readonly' : ''}></div>`);
+  }
+  const list = d => pz.entries.map((e, i) => e.d !== d ? '' : `<button data-act="xw-clue" data-v="${i}" class="${xwEntryDone(pz, x, e) ? 'solved' : ''}"><b>${e.n}</b> ${esc(e.q)} <span class="muted mono small">(${e.a.length})</span></button>`).join('');
+  const past = XW.puzzles.map((p, i) => ({ p, day: dayKey(addDays(parseDay(XW.start), i)) })).filter(o => o.day <= today() && o.p.id !== pz.id).reverse();
+  const status = x.solvedAt ? t('xwSolved') : x.revealedAt ? t('xwRevealed') : '';
+  return `<header class="top"><div class="stack" style="gap:4px"><span class="eyebrow">🧩 ${esc(xwCatName(pz))} · ${esc(t('xwLevel', pz.level))}</span><h1>${esc(pz.title)}</h1></div>
+    <button class="btn ghost sm" data-act="xw-back">${icon('left')} ${esc(t('xwBack'))}</button></header>
+  ${status ? `<section class="card flat"><b>✓ ${esc(status)}</b></section>` : `<p class="small muted">${esc(t('xwHelp'))}</p>`}
+  <div class="xwclue" id="xwClue"></div>
+  <div class="xwgrid" style="grid-template-columns:repeat(${pz.w},1fr);max-width:${pz.w * 38}px">${grid.join('')}</div>
+  ${done ? '' : `<div class="row wrap"><button class="btn sm" data-act="xw-check">${icon('check')} ${esc(t('xwCheck'))}</button>
+    <button class="btn sm ${left ? 'ghost' : ''}" data-act="xw-reveal" id="xwReveal" ${left ? 'disabled' : ''}>${esc(left ? t('xwRevealIn', fmtDur(left)) : t('xwReveal'))}</button>
+    <span class="small muted" id="xwMsg"></span></div>`}
+  <div class="xwcols"><div class="stack" style="gap:6px"><h3>${esc(t('xwAcross'))}</h3><div class="xwlist">${list('a')}</div></div>
+    <div class="stack" style="gap:6px"><h3>${esc(t('xwDown'))}</h3><div class="xwlist">${list('d')}</div></div></div>
+  ${past.length ? `<h3 style="margin-top:6px">${esc(t('xwArchive'))}</h3><div class="stack" style="gap:6px">${past.slice(0, 40).map(o => { const r = S.xw[o.p.id]; return `<button class="card flat" data-act="xw-open" data-v="${o.p.id}" style="text-align:left;cursor:pointer"><div class="row spread"><b>${esc(o.p.title)}</b><span class="small muted mono">${esc(fmtDate(o.day, { day: 'numeric', month: 'short' }))}</span></div><span class="small muted">${esc(xwCatName(o.p))} · ${r && r.solvedAt ? '✓' : r && r.revealedAt ? '👁' : r ? '…' : esc(t('xwNone'))}</span></button>`; }).join('')}</div>` : ''}`;
+}
+const xwEntryDone = (pz, x, e) => [...e.a].every((ch, i) => x.cells[(e.r + (e.d === 'd' ? i : 0)) + '_' + (e.c + (e.d === 'a' ? i : 0))] === ch);
+function xwPaint() {
+  // Highlight the active word and show its clue without re-rendering the grid (keeps the keyboard open).
+  const pz = xwFind(S.xwId); if (!pz) return;
+  let e = xwEntryAt(pz, XS.r, XS.c, XS.dir);
+  if (!e) { XS.dir = XS.dir === 'a' ? 'd' : 'a'; e = xwEntryAt(pz, XS.r, XS.c, XS.dir); }
+  document.querySelectorAll('.xwcell input').forEach(inp => inp.classList.remove('inword'));
+  document.querySelectorAll('.xwlist button').forEach(b => b.classList.remove('on'));
+  const cl = $('#xwClue');
+  if (!e) { if (cl) cl.textContent = ''; return; }
+  for (let i = 0; i < e.a.length; i++) { const inp = document.querySelector(`[data-xw="${(e.r + (e.d === 'd' ? i : 0)) + '_' + (e.c + (e.d === 'a' ? i : 0))}"]`); if (inp) inp.classList.add('inword'); }
+  const ei = pz.entries.indexOf(e), btn = document.querySelector(`.xwlist [data-v="${ei}"]`); if (btn) btn.classList.add('on');
+  if (cl) cl.textContent = `${e.n} ${e.d === 'a' ? '→' : '↓'}  ${e.q} (${e.a.length})`;
+}
+function xwFocus(r, c) { const inp = document.querySelector(`[data-xw="${r}_${c}"]`); if (inp) { XS.r = r; XS.c = c; inp.focus({ preventScroll: true }); inp.select && inp.select(); xwPaint(); } }
+function xwStep(delta) {
+  const dr = XS.dir === 'd' ? delta : 0, dc = XS.dir === 'a' ? delta : 0;
+  if (document.querySelector(`[data-xw="${XS.r + dr}_${XS.c + dc}"]`)) xwFocus(XS.r + dr, XS.c + dc);
+}
+function xwSave(pz, x) {
+  clearTimeout(XS.saveT); XS.saveT = setTimeout(() => DB.put('xw', x), 500);
+  const cells = xwCells(pz);
+  if (!x.solvedAt && !x.revealedAt && Object.entries(cells).every(([k, cell]) => x.cells[k] === cell.ch)) {
+    x.solvedAt = Date.now(); DB.put('xw', x); toast(t('xwSolved'), 'ok'); burst(); afterChange();
+  } else {
+    // keep the clue list's strike-through current
+    pz.entries.forEach((e, i) => { const b = document.querySelector(`.xwlist [data-v="${i}"]`); if (b) b.classList.toggle('solved', xwEntryDone(pz, x, e)); });
+  }
+}
+function xwInput(inp) {
+  const pz = xwFind(S.xwId); if (!pz) return;
+  const x = xwRecord(pz), k = inp.dataset.xw;
+  let v = (inp.value || '').toUpperCase().replace(/Ä/g, 'AE').replace(/Ö/g, 'OE').replace(/Ü/g, 'UE').replace(/ß/g, 'SS').replace(/[^A-Z]/g, '');
+  const old = x.cells[k] || '';
+  if (v.length > 1) v = v.startsWith(old) && old ? v.slice(old.length) : v; // typed over an existing letter
+  const ch = v.slice(-1) || '';
+  inp.value = ch; inp.classList.remove('wrong');
+  if (ch) x.cells[k] = ch; else delete x.cells[k];
+  xwSave(pz, x);
+  if (ch && v.length >= 2 && /^(AE|OE|UE|SS)$/.test(v)) { inp.value = v[0]; x.cells[k] = v[0]; xwStep(1); const nx = document.querySelector(`[data-xw="${XS.r}_${XS.c}"]`); if (nx && nx !== inp) { nx.value = v[1]; x.cells[nx.dataset.xw] = v[1]; xwSave(pz, x); } }
+  if (ch && S.tab === 'xw') xwStep(1);
+}
+function xwTick() {
+  clearInterval(XS.timer);
+  XS.timer = setInterval(() => {
+    if (S.tab !== 'xw') { clearInterval(XS.timer); return; }
+    const pz = xwFind(S.xwId), x = pz && S.xw[pz.id], b = $('#xwReveal'); if (!x || !b) return;
+    const left = xwRevealLeft(x);
+    b.textContent = left ? t('xwRevealIn', fmtDur(left)) : t('xwReveal'); b.disabled = !!left; b.classList.toggle('ghost', !!left);
+  }, 1000);
+}
+document.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.xw) xwInput(e.target); });
+document.addEventListener('focusin', e => {
+  const d = e.target.dataset; if (!d || !d.xw) return;
+  const fresh = XS.r < 0; XS.r = +d.r; XS.c = +d.c;
+  const pz = xwFind(S.xwId); if (fresh && pz) XS.dir = xwEntryAt(pz, XS.r, XS.c, 'a') ? 'a' : 'd';
+  xwPaint();
+});
+document.addEventListener('pointerdown', e => {
+  const d = e.target.dataset; if (!d || !d.xw) return;
+  if (+d.r === XS.r && +d.c === XS.c && document.activeElement === e.target) { XS.dir = XS.dir === 'a' ? 'd' : 'a'; setTimeout(xwPaint, 0); }
+});
+document.addEventListener('keydown', e => {
+  const d = e.target.dataset; if (!d || !d.xw) return;
+  const pz = xwFind(S.xwId); if (!pz) return;
+  const x = xwRecord(pz);
+  if (e.key === 'Backspace' && !e.target.value) { e.preventDefault(); xwStep(-1); const p = document.activeElement; if (p && p.dataset.xw && !p.readOnly) { p.value = ''; delete x.cells[p.dataset.xw]; xwSave(pz, x); } return; }
+  const mv = { ArrowRight: ['a', 1], ArrowLeft: ['a', -1], ArrowDown: ['d', 1], ArrowUp: ['d', -1] }[e.key];
+  if (mv) { e.preventDefault(); if (XS.dir !== mv[0]) { XS.dir = mv[0]; xwPaint(); } else xwStep(mv[1]); }
+});
 
 /* Español: a voice sparring partner with far too much personality */
 const ES_CHARS = {
@@ -1803,7 +1975,7 @@ async function buildBackup() {
   const memos = [];
   for (const m of S.memos) memos.push(Object.assign({}, m, { blob: m.blob ? await blobToDataURL(m.blob) : null, status: '' }));
   const settings = Object.assign({}, S.set); delete settings.anthropicKey; delete settings.openaiKey; // keys never leave the browser
-  const data = { app: 'echo-journal', version: 1, exportedAt: new Date().toISOString(), memos, dialogs: S.dialogs, recaps: Object.values(S.recaps), goals: Object.values(S.goals), commitments: S.commitments, played: played(), settings };
+  const data = { app: 'echo-journal', version: 1, exportedAt: new Date().toISOString(), memos, dialogs: S.dialogs, recaps: Object.values(S.recaps), goals: Object.values(S.goals), commitments: S.commitments, xw: Object.values(S.xw), played: played(), settings };
   return new Blob([JSON.stringify(data)], { type: 'application/json' });
 }
 async function exportBackup() {
@@ -1824,7 +1996,7 @@ async function importBackup(file) {
     if (data.app !== 'echo-journal') throw new Error('format');
     let n = 0;
     for (const m of data.memos || []) { if (m.blob) m.blob = await (await fetch(m.blob)).blob(); await DB.put('memos', m); n++; }
-    for (const [store, list] of [['dialogs', data.dialogs], ['recaps', data.recaps], ['goals', data.goals], ['commitments', data.commitments]]) for (const x of list || []) { await DB.put(store, x); n++; }
+    for (const [store, list] of [['dialogs', data.dialogs], ['recaps', data.recaps], ['goals', data.goals], ['commitments', data.commitments], ['xw', data.xw]]) for (const x of list || []) { await DB.put(store, x); n++; }
     if (data.played) { const pl = played(); for (const [d, ids] of Object.entries(data.played)) pl[d] = [...new Set([...(pl[d] || []), ...ids])]; LS.set('echo-played', pl); }
     if (data.settings) { const keep = { anthropicKey: S.set.anthropicKey, openaiKey: S.set.openaiKey }; S.set = Object.assign({}, S.set, data.settings, keep); saveSettings(); applyTheme(); }
     await loadAll(); toast(t('imported', n), 'ok'); closeSheet(); afterChange();
@@ -1851,7 +2023,7 @@ const KV = {
 const FS_OK = !IS_ARTIFACT && typeof window.showSaveFilePicker === 'function';
 const AB = { handle: null, state: 'off', timer: 0, busy: false, dirty: false, last: LS.get('echo-backup-last', 0) };
 const BACKUP_TYPES = [{ description: 'Echo-Backup', accept: { 'application/json': ['.json'] } }];
-const entryCount = () => S.memos.length + S.dialogs.length + S.commitments.length + Object.keys(S.recaps).length + Object.keys(S.goals).length;
+const entryCount = () => S.memos.length + S.dialogs.length + S.commitments.length + Object.keys(S.recaps).length + Object.keys(S.goals).length + Object.keys(S.xw).length;
 const journalEmpty = () => !entryCount();
 async function abInit() {
   if (!FS_OK) { AB.state = 'unsupported'; return; }
@@ -1967,11 +2139,12 @@ function renderTabs() {
 }
 function render() {
   const active = document.activeElement, id = active && active.id, sel = active && 'selectionStart' in active ? [active.selectionStart, active.selectionEnd] : null;
-  const views = { today: viewToday, goals: viewGoals, history: viewHistory, socratic: viewSocratic, recap: viewRecap };
+  const views = { today: viewToday, goals: viewGoals, history: viewHistory, socratic: viewSocratic, recap: viewRecap, xw: viewXw };
   $('#app').innerHTML = views[S.tab]();
   renderTabs();
   if (id) { const el = document.getElementById(id); if (el && el !== active) { el.focus(); if (sel && el.setSelectionRange) try { el.setSelectionRange(sel[0], sel[1]); } catch { /* type without selection */ } } }
   if (S.tab === 'today') heroWave();
+  if (S.tab === 'xw') { xwTick(); setTimeout(xwPaint, 0); }
 }
 function afterChange() { render(); celebrate(); }
 
@@ -2014,6 +2187,23 @@ document.addEventListener('click', async e => {
     case 'gweek': { const nw = dayKey(addDays(parseDay(S.goalWeek || weekStart()), 7 * +v)); if (nw <= dayKey(addDays(parseDay(weekStart()), 7))) { S.goalWeek = nw; render(); } break; }  // one week ahead for planning
     case 'gday': updateGoal(b.dataset.w, id, it => { it.days[+v] = !it.days[+v]; }); break;
     case 'tab-socratic': S.tab = 'socratic'; render(); scrollTo(0, 0); break;
+    case 'quest-es': S.tab = 'socratic'; S.socMode = 'es'; LS.set('echo-soc-mode', 'es'); render(); scrollTo(0, 0); break;
+    case 'xw-open': xwOpen(v); break;
+    case 'xw-back': S.tab = 'today'; render(); scrollTo(0, 0); break;
+    case 'xw-clue': { const pz = xwFind(S.xwId), e = pz && pz.entries[+v]; if (e) { XS.dir = e.d; xwFocus(e.r, e.c); } break; }
+    case 'xw-check': {
+      const pz = xwFind(S.xwId), x = pz && S.xw[pz.id]; if (!x) break;
+      const cells = xwCells(pz), wrong = Object.entries(x.cells).filter(([k, v]) => cells[k] && v !== cells[k].ch);
+      wrong.forEach(([k]) => { const inp = document.querySelector(`[data-xw="${k}"]`); if (inp) inp.classList.add('wrong'); });
+      const m = $('#xwMsg'); if (m) m.textContent = wrong.length ? t('xwWrong', wrong.length) : t('xwAllOk');
+      break;
+    }
+    case 'xw-reveal': {
+      const pz = xwFind(S.xwId), x = pz && S.xw[pz.id]; if (!x || xwRevealLeft(x) || x.solvedAt) break;
+      const cells = xwCells(pz); x.revealed = {};
+      for (const [k, cell] of Object.entries(cells)) { if (x.cells[k] !== cell.ch) x.revealed[k] = true; x.cells[k] = cell.ch; }
+      x.revealedAt = Date.now(); await DB.put('xw', x); toast(t('xwRevealed'), 'ok'); afterChange(); break;
+    }
     case 'tab-recap': S.tab = 'recap'; S.recapDay = today(); render(); scrollTo(0, 0); break;
     case 'shuffle': S.promptShift++; render(); break;
     case 'impulse': S.impulse = v; S.promptShift = 0; render(); break;
