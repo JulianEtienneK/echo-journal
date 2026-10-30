@@ -427,7 +427,7 @@ const I18N = {
     privacy: 'Alles liegt lokal in diesem Browser. Mach ab und zu ein Backup: Browserdaten löschen heißt Memos löschen.',
     q_bonus: 'Bonus · freiwillig', q_es: 'Español mit deinem Sparringspartner', q_xw: 'Ein Kreuzworträtsel lösen', q_geo: 'Eine Atlas-Runde (Länder & Flaggen)',
     xwErn: 'Ernährungsmedizin', xwAw: 'Allgemeinwissen', xwBack: 'Zurück', xwLevel: n => 'Stufe ' + n, xwAcross: 'Waagerecht', xwDown: 'Senkrecht',
-    xwHelp: 'Umlaute als AE, OE, UE, ß als SS. Feld antippen, nochmal tippen wechselt die Richtung.', xwCheck: 'Prüfen', xwReveal: 'Lösung zeigen', xwRevealIn: s => 'Lösung in ' + s,
+    xwHelp: 'Umlaute als AE, OE, UE, ß als SS. Feld antippen, nochmal tippen wechselt die Richtung.', xwCheck: 'Prüfen', xwReveal: 'Lösung zeigen', xwRevealIn: s => 'Lösung in ' + s, xwWord: 'Wort aufdecken', xwWordCost: n => 'Wort aufdecken · −' + n + ' XP', xwWordDone: n => 'Wort aufgedeckt · −' + n + ' XP', xwPickFirst: 'Tippe zuerst ein Feld des Wortes an.', xwSolvedXP: (n, w) => 'Gelöst · ' + (n >= 0 ? '+' : '') + n + ' XP' + (w ? ' (' + w + ' aufgedeckt)' : ''), xwTime: s => 'Zeit ' + s, xwBestT: s => 'Bestzeit ' + s,
     xwSolved: 'Gelöst · +15 XP', xwRevealed: 'Mit Lösung beendet · +5 XP', xwWrong: n => n + ' Buchstaben stimmen noch nicht', xwAllOk: 'Bisher alles richtig',
     xwHub: 'Kreuzworträtsel', xwHubSub: n => n + ' Rätsel im Pool · lös so viele du magst', xwAll: 'Alle', xwStarted: 'Angefangen', xwOpenL: 'Neu', xwRepeat: 'Wiederholen', xwEmpty: 'Hier ist gerade nichts.',
     xwAgain: 'Nochmal lösen', xwTimes: n => n + '× gelöst', xwRepeatXP: 'Wiederholung · +5 XP', xwAllDone: 'Alle Rätsel geschafft. Unter „Wiederholen“ kannst du sie nochmal lösen.',
@@ -540,7 +540,7 @@ const I18N = {
     exportBtn: 'Export backup', importBtn: 'Import backup', used: s => 'Used: ' + s, wipe: 'Delete everything',
     q_bonus: 'Bonus · optional', q_es: 'Español with your sparring partner', q_xw: 'Solve a crossword', q_geo: 'One Atlas round (countries & flags)',
     xwErn: 'Nutritional medicine', xwAw: 'General knowledge', xwBack: 'Back', xwLevel: n => 'Level ' + n, xwAcross: 'Across', xwDown: 'Down',
-    xwHelp: 'Umlauts as AE, OE, UE, ß as SS. Tap a square, tap again to switch direction.', xwCheck: 'Check', xwReveal: 'Show solution', xwRevealIn: s => 'Solution in ' + s,
+    xwHelp: 'Umlauts as AE, OE, UE, ß as SS. Tap a square, tap again to switch direction.', xwCheck: 'Check', xwReveal: 'Show solution', xwRevealIn: s => 'Solution in ' + s, xwWord: 'Reveal word', xwWordCost: n => 'Reveal word · −' + n + ' XP', xwWordDone: n => 'Word revealed · −' + n + ' XP', xwPickFirst: 'Tap a square of the word first.', xwSolvedXP: (n, w) => 'Solved · ' + (n >= 0 ? '+' : '') + n + ' XP' + (w ? ' (' + w + ' revealed)' : ''), xwTime: s => 'time ' + s, xwBestT: s => 'best ' + s,
     xwSolved: 'Solved · +15 XP', xwRevealed: 'Finished with solution · +5 XP', xwWrong: n => n + ' letters are not right yet', xwAllOk: 'All correct so far',
     xwHub: 'Crosswords', xwHubSub: n => n + ' puzzles in the pool · solve as many as you like', xwAll: 'All', xwStarted: 'In progress', xwOpenL: 'New', xwRepeat: 'Repeat', xwEmpty: 'Nothing here right now.',
     xwAgain: 'Solve again', xwTimes: n => 'solved ' + n + '×', xwRepeatXP: 'Repeat · +5 XP', xwAllDone: 'All puzzles done. Under “Repeat” you can solve them again.',
@@ -704,7 +704,7 @@ function computeStats() {
   xp += esDone.length * 15;
   // Crosswords: first completion +15 (+5 with solution), each repeat solved on your own +5.
   const xwDoneDays = new Set();
-  for (const x of Object.values(S.xw)) xwCompletions(x).forEach((c, i) => { xp += i === 0 ? (c.rev ? 5 : 15) : (c.rev ? 0 : 5); xwDoneDays.add(dayKey(new Date(c.at))); });
+  for (const x of Object.values(S.xw)) xwCompletions(x).forEach((c, i) => { xp += i === 0 ? (c.rev ? 5 : (c.xp ?? 15)) : (c.rev ? 0 : 5); xwDoneDays.add(dayKey(new Date(c.at))); });
   const recapDays = Object.values(S.recaps).filter(r => !r.day.includes(':') && isRecapDone(r)).map(r => r.day);
   xp += recapDays.length * 10;
   const commitDone = S.commitments.filter(c => c.done).length;
@@ -726,6 +726,7 @@ function computeStats() {
   const st = streakInfo(new Set(dayMin.keys()));
   const best = Math.max(st.count, LS.get('echo-best', 0));
   if (best > LS.get('echo-best', 0)) LS.set('echo-best', best);
+  xp = Math.max(0, xp); // revealed crossword words can subtract, never below zero overall
   const level = levelFrom(xp);
   const quests = { memo: dayMin.has(td), socratic: socDays.has(td), recap: recapSet.has(td), echo: (pl[td] || []).length > 0,
     es: esDone.some(d => d.day === td), xw: xwDoneDays.has(td), geo: geoDays.includes(td) };
@@ -1416,7 +1417,16 @@ function md(text) {
 
 /* Crossword: one puzzle a day from puzzles.js, alternating Ernmed / Allgemeinwissen and German / English. */
 const XW = window.ECHO_XW || { start: today(), puzzles: [] };
-const xwCompletions = x => (x.history || []).concat(x.solvedAt || x.revealedAt ? [{ at: x.solvedAt || x.revealedAt, rev: !x.solvedAt }] : []);
+// Word value grows with length. A revealed word costs its own value (strict, as Julian chose).
+const xwWordXP = e => Math.max(2, e.a.length - 2);
+function xwScore(x) {
+  const pz = xwFind(x.id); if (!pz) return 15;
+  const w = new Set(x.words || []); let s = 0;
+  pz.entries.forEach((e, i) => { s += w.has(i) ? -xwWordXP(e) : xwWordXP(e); });
+  return s;
+}
+const xwCompletions = x => (x.history || []).concat(x.solvedAt || x.revealedAt ? [{ at: x.solvedAt || x.revealedAt, rev: !x.solvedAt, words: (x.words || []).length, xp: x.v2 && x.solvedAt ? xwScore(x) : undefined, dur: x.solvedAt && x.openedAt ? Math.round((x.solvedAt - x.openedAt) / 1000) : undefined }] : []);
+const xwBest = x => { const d = xwCompletions(x).filter(c => !c.rev && !c.words && c.dur).map(c => c.dur); return d.length ? Math.min(...d) : 0; };
 const xwStatus = pz => { const x = S.xw[pz.id]; if (!x) return 'new'; if (x.solvedAt || x.revealedAt) return 'done'; if (Object.keys(x.cells || {}).length) return 'started'; return xwCompletions(x).length ? 'done' : 'new'; };
 const xwCatName = pz => (pz.cat === 'ern' ? t('xwErn') : t('xwAw')) + ' · ' + (pz.lang === 'de' ? 'DE' : 'EN');
 const xwFind = id => XW.puzzles.find(p => p.id === id);
@@ -1435,7 +1445,7 @@ function xwCells(pz) {
 }
 function xwRecord(pz) {
   let x = S.xw[pz.id];
-  if (!x) { x = S.xw[pz.id] = { id: pz.id, cells: {}, openedAt: Date.now(), day: today() }; DB.put('xw', x); }
+  if (!x) { x = S.xw[pz.id] = { id: pz.id, cells: {}, openedAt: Date.now(), day: today(), v2: true, words: [] }; DB.put('xw', x); }
   return x;
 }
 function xwOpen(id) {
@@ -1460,15 +1470,17 @@ function viewXw() {
     const v = x.cells[k] || '', cls = [x.revealedAt && v === cell.ch && x.revealed && x.revealed[k] ? 'rev' : '', done && v === cell.ch ? 'ok' : '', XS.wrong && v && v !== cell.ch ? 'wrong' : ''].filter(Boolean).join(' ');
     grid.push(`<div class="xwcell">${cell.n ? `<span class="num">${cell.n}</span>` : ''}<input data-xw="${k}" data-r="${r}" data-c="${c}" value="${esc(v)}" maxlength="2" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text" class="${cls}" aria-label="${r + 1}/${c + 1}" ${done ? 'readonly' : ''}></div>`);
   }
-  const list = d => pz.entries.map((e, i) => e.d !== d ? '' : `<button data-act="xw-clue" data-v="${i}" class="${xwEntryDone(pz, x, e) ? 'solved' : ''}"><b>${e.n}</b> ${esc(e.q)} <span class="muted mono small">(${e.a.length})</span></button>`).join('');
+  const list = d => pz.entries.map((e, i) => e.d !== d ? '' : `<button data-act="xw-clue" data-v="${i}" class="${xwEntryDone(pz, x, e) ? 'solved' : ''}"><b>${e.n}</b> ${esc(e.q)} <span class="muted mono small">(${e.a.length}) · ${(x.words || []).includes(i) ? '−' : '+'}${xwWordXP(e)}</span></button>`).join('');
   const reps = (x.history || []).length, times = xwCompletions(x).length;
-  const status = x.solvedAt ? (reps ? t('xwRepeatXP') : t('xwSolved')) : x.revealedAt ? t('xwRevealed') : '';
+  const best = xwBest(x), cur = x.solvedAt && x.openedAt ? Math.round((x.solvedAt - x.openedAt) / 1000) : 0;
+  const status = x.solvedAt ? (reps ? t('xwRepeatXP') : (x.v2 ? t('xwSolvedXP', xwScore(x), (x.words || []).length) : t('xwSolved'))) + (cur ? ' · ' + t('xwTime', fmtDur(cur)) : '') + (best ? ' · ' + t('xwBestT', fmtDur(best)) : '') : x.revealedAt ? t('xwRevealed') : '';
   return `<header class="top"><div class="stack" style="gap:4px"><span class="eyebrow">🧩 ${esc(xwCatName(pz))} · ${esc(t('xwLevel', pz.level))}</span><h1>${esc(pz.title)}</h1></div>
     <button class="btn ghost sm" data-act="xw-back">${icon('left')} ${esc(t('xwBack'))}</button></header>
   ${status ? `<section class="card flat"><div class="row spread wrap"><b>✓ ${esc(status)}</b><span class="small muted mono">${esc(t('xwTimes', times))}</span></div><button class="btn sm" data-act="xw-again" style="justify-self:start">${icon('shuffle')} ${esc(t('xwAgain'))}</button></section>` : `<p class="small muted">${esc(t('xwHelp'))}${reps ? ' · ' + esc(t('xwTimes', reps)) : ''}</p>`}
   <div class="xwclue" id="xwClue"></div>
   <div class="xwgrid" style="grid-template-columns:repeat(${pz.w},1fr);max-width:${pz.w * 38}px">${grid.join('')}</div>
   ${done ? '' : `<div class="row wrap"><button class="btn sm" data-act="xw-check">${icon('check')} ${esc(t('xwCheck'))}</button>
+    <button class="btn sm ghost" data-act="xw-word" id="xwWord">${esc(t('xwWord'))}</button>
     <button class="btn sm ${left ? 'ghost' : ''}" data-act="xw-reveal" id="xwReveal" ${left ? 'disabled' : ''}>${esc(left ? t('xwRevealIn', fmtDur(left)) : t('xwReveal'))}</button>
     <span class="small muted" id="xwMsg"></span></div>`}
   <div class="xwcols"><div class="stack" style="gap:6px"><h3>${esc(t('xwAcross'))}</h3><div class="xwlist">${list('a')}</div></div>
@@ -1518,7 +1530,8 @@ function xwPaint() {
   if (!e) { if (cl) cl.textContent = ''; return; }
   for (let i = 0; i < e.a.length; i++) { const inp = document.querySelector(`[data-xw="${(e.r + (e.d === 'd' ? i : 0)) + '_' + (e.c + (e.d === 'a' ? i : 0))}"]`); if (inp) inp.classList.add('inword'); }
   const ei = pz.entries.indexOf(e), btn = document.querySelector(`.xwlist [data-v="${ei}"]`); if (btn) btn.classList.add('on');
-  if (cl) cl.textContent = `${e.n} ${e.d === 'a' ? '→' : '↓'}  ${e.q} (${e.a.length})`;
+  if (cl) cl.textContent = `${e.n} ${e.d === 'a' ? '→' : '↓'}  ${e.q} (${e.a.length}) · ${xwWordXP(e)} XP`;
+  const wb = $('#xwWord'); if (wb) wb.textContent = t('xwWordCost', xwWordXP(e));
 }
 function xwFocus(r, c) { const inp = document.querySelector(`[data-xw="${r}_${c}"]`); if (inp) { XS.r = r; XS.c = c; inp.focus({ preventScroll: true }); inp.select && inp.select(); xwPaint(); } }
 function xwStep(delta) {
@@ -2232,7 +2245,7 @@ document.addEventListener('click', async e => {
     case 'xw-filter': LS.set('echo-xw-' + b.dataset.k, v); render(); break;
     case 'xw-again': {
       const pz = xwFind(S.xwId), x = pz && S.xw[pz.id]; if (!x) break;
-      x.history = xwCompletions(x); x.cells = {}; x.revealed = {}; delete x.solvedAt; delete x.revealedAt; x.openedAt = Date.now();
+      x.history = xwCompletions(x); x.cells = {}; x.revealed = {}; x.words = []; x.v2 = true; delete x.solvedAt; delete x.revealedAt; x.openedAt = Date.now();
       await DB.put('xw', x); XS.r = -1; XS.c = -1; XS.dir = 'a'; render(); scrollTo(0, 0); break;
     }
     case 'xw-clue': { const pz = xwFind(S.xwId), e = pz && pz.entries[+v]; if (e) { XS.dir = e.d; xwFocus(e.r, e.c); } break; }
@@ -2241,6 +2254,17 @@ document.addEventListener('click', async e => {
       const cells = xwCells(pz), wrong = Object.entries(x.cells).filter(([k, v]) => cells[k] && v !== cells[k].ch);
       wrong.forEach(([k]) => { const inp = document.querySelector(`[data-xw="${k}"]`); if (inp) inp.classList.add('wrong'); });
       const m = $('#xwMsg'); if (m) m.textContent = wrong.length ? t('xwWrong', wrong.length) : t('xwAllOk');
+      break;
+    }
+    case 'xw-word': {
+      const pz = xwFind(S.xwId), x = pz && S.xw[pz.id]; if (!x || x.solvedAt || x.revealedAt) break;
+      const e = xwEntryAt(pz, XS.r, XS.c, XS.dir) || xwEntryAt(pz, XS.r, XS.c, XS.dir === 'a' ? 'd' : 'a');
+      if (!e) { const m = $('#xwMsg'); if (m) m.textContent = t('xwPickFirst'); break; }
+      const ei = pz.entries.indexOf(e); x.revealed = x.revealed || {}; x.words = x.words || [];
+      if (xwEntryDone(pz, x, e)) break;
+      for (let i = 0; i < e.a.length; i++) { const k = (e.r + (e.d === 'd' ? i : 0)) + '_' + (e.c + (e.d === 'a' ? i : 0)); if (x.cells[k] !== e.a[i]) x.revealed[k] = true; x.cells[k] = e.a[i]; }
+      if (!x.words.includes(ei)) x.words.push(ei);
+      const r0 = XS.r, c0 = XS.c; render(); xwSave(pz, x); if (!x.solvedAt) { toast(t('xwWordDone', xwWordXP(e)), 'ok'); xwFocus(r0, c0); }
       break;
     }
     case 'xw-reveal': {
