@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Echo Atlas</title>
+<meta name="theme-color" content="#F2F3EF">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one column like Echo. Home = stats + start; round = map/flag stage on top, answers below; collection = prestige world map + grid. */
+:root {
+  --bg: #F2F3EF; --surface: #FFFFFF; --surface-2: #E7EAE4; --ink: #1A1E1C; --muted: #5C6661; --line: #D5DAD3;
+  --calm: #1B8173; --calm-soft: rgba(27,129,115,.12); --rec: #D4542A; --rec-soft: rgba(212,84,42,.12);
+  --gold: #A87D14; --gold-soft: rgba(184,138,30,.16);
+  --ocean: #DCE6E8; --land: #C9CFC6; --land-line: #F7F8F5; --hl: #D4542A; --target: #1B8173;
+  --shadow: 0 1px 2px rgba(20,30,25,.05), 0 10px 28px rgba(20,30,25,.07);
+  --f-display: "Bricolage Grotesque", "DM Sans", system-ui, sans-serif;
+  --f-body: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --r: 18px; color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F1211; --surface: #171B19; --surface-2: #212624; --ink: #E8ECE7; --muted: #95A09A; --line: #2A312E;
+  --calm: #3DC2AD; --calm-soft: rgba(61,194,173,.14); --rec: #FF7647; --rec-soft: rgba(255,118,71,.15);
+  --gold: #E5B84C; --gold-soft: rgba(229,184,76,.15);
+  --ocean: #142024; --land: #34403B; --land-line: #171B19; --hl: #FF7647; --target: #3DC2AD;
+  --shadow: 0 1px 0 rgba(255,255,255,.03); color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0F1211; --surface: #171B19; --surface-2: #212624; --ink: #E8ECE7; --muted: #95A09A; --line: #2A312E;
+  --calm: #3DC2AD; --calm-soft: rgba(61,194,173,.14); --rec: #FF7647; --rec-soft: rgba(255,118,71,.15);
+  --gold: #E5B84C; --gold-soft: rgba(229,184,76,.15);
+  --ocean: #142024; --land: #34403B; --land-line: #171B19; --hl: #FF7647; --target: #3DC2AD;
+  --shadow: 0 1px 0 rgba(255,255,255,.03); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--calm); outline-offset: 2px; border-radius: 8px; }
+[hidden] { display: none !important; }
+#app {
+  max-width: 600px; margin: 0 auto; display: grid; gap: 14px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: calc(env(safe-area-inset-top, 0px) + 16px) calc(env(safe-area-inset-bottom, 0px) + 40px);
+}
+h1, h2, h3 { font-family: var(--f-display); margin: 0; line-height: 1.15; text-wrap: balance; }
+h1 { font-size: 30px; font-weight: 700; letter-spacing: -.02em; }
+h2 { font-size: 24px; font-weight: 700; letter-spacing: -.01em; }
+h3 { font-size: 17px; font-weight: 700; }
+.eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.card { background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); padding: 18px; display: grid; gap: 12px; min-width: 0; }
+.row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.spread { justify-content: space-between; }
+.grow { flex: 1; min-width: 0; }
+.btn { border: 0; border-radius: 14px; padding: 13px 18px; font-weight: 700; background: var(--surface-2); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn.primary { background: var(--calm); color: #fff; }
+:root[data-theme="dark"] .btn.primary { color: #0F1211; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.primary { color: #0F1211; } }
+.btn.big { padding: 17px 20px; font-size: 18px; width: 100%; }
+.btn:disabled { opacity: .45; cursor: default; }
+.link { background: none; border: 0; padding: 6px 0; color: var(--muted); font-weight: 500; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bar { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--calm); border-radius: 99px; transition: width .4s ease; }
+.bar.gold i { background: var(--gold); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.stat { background: var(--surface-2); border-radius: 14px; padding: 12px; display: grid; gap: 2px; }
+.stat b { font-family: var(--f-display); font-size: 22px; }
+.lvl { display: flex; align-items: center; gap: 14px; }
+.lvlbadge { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-display); font-weight: 700; font-size: 22px; background: var(--calm-soft); color: var(--calm); flex: none; }
+
+/* stage */
+.stage { position: relative; background: var(--ocean); border-radius: var(--r); overflow: hidden; aspect-ratio: 3 / 2; max-width: 100%; }
+.stage svg { width: 100%; height: 100%; display: block; }
+.stage .sphere { fill: var(--ocean); }
+.stage .grat { fill: none; stroke: var(--ink); stroke-opacity: .06; stroke-width: .6; }
+.stage .land { fill: var(--land); stroke: var(--land-line); stroke-width: .5; }
+.stage.clickable .land { cursor: pointer; }
+.stage.clickable .land:hover { fill: var(--gold); fill-opacity: .55; }
+.stage .land.target { fill: var(--target); }
+.stage .land.wrong { fill: var(--hl); }
+.stage .ring { fill: none; stroke: var(--target); stroke-width: 2.5; }
+.stage .ring.wrong { stroke: var(--hl); }
+.stage .ring.pulse { animation: pulse 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes pulse { 50% { stroke-opacity: .35; } }
+.flagbig { display: grid; place-items: center; background: var(--surface-2); border-radius: var(--r); padding: 22px; }
+.flagbig img { width: min(320px, 80%); aspect-ratio: 4 / 3; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.18); object-fit: cover; }
+.q { font-family: var(--f-display); font-size: 22px; font-weight: 700; text-wrap: balance; }
+.opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.opt { border: 2px solid var(--line); background: var(--surface); border-radius: 14px; padding: 13px 12px; font-weight: 700; text-align: left; display: flex; gap: 10px; align-items: center; min-width: 0; }
+.opt .k { font-family: var(--f-mono); font-size: 12px; color: var(--muted); flex: none; }
+.opt:hover:not(:disabled) { border-color: var(--calm); }
+.opt.ok { border-color: var(--calm); background: var(--calm-soft); }
+.opt.bad { border-color: var(--rec); background: var(--rec-soft); }
+.opt:disabled { cursor: default; }
+.opt.flag { padding: 8px; justify-content: center; }
+.opt.flag img { width: 100%; aspect-ratio: 4 / 3; border-radius: 6px; object-fit: cover; }
+.progress { display: flex; gap: 4px; }
+.progress i { flex: 1; height: 6px; border-radius: 99px; background: var(--surface-2); }
+.progress i.ok { background: var(--calm); }
+.progress i.bad { background: var(--rec); }
+.progress i.cur { background: var(--gold); }
+.fb { border-radius: var(--r); padding: 14px 16px; display: flex; gap: 14px; align-items: center; }
+.fb.ok { background: var(--calm-soft); }
+.fb.bad { background: var(--rec-soft); }
+.fb img { width: 72px; aspect-ratio: 4 / 3; border-radius: 5px; object-fit: cover; flex: none; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+.xp { font-family: var(--f-mono); font-size: 13px; color: var(--gold); font-weight: 500; white-space: nowrap; }
+.tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 99px; background: var(--surface-2); color: var(--muted); }
+.tag.challenge { background: var(--gold-soft); color: var(--gold); }
+.tag.new { background: var(--calm-soft); color: var(--calm); }
+.combo { font-family: var(--f-mono); font-size: 13px; color: var(--rec); }
+
+/* prestige */
+.pdot { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 6px 12px; font-size: 13px; font-weight: 500; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.cell { border: 0; background: var(--surface); border-radius: 12px; padding: 8px; display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 8px; align-items: center; text-align: left; box-shadow: var(--shadow); position: relative; }
+.cell img { width: 44px; aspect-ratio: 4 / 3; border-radius: 4px; object-fit: cover; }
+.cell.unseen img { filter: grayscale(1); opacity: .35; }
+.cell .nm { font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cell .cnt { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.cell .stripe { position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; }
+.toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 700; z-index: 20; box-shadow: var(--shadow); max-width: calc(100% - 32px); text-align: center; animation: pop .25s ease; }
+@keyframes pop { from { transform: translate(-50%, 10px); opacity: 0; } }
+.big-num { font-family: var(--f-display); font-size: 44px; font-weight: 700; line-height: 1; }
+.intro-name { font-family: var(--f-display); font-size: 30px; font-weight: 700; letter-spacing: -.01em; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px; }
+.loading { padding: 60px 0; text-align: center; color: var(--muted); }
+@media (max-width: 420px) { .opts { grid-template-columns: 1fr; } .opts.flags { grid-template-columns: repeat(2, minmax(0,1fr)); } .stats { grid-template-columns: repeat(3, minmax(0,1fr)); } .stat b { font-size: 19px; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="app"><p class="loading">Atlas lädt …</p></div>
+<script src="geo/d3.min.js"></script>
+<script src="geo/topojson-client.min.js"></script>
+<script src="geo/data.js"></script>
+<script src="geo/flags.js"></script>
+<script>
+'use strict';
+/* ---------- storage (shared origin with Echo: key echo-geo is included in Echo's backup) ---------- */
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* blocked */ } },
+};
+const KEY = 'echo-geo';
+let ST = LS.get(KEY, null) || { v: 1, xp: 0, cs: {}, days: {}, best: 0, updated: 0 };
+const save = () => { ST.updated = Date.now(); LS.set(KEY, ST); };
+
+// Theme follows Echo's setting.
+(() => { const s = LS.get('echo-settings', {}); if (s.theme && s.theme !== 'system') document.documentElement.dataset.theme = s.theme; })();
+
+/* ---------- data ---------- */
+const COUNTRIES = GEO.countries;              // ordered: tier 1→4, big→small inside a tier
+const BY = Object.fromEntries(COUNTRIES.map(c => [c.c, c]));
+const FEATS = topojson.feature(GEO.topo, GEO.topo.objects.countries).features;
+const FEAT_BY_ID = new Map(FEATS.map(f => [String(f.id), f]));
+const CODE_BY_ID = new Map(COUNTRIES.filter(c => c.g).map(c => [String(c.g), c.c]));
+const featOf = code => { const c = BY[code]; return c && c.g ? FEAT_BY_ID.get(String(c.g)) : null; };
+const flagCache = {};
+const flag = code => flagCache[code] || (flagCache[code] = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(FLAGS[code] || ''));
+const REGION_DE = { Africa: 'Afrika', Americas: 'Amerika', Asia: 'Asien', Europe: 'Europa', Oceania: 'Ozeanien', Antarctic: 'Antarktis' };
+const SUB_DE = {
+  'Western Europe': 'Westeuropa', 'Northern Europe': 'Nordeuropa', 'Southern Europe': 'Südeuropa', 'Eastern Europe': 'Osteuropa', 'Central Europe': 'Mitteleuropa', 'Southeast Europe': 'Südosteuropa',
+  'Northern Africa': 'Nordafrika', 'Western Africa': 'Westafrika', 'Middle Africa': 'Zentralafrika', 'Eastern Africa': 'Ostafrika', 'Southern Africa': 'Südliches Afrika',
+  'North America': 'Nordamerika', 'Central America': 'Mittelamerika', 'Caribbean': 'Karibik', 'South America': 'Südamerika',
+  'Western Asia': 'Westasien', 'Central Asia': 'Zentralasien', 'Southern Asia': 'Südasien', 'Eastern Asia': 'Ostasien', 'South-Eastern Asia': 'Südostasien',
+  'Australia and New Zealand': 'Australien & Neuseeland', 'Melanesia': 'Melanesien', 'Micronesia': 'Mikronesien', 'Polynesia': 'Polynesien',
+};
+const esc = s => String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+
+/* ---------- progress model ---------- */
+// Prestige by number of correct answers (Wiederholungen) per country.
+const PRESTIGE = [
+  { min: 0, name: 'Neu', color: 'var(--surface-2)' },
+  { min: 1, name: 'Bronze', color: '#B87333' },
+  { min: 3, name: 'Silber', color: '#A7B0B8' },
+  { min: 6, name: 'Gold', color: '#E0B12E' },
+  { min: 10, name: 'Smaragd', color: '#1FA37A' },
+  { min: 20, name: 'Saphir', color: '#2F6FDB' },
+  { min: 35, name: 'Amethyst', color: '#8B4FD8' },
+  { min: 60, name: 'Legende', color: '#E8466A' },
+];
+const prestigeOf = n => { let p = PRESTIGE[0]; for (const x of PRESTIGE) if (n >= x.min) p = x; return p; };
+const nextPrestige = n => PRESTIGE.find(x => x.min > n) || null;
+// Leitner boxes: how long until a country comes back after a correct answer.
+const MIN = 60e3, HOUR = 60 * MIN, DAY = 24 * HOUR;
+const INTERVALS = [0, 4 * MIN, 25 * MIN, 3 * HOUR, DAY, 3 * DAY, 7 * DAY, 21 * DAY, 60 * DAY];
+const cs = code => ST.cs[code] || (ST.cs[code] = { n: 0, w: 0, box: 0, due: 0, seen: 0 });
+const seenList = () => COUNTRIES.filter(c => ST.cs[c.c] && ST.cs[c.c].seen);
+const unseenList = () => COUNTRIES.filter(c => !(ST.cs[c.c] && ST.cs[c.c].seen));
+const mastered = () => COUNTRIES.filter(c => (ST.cs[c.c] || {}).n >= 6).length;
+const levelOf = xp => { let l = 1, need = 100; while (xp >= need) { xp -= need; l++; need = 100 + 40 * (l - 1); } return { l, into: xp, need }; };
+const dayRec = () => ST.days[today()] || (ST.days[today()] = { r: 0, xp: 0, q: 0, ok: 0 });
+const streak = () => {
+  let n = 0; const d = new Date();
+  if (!(ST.days[today()] && ST.days[today()].r)) d.setDate(d.getDate() - 1);
+  for (;;) { const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); if (ST.days[k] && ST.days[k].r) { n++; d.setDate(d.getDate() - 1); } else break; }
+  return n;
+};
+
+/* ---------- map ---------- */
+const W = 600, H = 400;
+function centerOf(code) { const f = featOf(code); return f ? d3.geoCentroid(f) : [BY[code].ll[1], BY[code].ll[0]]; }
+function radiusOf(code) {
+  const f = featOf(code); if (!f) return 0.5;
+  const c = d3.geoCentroid(f), b = d3.geoBounds(f);
+  const pts = [[b[0][0], b[0][1]], [b[1][0], b[1][1]], [b[0][0], b[1][1]], [b[1][0], b[0][1]]];
+  let r = 0; for (const p of pts) r = Math.max(r, d3.geoDistance(c, p) * 180 / Math.PI);
+  return Math.min(r, 40);
+}
+// mode 'zoom': centred on one country with context; 'region': the country's subregion, for tapping.
+function makeProjection(code, mode) {
+  let center, radius;
+  if (mode === 'region') {
+    const sub = BY[code].s, members = COUNTRIES.filter(c => c.s === sub);
+    center = d3.geoCentroid({ type: 'MultiPoint', coordinates: members.map(c => [c.ll[1], c.ll[0]]) });
+    radius = 0; for (const c of members) radius = Math.max(radius, d3.geoDistance(center, [c.ll[1], c.ll[0]]) * 180 / Math.PI);
+    radius = Math.max(14, Math.min(radius + 8, 75));
+  } else {
+    center = centerOf(code); radius = Math.max(7, Math.min(radiusOf(code) * 2.6, 70));
+  }
+  const p = d3.geoOrthographic().rotate([-center[0], -center[1]]).precision(.3);
+  p.fitExtent([[12, 12], [W - 12, H - 12]], d3.geoCircle().center(center).radius(radius)());
+  return p;
+}
+function mapSVG(proj, opts = {}) {
+  const path = d3.geoPath(proj);
+  const grat = path(d3.geoGraticule10());
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.label || 'Karte')}"><path class="sphere" d="${path({ type: 'Sphere' })}"/><path class="grat" d="${grat}"/>`;
+  for (const f of FEATS) {
+    const d = path(f); if (!d) continue;
+    const code = CODE_BY_ID.get(String(f.id)) || '';
+    const cls = ['land']; if (opts.marks && opts.marks[code]) cls.push(opts.marks[code]);
+    const fill = opts.fills && opts.fills[code] ? ` style="fill:${opts.fills[code]}"` : '';
+    s += `<path class="${cls.join(' ')}" data-c="${code}" d="${d}"${fill}/>`;
+  }
+  // rings for countries too small to see (or without geometry)
+  for (const [code, kind] of Object.entries(opts.marks || {})) {
+    const f = featOf(code); let small = true, pt;
+    if (f) { const b = path.bounds(f); small = (b[1][0] - b[0][0]) * (b[1][1] - b[0][1]) < 90; pt = proj(d3.geoCentroid(f)); }
+    else pt = proj([BY[code].ll[1], BY[code].ll[0]]);
+    if (small && pt && isFinite(pt[0])) s += `<circle class="ring ${kind === 'wrong' ? 'wrong' : ''} ${opts.pulse ? 'pulse' : ''}" cx="${pt[0].toFixed(1)}" cy="${pt[1].toFixed(1)}" r="11"/>`;
+  }
+  return s + '</svg>';
+}
+
+/* ---------- questions ---------- */
+function distractors(code, n, hard) {
+  const c = BY[code];
+  const sameSub = shuffle(COUNTRIES.filter(x => x.s === c.s && x.c !== code));
+  const sameReg = shuffle(COUNTRIES.filter(x => x.r === c.r && x.s !== c.s));
+  const any = shuffle(COUNTRIES.filter(x => x.r !== c.r));
+  const out = [];
+  const take = (list, k) => { for (const x of list) { if (out.length >= k) break; if (!out.includes(x.c)) out.push(x.c); } };
+  if (hard) { take(sameSub, n); take(sameReg, n); }
+  else { take(sameSub, 1); take(sameReg, n - 1); take(sameSub, n); }
+  take(any, n);
+  return out.slice(0, n);
+}
+const TYPES = {
+  mapToName: { label: 'Welches Land ist markiert?', xp: 10 },
+  flagToName: { label: 'Zu welchem Land gehört diese Flagge?', xp: 10 },
+  nameToFlag: { label: c => `Welche Flagge hat ${c}?`, xp: 10 },
+  nameToMap: { label: c => `Wo liegt ${c}? Tippe es auf der Karte an.`, xp: 15 },
+  flagToMap: { label: 'Wo liegt das Land mit dieser Flagge?', xp: 20 },
+};
+function chooseType(box, challenge) {
+  if (challenge) return pick(['mapToName', 'flagToName']);
+  if (box <= 0) return pick(['mapToName', 'flagToName']);
+  if (box === 1) return pick(['mapToName', 'flagToName', 'nameToFlag']);
+  if (box === 2) return pick(['nameToFlag', 'mapToName', 'nameToMap']);
+  if (box === 3) return pick(['nameToMap', 'flagToName', 'flagToMap']);
+  return pick(['nameToMap', 'flagToMap', 'flagToMap', 'nameToFlag']);
+}
+function makeQ(code, opt = {}) {
+  const st = cs(code), type = opt.type || chooseType(opt.box ?? st.box, opt.challenge);
+  const hard = (st.box >= 3) && !opt.challenge;
+  const q = { kind: 'q', code, type, challenge: !!opt.challenge, retry: !!opt.retry };
+  if (type !== 'nameToMap' && type !== 'flagToMap') q.options = shuffle([code, ...distractors(code, hard ? 5 : 3, hard)]);
+  return q;
+}
+
+/* ---------- round building ---------- */
+function buildRound(mode) {
+  const now = Date.now();
+  const due = shuffle(seenList().filter(c => cs(c.c).due <= now)).sort((a, b) => cs(a.c).due - cs(b.c).due).map(c => c.c);
+  const seq = [];
+  if (mode === 'review') {
+    let pool = due.length ? due : shuffle(seenList().map(c => c.c));
+    pool = pool.slice(0, 12);
+    for (const c of pool) seq.push(makeQ(c));
+    return seq;
+  }
+  const unseen = unseenList();
+  const nNew = Math.max(0, Math.min(unseen.length, due.length >= 9 ? 2 : due.length >= 5 ? 3 : 4));
+  const news = unseen.slice(0, nNew).map(c => c.c);
+  const reviews = due.slice(0, Math.max(4, 12 - nNew * 2)).map(c => makeQ(c));
+  // Intro → one other question → first check of the new country.
+  for (const n of news) {
+    seq.push({ kind: 'intro', code: n });
+    if (reviews.length) seq.push(reviews.shift());
+    seq.push(makeQ(n, { box: 0 }));
+  }
+  const tail = shuffle([...reviews, ...news.map(n => makeQ(n, { box: 1 }))]);
+  // One challenge from a harder tier than the current frontier, mixed in at about two thirds.
+  const frontier = news.length ? BY[news[news.length - 1]].t : (unseen[0] ? unseen[0].t : 4);
+  const pool = unseen.filter(c => c.t >= Math.min(4, frontier + 1) && !news.includes(c.c));
+  if (pool.length) tail.splice(Math.floor(tail.length * 0.66), 0, makeQ(pick(pool.slice(0, 40)).c, { challenge: true }));
+  seq.push(...tail);
+  if (!seq.length) for (const c of shuffle(seenList()).slice(0, 12)) seq.push(makeQ(c.c));
+  return seq;
+}
+
+/* ---------- state ---------- */
+const S = { view: 'home', round: null, filter: 'all', sheet: null };
+const app = document.getElementById('app');
+function toast(msg) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg; document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2600);
+}
+
+/* ---------- views ---------- */
+function render() {
+  if (S.view === 'round') return renderRound();
+  if (S.view === 'done') return renderDone();
+  if (S.view === 'collection') return renderCollection();
+  renderHome();
+}
+function renderHome() {
+  const lv = levelOf(ST.xp), seen = seenList().length, total = COUNTRIES.length, now = Date.now();
+  const due = seenList().filter(c => cs(c.c).due <= now).length, d = ST.days[today()];
+  const nextNew = unseenList().slice(0, 4);
+  app.innerHTML = `
+  <div class="topbar"><a class="link" href="./">← Echo</a><span class="small muted mono">${streak()} ${streak() === 1 ? 'Tag' : 'Tage'} Serie</span></div>
+  <header style="display:grid;gap:4px"><span class="eyebrow">Echo Atlas</span><h1>Alle Länder der Welt</h1>
+    <p class="muted" style="margin:0">${total} Länder, Flagge und Lage. Von leicht nach schwer, mit Wiederholung, bis jedes Land Legende ist.</p></header>
+  <section class="card">
+    <div class="lvl"><div class="lvlbadge">${lv.l}</div><div class="grow" style="display:grid;gap:6px">
+      <div class="row spread"><h3>Level ${lv.l}</h3><span class="xp">${lv.into} / ${lv.need} XP</span></div>
+      <div class="bar gold"><i style="width:${Math.round(lv.into / lv.need * 100)}%"></i></div></div></div>
+    <div class="stats">
+      <div class="stat"><span class="eyebrow">Entdeckt</span><b class="mono">${seen}<span class="small muted">/${total}</span></b></div>
+      <div class="stat"><span class="eyebrow">Gold+</span><b class="mono">${mastered()}</b></div>
+      <div class="stat"><span class="eyebrow">Heute</span><b class="mono">${d ? d.xp : 0}<span class="small muted"> XP</span></b></div>
+    </div>
+    <div style="display:grid;gap:6px"><div class="row spread small"><span class="muted">Weltkarte entdeckt</span><span class="mono">${Math.round(seen / total * 100)} %</span></div>
+      <div class="bar"><i style="width:${seen / total * 100}%"></i></div></div>
+  </section>
+  <section class="card">
+    <div class="row spread"><div style="display:grid;gap:2px"><span class="eyebrow">Nächste Runde</span>
+      <h3>${nextNew.length ? nextNew.length + ' neue Länder' : 'Alles entdeckt'}${due ? ' · ' + due + ' fällig' : ''}</h3></div>
+      <span class="tag challenge">+1 Challenge</span></div>
+    ${nextNew.length ? `<div class="row" style="flex-wrap:wrap;gap:6px">${nextNew.map(c => `<span class="tag new">${esc(c.n)}</span>`).join('')}</div>` : ''}
+    <button class="btn primary big" id="start" data-act="start">Runde starten</button>
+    <div class="row" style="gap:8px"><button class="btn grow" data-act="review" ${seen ? '' : 'disabled'}>Nur wiederholen</button><button class="btn grow" data-act="collection">Sammlung</button></div>
+  </section>
+  <section class="card">
+    <div class="row spread"><h3>Prestige je Land</h3><span class="small muted">richtige Antworten</span></div>
+    <div class="legend">${PRESTIGE.slice(1).map(p => `<span><i class="pdot" style="background:${p.color}"></i>${p.name} · ${p.min}+</span>`).join('')}</div>
+  </section>`;
+}
+function renderCollection() {
+  const fills = {};
+  for (const c of COUNTRIES) { const st = ST.cs[c.c]; if (st && st.seen) fills[c.c] = prestigeOf(st.n).color; }
+  const proj = d3.geoNaturalEarth1().fitExtent([[6, 6], [W - 6, H - 6]], { type: 'Sphere' });
+  const filters = [['all', 'Alle'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3'], ['4', 'Stufe 4'], ...Object.entries(REGION_DE).filter(([k]) => k !== 'Antarctic')];
+  const list = COUNTRIES.filter(c => S.filter === 'all' || String(c.t) === S.filter || c.r === S.filter);
+  app.innerHTML = `
+  <div class="topbar"><button class="link" data-act="home">← Zurück</button><span class="small muted mono">${seenList().length}/${COUNTRIES.length} entdeckt</span></div>
+  <h2>Sammlung</h2>
+  <div class="stage">${mapSVG(proj, { fills, label: 'Weltkarte nach Prestige gefärbt' })}</div>
+  <div class="legend">${PRESTIGE.slice(1).map(p => `<span><i class="pdot" style="background:${p.color}"></i>${p.name}</span>`).join('')}</div>
+  <div class="chips" role="group" aria-label="Filter">${filters.map(([k, l]) => `<button class="chip" data-act="filter" data-v="${k}" aria-pressed="${S.filter === k}">${l}</button>`).join('')}</div>
+  <div class="grid">${list.map(c => { const st = ST.cs[c.c] || { n: 0 }, p = prestigeOf(st.n), seen = st.seen;
+    return `<button class="cell ${seen ? '' : 'unseen'}" data-act="info" data-c="${c.c}"><span class="stripe" style="background:${seen ? p.color : 'transparent'}"></span><img src="${flag(c.c)}" alt="" loading="lazy"><span style="min-width:0"><span class="nm" style="display:block">${seen ? esc(c.n) : '???'}</span><span class="cnt">${seen ? `<i class="pdot" style="background:${p.color}"></i>${p.name} · ${st.n}×` : 'Stufe ' + c.t}</span></span></button>`; }).join('')}</div>
+  ${S.sheet ? infoSheet(S.sheet) : ''}`;
+}
+function infoCard(code, extra = '') {
+  const c = BY[code], st = ST.cs[code] || { n: 0, w: 0 }, p = prestigeOf(st.n), np = nextPrestige(st.n);
+  return `
+  <div class="stage">${mapSVG(makeProjection(code, 'zoom'), { marks: { [code]: 'target' }, pulse: true, label: 'Lage von ' + c.n })}</div>
+  <div class="row" style="gap:16px;align-items:flex-start">
+    <img src="${flag(code)}" alt="Flagge von ${esc(c.n)}" style="width:120px;aspect-ratio:4/3;border-radius:8px;object-fit:cover;box-shadow:0 2px 10px rgba(0,0,0,.2);flex:none">
+    <div class="grow" style="display:grid;gap:6px"><div class="intro-name">${esc(c.n)}</div>
+      <div class="facts"><span class="tag">${esc(SUB_DE[c.s] || c.s)}</span><span class="tag">Stufe ${c.t}</span></div>
+      ${st.seen ? `<div class="row small"><i class="pdot" style="background:${p.color}"></i><span>${p.name} · ${st.n}× richtig${np ? ` · noch ${np.min - st.n} bis ${np.name}` : ''}</span></div>` : ''}
+    </div></div>${extra}`;
+}
+function infoSheet(code) {
+  const st = ST.cs[code];
+  if (!st || !st.seen) return `<section class="card"><div class="row spread"><h3>Noch nicht entdeckt</h3><button class="link" data-act="close">Schließen</button></div><p class="muted" style="margin:0">Dieses Land taucht in einer späteren Runde auf. Stufe ${BY[code].t} von 4.</p></section>`;
+  return `<section class="card" id="sheet"><div class="row spread"><span class="eyebrow">Steckbrief</span><button class="link" data-act="close">Schließen</button></div>${infoCard(code)}</section>`;
+}
+function renderRound() {
+  const R = S.round, item = R.seq[R.i];
+  const prog = `<div class="progress">${R.seq.map((x, i) => `<i class="${i < R.i ? (R.res[i] === false ? 'bad' : 'ok') : i === R.i ? 'cur' : ''}"></i>`).join('')}</div>`;
+  const top = `<div class="topbar"><button class="link" data-act="quit">✕ Beenden</button><span class="row" style="gap:12px">${R.combo >= 3 ? `<span class="combo">🔥 ${R.combo}er Serie</span>` : ''}<span class="xp">+${R.xp} XP</span></span></div>`;
+  const c = BY[item.code];
+  if (item.kind === 'intro') {
+    app.innerHTML = `${top}${prog}<span class="tag new" style="justify-self:start">Neues Land</span>${infoCard(item.code)}
+      <button class="btn primary big" data-act="next" id="next">Gemerkt · weiter</button>`;
+    return;
+  }
+  const label = typeof TYPES[item.type].label === 'function' ? TYPES[item.type].label(c.n) : TYPES[item.type].label;
+  let stage = '';
+  if (item.type === 'mapToName') stage = `<div class="stage">${mapSVG(makeProjection(item.code, 'zoom'), { marks: R.answered ? answerMarks(item) : { [item.code]: 'target' }, pulse: !R.answered, label: 'Markiertes Land' })}</div>`;
+  else if (item.type === 'flagToName' || item.type === 'flagToMap') stage = R.answered && item.type === 'flagToMap' ? '' : `<div class="flagbig"><img src="${flag(item.code)}" alt="Flagge"></div>`;
+  if (item.type === 'nameToMap' || item.type === 'flagToMap') {
+    const smallFlag = item.type === 'flagToMap' && R.answered ? '' : '';
+    stage += `<div class="stage ${R.answered ? '' : 'clickable'}" id="clickmap">${mapSVG(R.proj, { marks: R.answered ? answerMarks(item) : {}, label: 'Karte zum Antippen' })}</div>${smallFlag}`;
+  }
+  let answers = '';
+  if (item.options) {
+    const flags = item.type === 'nameToFlag';
+    answers = `<div class="opts ${flags ? 'flags' : ''}">${item.options.map((o, i) => {
+      const cls = R.answered ? (o === item.code ? 'ok' : o === R.chosen ? 'bad' : '') : '';
+      return `<button class="opt ${flags ? 'flag' : ''} ${cls}" data-act="answer" data-v="${o}" ${R.answered ? 'disabled' : ''}>${flags ? `<img src="${flag(o)}" alt="Option ${i + 1}">` : `<span class="k">${i + 1}</span><span>${esc(BY[o].n)}</span>`}</button>`; }).join('')}</div>`;
+  }
+  let fb = '';
+  if (R.answered) {
+    const ok = R.chosen === item.code, st = cs(item.code), p = prestigeOf(st.n);
+    const wrongName = !ok && R.chosen ? (BY[R.chosen] ? BY[R.chosen].n : 'ein Gebiet ohne eigenen Eintrag') : '';
+    fb = `<div class="fb ${ok ? 'ok' : 'bad'}"><img src="${flag(item.code)}" alt=""><div class="grow" style="display:grid;gap:2px">
+      <b>${ok ? 'Richtig!' : 'Das war ' + esc(c.n)}</b>
+      <span class="small muted">${ok ? `${esc(c.n)} · ${esc(SUB_DE[c.s] || c.s)}` : (wrongName ? 'Du hattest ' + esc(wrongName) + '. ' : '') + 'Kommt gleich nochmal.'}</span>
+      <span class="small row" style="gap:6px"><i class="pdot" style="background:${p.color}"></i>${p.name} · ${st.n}×</span></div>
+      ${ok ? `<span class="xp">+${R.lastXP}</span>` : ''}</div>
+      <button class="btn primary big" data-act="next" id="next">Weiter</button>`;
+  }
+  app.innerHTML = `${top}${prog}
+    <div class="row" style="gap:6px;flex-wrap:wrap">${item.challenge ? '<span class="tag challenge">Challenge · +25 XP</span>' : ''}${item.retry ? '<span class="tag">Nochmal</span>' : ''}</div>
+    <div class="q">${esc(label)}</div>${stage}${answers}${fb}`;
+  if (R.answered) document.getElementById('next')?.focus();
+}
+function answerMarks(item) {
+  const m = { [item.code]: 'target' };
+  if (S.round.chosen && S.round.chosen !== item.code && BY[S.round.chosen]) m[S.round.chosen] = 'wrong';
+  return m;
+}
+function renderDone() {
+  const R = S.round, okN = R.res.filter(x => x === true).length, qN = R.res.filter(x => x !== null).length;
+  const lv = levelOf(ST.xp);
+  app.innerHTML = `
+  <div class="topbar"><a class="link" href="./">← Echo</a><span class="small muted mono">${streak()} ${streak() === 1 ? 'Tag' : 'Tage'} Serie</span></div>
+  <section class="card" style="text-align:center;justify-items:center">
+    <span class="eyebrow">Runde geschafft</span><div class="big-num">+${R.xp} XP</div>
+    <p class="muted" style="margin:0">${okN} von ${qN} richtig${R.perfect ? ' · fehlerfrei, +30 XP Bonus' : ''} · Level ${lv.l}</p>
+  </section>
+  ${R.newOnes.length ? `<section class="card"><h3>Neu entdeckt</h3><div class="row" style="flex-wrap:wrap;gap:8px">${R.newOnes.map(c => `<span class="tag new">${esc(BY[c].n)}</span>`).join('')}</div></section>` : ''}
+  ${R.ups.length ? `<section class="card"><h3>Aufgestiegen</h3><div style="display:grid;gap:8px">${R.ups.map(([c, p]) => `<div class="row"><img src="${flag(c)}" alt="" style="width:40px;aspect-ratio:4/3;border-radius:4px;object-fit:cover"><span class="grow">${esc(BY[c].n)}</span><span class="row small" style="gap:6px"><i class="pdot" style="background:${p.color}"></i>${p.name}</span></div>`).join('')}</div></section>` : ''}
+  <button class="btn primary big" data-act="start" id="again">Nächste Runde</button>
+  <div class="row" style="gap:8px"><button class="btn grow" data-act="home">Übersicht</button><button class="btn grow" data-act="collection">Sammlung</button></div>`;
+  document.getElementById('again').focus();
+}
+
+/* ---------- actions ---------- */
+function startRound(mode) {
+  const seq = buildRound(mode);
+  if (!seq.length) { toast('Nichts zu wiederholen'); return; }
+  S.round = { seq, i: 0, res: [], xp: 0, combo: 0, answered: false, chosen: null, newOnes: [], ups: [], retried: new Set(), perfect: false, lastXP: 0 };
+  prepItem(); S.view = 'round'; render(); scrollTo(0, 0);
+}
+function prepItem() {
+  const R = S.round, item = R.seq[R.i];
+  R.answered = false; R.chosen = null;
+  if (item && (item.type === 'nameToMap' || item.type === 'flagToMap')) R.proj = makeProjection(item.code, 'region');
+}
+function answer(choice) {
+  const R = S.round, item = R.seq[R.i]; if (R.answered) return;
+  R.answered = true; R.chosen = choice;
+  const ok = choice === item.code, st = cs(item.code), now = Date.now(), d = dayRec();
+  d.q++;
+  if (ok) {
+    const before = prestigeOf(st.n);
+    st.n++; st.box = Math.min(INTERVALS.length - 1, st.box + 1); st.due = now + INTERVALS[st.box]; st.seen = st.seen || now;
+    R.combo++;
+    let xp = item.challenge ? 25 : TYPES[item.type].xp;
+    if (R.combo >= 3) xp += Math.min(10, 2 * (R.combo - 2));
+    R.xp += xp; R.lastXP = xp; ST.xp += xp; d.xp += xp; d.ok++;
+    const after = prestigeOf(st.n);
+    if (after !== before) { R.ups = R.ups.filter(u => u[0] !== item.code); R.ups.push([item.code, after]); toast(`${BY[item.code].n}: ${after.name}!`); }
+    if (item.challenge && !R.newOnes.includes(item.code)) R.newOnes.push(item.code);
+  } else {
+    st.w++; st.box = st.seen ? 1 : 0; st.due = now; st.seen = st.seen || now; R.combo = 0;
+    if (!R.retried.has(item.code)) { R.retried.add(item.code); R.seq.splice(Math.min(R.seq.length, R.i + 3), 0, makeQ(item.code, { retry: true, type: pick(['mapToName', 'flagToName']) })); }
+    if (item.challenge && !R.newOnes.includes(item.code)) R.newOnes.push(item.code);
+  }
+  R.res[R.i] = ok; save(); render();
+}
+function next() {
+  const R = S.round, item = R.seq[R.i];
+  if (item.kind === 'intro') {
+    const st = cs(item.code); if (!st.seen) { st.seen = Date.now(); st.due = Date.now(); R.newOnes.push(item.code); R.xp += 5; ST.xp += 5; dayRec().xp += 5; save(); }
+    R.res[R.i] = null;
+  }
+  R.i++;
+  if (R.i >= R.seq.length) return finish();
+  prepItem(); render(); scrollTo(0, 0);
+}
+function finish() {
+  const R = S.round, d = dayRec();
+  const qs = R.res.filter(x => x !== null);
+  if (qs.length >= 5 && qs.every(Boolean)) { R.perfect = true; R.xp += 30; ST.xp += 30; d.xp += 30; }
+  d.r++; ST.best = Math.max(ST.best || 0, streak()); save();
+  S.view = 'done'; render(); scrollTo(0, 0);
+}
+app.addEventListener('click', e => {
+  const land = e.target.closest('#clickmap .land');
+  const mapEl = e.target.closest('#clickmap');
+  if (mapEl && S.view === 'round' && !S.round.answered) {
+    const item = S.round.seq[S.round.i];
+    // Snap: tiny countries count when the tap lands within ~24px of them.
+    const svg = mapEl.querySelector('svg'), r = svg.getBoundingClientRect(), sx = W / r.width;
+    const x = (e.clientX - r.left) * sx, y = (e.clientY - r.top) * sx;
+    const f = featOf(item.code), pt = S.round.proj(f ? d3.geoCentroid(f) : [BY[item.code].ll[1], BY[item.code].ll[0]]);
+    const near = pt && Math.hypot(pt[0] - x, pt[1] - y) < 24;
+    const code = land ? land.dataset.c : '';
+    if (code === item.code || (near && (!code || (BY[code] && BY[code].a > 5 * (BY[item.code].a || 1))))) return answer(item.code);
+    if (land) return answer(code || '?');
+    return; // tap on the sea: ignore
+  }
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act;
+  if (a === 'start') startRound('learn');
+  else if (a === 'review') startRound('review');
+  else if (a === 'collection') { S.view = 'collection'; S.sheet = null; render(); scrollTo(0, 0); }
+  else if (a === 'home') { S.view = 'home'; render(); scrollTo(0, 0); }
+  else if (a === 'quit') { if (S.round.res.length) finish(); else { S.view = 'home'; render(); } }
+  else if (a === 'answer') answer(b.dataset.v);
+  else if (a === 'next') next();
+  else if (a === 'filter') { S.filter = b.dataset.v; S.sheet = null; render(); }
+  else if (a === 'info') { S.sheet = b.dataset.c; render(); document.getElementById('sheet')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (!document.getElementById('sheet')) window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
+  else if (a === 'close') { S.sheet = null; render(); }
+});
+document.addEventListener('keydown', e => {
+  if (S.view !== 'round') return;
+  const R = S.round, item = R.seq[R.i];
+  if ((e.key === 'Enter' || e.key === ' ') && (R.answered || item.kind === 'intro')) { e.preventDefault(); next(); return; }
+  const n = parseInt(e.key, 10);
+  if (!R.answered && item.options && n >= 1 && n <= item.options.length) answer(item.options[n - 1]);
+});
+render();
+</script>
+</body>
+</html>

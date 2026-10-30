@@ -8,3 +8,4 @@ Persönliches Sprachtagebuch mit Wochenzielen, Sokrates-Dialog, Spanisch-Partner
 - Umzug/Sicherung: Einstellungen → Backup exportieren / importieren.
 - Automatische Sicherung (Edge/Chrome am Computer): Einstellungen → Sicherungsdatei wählen, z. B. in OneDrive. Echo schreibt nach jeder Änderung hinein. Ist der Browser leer, bietet Echo auf der Startseite „Sicherung wiederherstellen“ an.
 - Spanisch: Sokrates → Español. Drei Figuren (Don Pulpo, Doña Espina, Tinto), Niveau A2–C1, Antworten werden vorgelesen (Browser-Stimme kostenlos, mit OpenAI-Key lebendiger). „Hablar“ nimmt auf und schickt ab.
+- Atlas (laender.html): alle 197 Länder mit Flagge und Lage, Runden mit Wiederholung, XP und Prestige je Land. Fortschritt liegt unter `echo-geo` im Browser und ist im Echo-Backup enthalten. Eine Runde pro Tag zählt als Bonus-Aufgabe (+15 XP).

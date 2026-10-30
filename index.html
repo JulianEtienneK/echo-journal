@@ -424,7 +424,7 @@ const I18N = {
     wipeConfirm: 'Alle Memos, Dialoge, Ziele und Rückblicke auf diesem Gerät löschen? Das lässt sich nicht rückgängig machen.',
     imported: n => n + ' Einträge importiert', exported: 'Backup erstellt', importFail: 'Die Datei ist kein Echo-Backup.',
     privacy: 'Alles liegt lokal in diesem Browser. Mach ab und zu ein Backup: Browserdaten löschen heißt Memos löschen.',
-    q_bonus: 'Bonus · freiwillig', q_es: 'Español mit deinem Sparringspartner', q_xw: 'Ein Kreuzworträtsel lösen',
+    q_bonus: 'Bonus · freiwillig', q_es: 'Español mit deinem Sparringspartner', q_xw: 'Ein Kreuzworträtsel lösen', q_geo: 'Eine Atlas-Runde (Länder & Flaggen)',
     xwErn: 'Ernährungsmedizin', xwAw: 'Allgemeinwissen', xwBack: 'Zurück', xwLevel: n => 'Stufe ' + n, xwAcross: 'Waagerecht', xwDown: 'Senkrecht',
     xwHelp: 'Umlaute als AE, OE, UE, ß als SS. Feld antippen, nochmal tippen wechselt die Richtung.', xwCheck: 'Prüfen', xwReveal: 'Lösung zeigen', xwRevealIn: s => 'Lösung in ' + s,
     xwSolved: 'Gelöst · +15 XP', xwRevealed: 'Mit Lösung beendet · +5 XP', xwWrong: n => n + ' Buchstaben stimmen noch nicht', xwAllOk: 'Bisher alles richtig',
@@ -537,7 +537,7 @@ const I18N = {
     liveStt: 'Live transcript in the browser (free, less accurate; on Android it may not run alongside recording)',
     autoAI: 'Transcribe and summarize new memos automatically', dataSection: 'Data',
     exportBtn: 'Export backup', importBtn: 'Import backup', used: s => 'Used: ' + s, wipe: 'Delete everything',
-    q_bonus: 'Bonus · optional', q_es: 'Español with your sparring partner', q_xw: 'Solve a crossword',
+    q_bonus: 'Bonus · optional', q_es: 'Español with your sparring partner', q_xw: 'Solve a crossword', q_geo: 'One Atlas round (countries & flags)',
     xwErn: 'Nutritional medicine', xwAw: 'General knowledge', xwBack: 'Back', xwLevel: n => 'Level ' + n, xwAcross: 'Across', xwDown: 'Down',
     xwHelp: 'Umlauts as AE, OE, UE, ß as SS. Tap a square, tap again to switch direction.', xwCheck: 'Check', xwReveal: 'Show solution', xwRevealIn: s => 'Solution in ' + s,
     xwSolved: 'Solved · +15 XP', xwRevealed: 'Finished with solution · +5 XP', xwWrong: n => n + ' letters are not right yet', xwAllOk: 'All correct so far',
@@ -714,6 +714,9 @@ function computeStats() {
     xp += 3 * wp.done;
     if (wp.items.length && wp.items.every(goalDone)) goalWeeks++;
   }
+  // Echo Atlas (laender.html): +15 XP per day with at least one finished round.
+  const geoDays = Object.entries((LS.get('echo-geo', null) || {}).days || {}).filter(([, v]) => v && v.r > 0).map(([k]) => k);
+  xp += geoDays.length * 15;
   const pl = played(); let echoCount = 0;
   for (const ids of Object.values(pl)) { echoCount += ids.length; xp += 2 * Math.min(5, ids.length); }
   const socDays = new Set(socDone.map(d => d.day)), recapSet = new Set(recapDays);
@@ -724,7 +727,7 @@ function computeStats() {
   if (best > LS.get('echo-best', 0)) LS.set('echo-best', best);
   const level = levelFrom(xp);
   const quests = { memo: dayMin.has(td), socratic: socDays.has(td), recap: recapSet.has(td), echo: (pl[td] || []).length > 0,
-    es: esDone.some(d => d.day === td), xw: xwDoneDays.has(td) };
+    es: esDone.some(d => d.day === td), xw: xwDoneDays.has(td), geo: geoDays.includes(td) };
   // Extra counters for badges.
   const perDay = new Map(), imps = new Set(); let longest = 0, night = 0, early = 0, pi = 0, mirror = 0, holiday = 0;
   for (const m of S.memos) {
@@ -1311,6 +1314,7 @@ function viewToday() {
     <div class="stack" style="gap:2px">
       ${quest('es', '🗣️ ' + t('q_es'), 15, 'quest-es')}
       ${XW.puzzles.length ? quest('xw', '🧩 ' + t('q_xw'), 15, 'xw-hub') : ''}
+      ${quest('geo', '🌍 ' + t('q_geo'), 15, 'geo-open')}
     </div>
   </section>
   ${commits.length ? `<section class="card">
@@ -1993,7 +1997,7 @@ async function buildBackup() {
   const memos = [];
   for (const m of S.memos) memos.push(Object.assign({}, m, { blob: m.blob ? await blobToDataURL(m.blob) : null, status: '' }));
   const settings = Object.assign({}, S.set); delete settings.anthropicKey; delete settings.openaiKey; // keys never leave the browser
-  const data = { app: 'echo-journal', version: 1, exportedAt: new Date().toISOString(), memos, dialogs: S.dialogs, recaps: Object.values(S.recaps), goals: Object.values(S.goals), commitments: S.commitments, xw: Object.values(S.xw), played: played(), settings };
+  const data = { app: 'echo-journal', version: 1, exportedAt: new Date().toISOString(), memos, dialogs: S.dialogs, recaps: Object.values(S.recaps), goals: Object.values(S.goals), commitments: S.commitments, xw: Object.values(S.xw), played: played(), geo: LS.get('echo-geo', null), settings };
   return new Blob([JSON.stringify(data)], { type: 'application/json' });
 }
 async function exportBackup() {
@@ -2015,6 +2019,7 @@ async function importBackup(file) {
     let n = 0;
     for (const m of data.memos || []) { if (m.blob) m.blob = await (await fetch(m.blob)).blob(); await DB.put('memos', m); n++; }
     for (const [store, list] of [['dialogs', data.dialogs], ['recaps', data.recaps], ['goals', data.goals], ['commitments', data.commitments], ['xw', data.xw]]) for (const x of list || []) { await DB.put(store, x); n++; }
+    if (data.geo && (data.geo.xp || 0) > ((LS.get('echo-geo', null) || {}).xp || 0)) LS.set('echo-geo', data.geo);
     if (data.played) { const pl = played(); for (const [d, ids] of Object.entries(data.played)) pl[d] = [...new Set([...(pl[d] || []), ...ids])]; LS.set('echo-played', pl); }
     if (data.settings) { const keep = { anthropicKey: S.set.anthropicKey, openaiKey: S.set.openaiKey }; S.set = Object.assign({}, S.set, data.settings, keep); saveSettings(); applyTheme(); }
     await loadAll(); toast(t('imported', n), 'ok'); closeSheet(); afterChange();
@@ -2205,6 +2210,7 @@ document.addEventListener('click', async e => {
     case 'gweek': { const nw = dayKey(addDays(parseDay(S.goalWeek || weekStart()), 7 * +v)); if (nw <= dayKey(addDays(parseDay(weekStart()), 7))) { S.goalWeek = nw; render(); } break; }  // one week ahead for planning
     case 'gday': updateGoal(b.dataset.w, id, it => { it.days[+v] = !it.days[+v]; }); break;
     case 'tab-socratic': S.tab = 'socratic'; render(); scrollTo(0, 0); break;
+    case 'geo-open': location.href = 'laender.html'; break;
     case 'quest-es': S.tab = 'socratic'; S.socMode = 'es'; LS.set('echo-soc-mode', 'es'); render(); scrollTo(0, 0); break;
     case 'xw-open': xwOpen(v); break;
     case 'xw-back': if (S.tab === 'xw' && S.xwId) { S.xwId = null; } else S.tab = 'today'; render(); scrollTo(0, 0); break;
@@ -2412,6 +2418,7 @@ if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListen
   if (open) S.activeDialog = open.id;
   { const tv = LS.get('echo-tabs', []); if (!tv.includes('today')) LS.set('echo-tabs', [...tv, 'today']); }
   await abInit();
+  { const g = LS.get('echo-geo', null); if (g && g.updated > (AB.last || 0)) abSchedule(); }
   if (!journalEmpty()) LS.set('echo-restore-hide', false);
   render(); celebrate();
   if (IS_ARTIFACT) window.claude.use('sample').then(fn => { SAMPLE = fn; render(); }).catch(() => {});
