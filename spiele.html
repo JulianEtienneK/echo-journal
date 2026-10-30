@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Echo Spiele</title>
+<meta name="theme-color" content="#F2F3EF">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Spiele page reuses the Atlas styles. Layout: one column like Echo. Home = stats + start; round = map/flag stage on top, answers below; collection = prestige world map + grid. */
+:root {
+  --bg: #F2F3EF; --surface: #FFFFFF; --surface-2: #E7EAE4; --ink: #1A1E1C; --muted: #5C6661; --line: #D5DAD3;
+  --calm: #1B8173; --calm-soft: rgba(27,129,115,.12); --rec: #D4542A; --rec-soft: rgba(212,84,42,.12);
+  --gold: #A87D14; --gold-soft: rgba(184,138,30,.16);
+  --ocean: #DCE6E8; --land: #C9CFC6; --land-line: #F7F8F5; --hl: #D4542A; --target: #1B8173;
+  --shadow: 0 1px 2px rgba(20,30,25,.05), 0 10px 28px rgba(20,30,25,.07);
+  --f-display: "Bricolage Grotesque", "DM Sans", system-ui, sans-serif;
+  --f-body: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --r: 18px; color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F1211; --surface: #171B19; --surface-2: #212624; --ink: #E8ECE7; --muted: #95A09A; --line: #2A312E;
+  --calm: #3DC2AD; --calm-soft: rgba(61,194,173,.14); --rec: #FF7647; --rec-soft: rgba(255,118,71,.15);
+  --gold: #E5B84C; --gold-soft: rgba(229,184,76,.15);
+  --ocean: #142024; --land: #34403B; --land-line: #171B19; --hl: #FF7647; --target: #3DC2AD;
+  --shadow: 0 1px 0 rgba(255,255,255,.03); color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0F1211; --surface: #171B19; --surface-2: #212624; --ink: #E8ECE7; --muted: #95A09A; --line: #2A312E;
+  --calm: #3DC2AD; --calm-soft: rgba(61,194,173,.14); --rec: #FF7647; --rec-soft: rgba(255,118,71,.15);
+  --gold: #E5B84C; --gold-soft: rgba(229,184,76,.15);
+  --ocean: #142024; --land: #34403B; --land-line: #171B19; --hl: #FF7647; --target: #3DC2AD;
+  --shadow: 0 1px 0 rgba(255,255,255,.03); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--calm); outline-offset: 2px; border-radius: 8px; }
+[hidden] { display: none !important; }
+#app {
+  max-width: 600px; margin: 0 auto; display: grid; gap: 14px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: calc(env(safe-area-inset-top, 0px) + 16px) calc(env(safe-area-inset-bottom, 0px) + 40px);
+}
+h1, h2, h3 { font-family: var(--f-display); margin: 0; line-height: 1.15; text-wrap: balance; }
+h1 { font-size: 30px; font-weight: 700; letter-spacing: -.02em; }
+h2 { font-size: 24px; font-weight: 700; letter-spacing: -.01em; }
+h3 { font-size: 17px; font-weight: 700; }
+.eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.card { background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); padding: 18px; display: grid; gap: 12px; min-width: 0; }
+.row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.spread { justify-content: space-between; }
+.grow { flex: 1; min-width: 0; }
+.btn { border: 0; border-radius: 14px; padding: 13px 18px; font-weight: 700; background: var(--surface-2); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn.primary { background: var(--calm); color: #fff; }
+:root[data-theme="dark"] .btn.primary { color: #0F1211; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.primary { color: #0F1211; } }
+.btn.big { padding: 17px 20px; font-size: 18px; width: 100%; }
+.btn:disabled { opacity: .45; cursor: default; }
+.link { background: none; border: 0; padding: 6px 0; color: var(--muted); font-weight: 500; white-space: nowrap; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bar { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--calm); border-radius: 99px; transition: width .4s ease; }
+.bar.gold i { background: var(--gold); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.stat { background: var(--surface-2); border-radius: 14px; padding: 12px; display: grid; gap: 2px; }
+.stat b { font-family: var(--f-display); font-size: 22px; }
+.lvl { display: flex; align-items: center; gap: 14px; }
+.lvlbadge { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-display); font-weight: 700; font-size: 22px; background: var(--calm-soft); color: var(--calm); flex: none; }
+
+/* stage */
+.stage { position: relative; background: var(--ocean); border-radius: var(--r); overflow: hidden; aspect-ratio: 3 / 2; max-width: 100%; }
+.stage svg { width: 100%; height: 100%; display: block; }
+.stage .sphere { fill: var(--ocean); }
+.stage .grat { fill: none; stroke: var(--ink); stroke-opacity: .06; stroke-width: .6; }
+.stage .land { fill: var(--land); stroke: var(--land-line); stroke-width: .5; }
+.stage.clickable .land { cursor: pointer; }
+.stage.clickable .land:hover { fill: var(--gold); fill-opacity: .55; }
+.stage .land.target { fill: var(--target); }
+.stage .land.wrong { fill: var(--hl); }
+.stage .ring { fill: none; stroke: var(--target); stroke-width: 2.5; }
+.stage .ring.wrong { stroke: var(--hl); }
+.stage .ring.pulse { animation: pulse 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes pulse { 50% { stroke-opacity: .35; } }
+.flagbig { display: grid; place-items: center; background: var(--surface-2); border-radius: var(--r); padding: 22px; }
+.flagbig img { width: min(320px, 80%); aspect-ratio: 4 / 3; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.18); object-fit: cover; }
+.q { font-family: var(--f-display); font-size: 22px; font-weight: 700; text-wrap: balance; }
+.opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.opt { border: 2px solid var(--line); background: var(--surface); border-radius: 14px; padding: 13px 12px; font-weight: 700; text-align: left; display: flex; gap: 10px; align-items: center; min-width: 0; }
+.opt .k { font-family: var(--f-mono); font-size: 12px; color: var(--muted); flex: none; }
+.opt:hover:not(:disabled) { border-color: var(--calm); }
+.opt.ok { border-color: var(--calm); background: var(--calm-soft); }
+.opt.bad { border-color: var(--rec); background: var(--rec-soft); }
+.opt:disabled { cursor: default; }
+.opt.flag { padding: 8px; justify-content: center; }
+.opt.flag img { width: 100%; aspect-ratio: 4 / 3; border-radius: 6px; object-fit: cover; }
+.progress { display: flex; gap: 4px; }
+.progress i { flex: 1; height: 6px; border-radius: 99px; background: var(--surface-2); }
+.progress i.ok { background: var(--calm); }
+.progress i.bad { background: var(--rec); }
+.progress i.cur { background: var(--gold); }
+.fb { border-radius: var(--r); padding: 14px 16px; display: flex; gap: 14px; align-items: center; }
+.fb.ok { background: var(--calm-soft); }
+.fb.bad { background: var(--rec-soft); }
+.fb img { width: 72px; aspect-ratio: 4 / 3; border-radius: 5px; object-fit: cover; flex: none; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+.xp { font-family: var(--f-mono); font-size: 13px; color: var(--gold); font-weight: 500; white-space: nowrap; }
+.tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 99px; background: var(--surface-2); color: var(--muted); }
+.tag.challenge { background: var(--gold-soft); color: var(--gold); }
+.tag.new { background: var(--calm-soft); color: var(--calm); }
+.combo { font-family: var(--f-mono); font-size: 13px; color: var(--rec); }
+
+/* prestige */
+.pdot { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 6px 12px; font-size: 13px; font-weight: 500; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.cell { border: 0; background: var(--surface); border-radius: 12px; padding: 8px; display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 8px; align-items: center; text-align: left; box-shadow: var(--shadow); position: relative; }
+.cell img { width: 44px; aspect-ratio: 4 / 3; border-radius: 4px; object-fit: cover; }
+.cell.unseen img { filter: grayscale(1); opacity: .35; }
+.cell .nm { font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cell .cnt { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.cell .stripe { position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; }
+.toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 700; z-index: 20; box-shadow: var(--shadow); max-width: calc(100% - 32px); text-align: center; animation: pop .25s ease; }
+@keyframes pop { from { transform: translate(-50%, 10px); opacity: 0; } }
+.big-num { font-family: var(--f-display); font-size: 44px; font-weight: 700; line-height: 1; }
+.intro-name { font-family: var(--f-display); font-size: 30px; font-weight: 700; letter-spacing: -.01em; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px; }
+.loading { padding: 60px 0; text-align: center; color: var(--muted); }
+.ac { position: relative; display: grid; gap: 8px; }
+.ac input { width: 100%; font: 700 18px/1.3 var(--f-body); padding: 14px 16px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); }
+.ac input:focus { outline: none; border-color: var(--calm); }
+.aclist { display: grid; gap: 4px; max-height: 264px; overflow-y: auto; }
+.aclist button { border: 0; background: var(--surface); border-radius: 10px; padding: 10px 12px; text-align: left; font-weight: 500; display: flex; justify-content: space-between; gap: 10px; }
+.aclist button.on, .aclist button:hover { background: var(--calm-soft); }
+.aclist button small { color: var(--muted); font-weight: 400; }
+.aclist mark { background: none; color: var(--calm); font-weight: 700; }
+.hint { font-size: 13px; color: var(--muted); }
+.fact { background: var(--gold-soft); border-radius: 14px; padding: 12px 14px; font-size: 15px; display: flex; gap: 10px; }
+.fact b { color: var(--gold); flex: none; }
+.skills { display: inline-flex; gap: 4px; }
+.skills i { width: 8px; height: 8px; border-radius: 50%; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
+.skills i.on { background: var(--calm); box-shadow: none; }
+.shake { animation: shake .3s; }
+@keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+@media (max-width: 420px) { .opts { grid-template-columns: 1fr; } .opts.flags { grid-template-columns: repeat(2, minmax(0,1fr)); } .stats { grid-template-columns: repeat(3, minmax(0,1fr)); } .stat b { font-size: 19px; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<style>
+.wgrid { display: grid; grid-template-rows: repeat(6, 1fr); gap: 6px; width: min(330px, 100%); margin: 0 auto; }
+.wrow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.wcell { aspect-ratio: 1; border: 2px solid var(--line); border-radius: 8px; display: grid; place-items: center; font: 700 26px/1 var(--f-display); text-transform: uppercase; background: var(--surface); }
+.wcell.filled { border-color: var(--muted); }
+.wcell.g { background: #3E9C5C; border-color: #3E9C5C; color: #fff; }
+.wcell.y { background: #C9A227; border-color: #C9A227; color: #fff; }
+.wcell.x { background: var(--surface-2); border-color: var(--surface-2); color: var(--muted); }
+.kb { display: grid; gap: 6px; }
+.kbrow { display: flex; gap: 5px; justify-content: center; }
+.kbrow button { flex: 1; max-width: 42px; height: 52px; border: 0; border-radius: 8px; background: var(--surface-2); font-weight: 700; padding: 0; }
+.kbrow button.wide { max-width: 68px; flex: 1.6; font-size: 13px; }
+.kbrow button.g { background: #3E9C5C; color: #fff; } .kbrow button.y { background: #C9A227; color: #fff; } .kbrow button.x { opacity: .35; }
+.sum { font: 700 44px/1.1 var(--f-display); text-align: center; letter-spacing: -.01em; }
+.numin { width: 100%; font: 700 30px/1.2 var(--f-mono); text-align: center; padding: 14px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); }
+.numin:focus { outline: none; border-color: var(--calm); }
+.expl { background: var(--surface-2); border-radius: 14px; padding: 12px 14px; font-size: 15px; }
+.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: end; height: 90px; }
+.week div { display: grid; gap: 4px; justify-items: center; font-size: 11px; color: var(--muted); }
+.week i { width: 100%; border-radius: 6px 6px 2px 2px; background: var(--calm); min-height: 3px; }
+</style>
+<div id="app"><p class="loading">Lädt …</p></div>
+<script src="geo/quiz.js"></script>
+<script>
+'use strict';
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* blocked */ } },
+};
+const KEY = 'echo-games';
+const G = LS.get(KEY, null) || { xp: 0, days: {}, wordle: { played: 0, won: 0, streak: 0, best: 0, dist: [0, 0, 0, 0, 0, 0] }, rechnen: { best: 0 }, quiz: {}, sound: true };
+const save = () => { G.updated = Date.now(); LS.set(KEY, G); };
+(() => { const s = LS.get('echo-settings', {}); if (s.theme && s.theme !== 'system') document.documentElement.dataset.theme = s.theme; })();
+const esc = s => String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const dk = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const today = () => dk(new Date());
+const day = () => G.days[today()] || (G.days[today()] = { xp: 0 });
+function gain(game, xp) { const d = day(); d[game] = (d[game] || 0) + 1; d.xp += xp; G.xp += xp; save(); }
+const app = document.getElementById('app');
+function toast(msg) { document.querySelectorAll('.toast').forEach(t => t.remove()); const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg; document.body.appendChild(el); setTimeout(() => el.remove(), 2400); }
+let AC = null;
+function beep(ok) { if (G.sound === false) return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); const o = AC.createOscillator(), g = AC.createGain(); o.frequency.value = ok ? 780 : 200; g.gain.setValueAtTime(.0001, AC.currentTime); g.gain.exponentialRampToValueAtTime(.1, AC.currentTime + .02); g.gain.exponentialRampToValueAtTime(.0001, AC.currentTime + .18); o.connect(g).connect(AC.destination); o.start(); o.stop(AC.currentTime + .2); } catch { /* no audio */ } }
+const back = `<div class="topbar"><a class="link" href="./#games">← Spiele</a><button class="link" data-act="sound">${G.sound === false ? '🔇' : '🔊'}</button></div>`;
+
+/* ================= Wordle ================= */
+const WORDS = ('ABEND ACKER ADLER ANGST BANDE BIBER BLATT BLICK BLITZ BODEN BRAUT BRIEF BUCHE CHAOS DACHS DAMPF DECKE DOLCH EBENE EIMER EISEN ENGEL ENKEL ERBSE ESSIG FABEL FADEN FALKE FEDER FEIER FELGE FERNE FLOSS FLUSS FORST FRAGE FUCHS GABEL GEIST GLANZ GNADE GRIFF GRUBE GURKE HAFEN HAGEL HALLE HEIDE HERDE HONIG HOTEL HUMOR INSEL JACKE JUWEL KABEL KAKAO KAMEL KANAL KARTE KATZE KERZE KETTE KISTE KLAGE KLIMA KNOPF KRAFT KRONE KUGEL KUNST LACHS LEDER LIEBE LILIE LISTE LUNGE MAGEN MANGO MARKT MAUER MEILE METER MIETE MILCH MINZE MOTOR NADEL NEBEL NUDEL OLIVE ONKEL OPFER ORGEL PALME PANDA PAUSE PERLE PILOT PINIE PIZZA PLATZ PRINZ PUPPE QUARK QUOTE RADIO RASEN REGAL REISE RIESE ROMAN RUDER SALAT SALBE SAMEN SCHAF SCHUH SEIFE SEITE SOCKE SONNE SPASS SPIEL STADT STAHL STAMM STAUB STEIN STIER STIRN STOCK STROM STUBE SUPPE TAFEL TANNE TANTE TASSE TEICH THRON TIGER TINTE TONNE TRAUM TREUE TULPE VOGEL WAAGE WAFFE WAGEN WALZE WANGE WANNE WEIDE WELLE WESPE WETTE WIESE WOLLE WURST ZANGE ZEBRA ZWERG BLASS BRAUN BREIT FRECH GLATT GROSS HEISS KLEIN LEISE RUHIG SAUER STARK STILL STUMM WEICH BAUEN BETEN GEHEN HOLEN JAGEN KAUEN LEBEN LESEN MALEN RATEN REDEN RUFEN SAGEN SEHEN WEBEN LOBEN HEBEN APFEL BIRNE TISCH STUHL LAMPE BLUME WOLKE REGEN NACHT STERN FEUER GRUND INSEL KREIS PUNKT LINIE FARBE KLANG MUSIK GEBEN HABEN FREMD WITZE BLUSE HOSEN MANTEL KLEID GEIGE FLOTE TROMMEL VIOLA ATLAS GLOBE ERDE').split(' ').filter(w => /^[A-Z]{5}$/.test(w));
+const SOL = [...new Set(WORDS)];
+const W = { mode: 'daily', target: '', guesses: [], cur: '', done: false, won: false };
+function dailyWord() { const n = Math.floor((new Date(today()) - new Date('2026-01-01')) / 864e5); let h = n * 2654435761 % 4294967296; return SOL[h % SOL.length]; }
+function wordleStart(mode) {
+  W.mode = mode; W.cur = '';
+  if (mode === 'daily') { const s = G.wordle.daily && G.wordle.daily.date === today() ? G.wordle.daily : null; W.target = dailyWord(); W.guesses = s ? s.guesses : []; W.done = s ? s.done : false; W.won = s ? s.won : false; }
+  else { W.target = SOL[Math.floor(Math.random() * SOL.length)]; W.guesses = []; W.done = false; W.won = false; }
+  view = 'wordle'; render();
+}
+function scoreGuess(g, t) {
+  const res = Array(5).fill('x'), left = {};
+  for (let i = 0; i < 5; i++) { if (g[i] === t[i]) res[i] = 'g'; else left[t[i]] = (left[t[i]] || 0) + 1; }
+  for (let i = 0; i < 5; i++) if (res[i] !== 'g' && left[g[i]]) { res[i] = 'y'; left[g[i]]--; }
+  return res;
+}
+function wordleKey(k) {
+  if (W.done) return;
+  if (k === 'ENTER') {
+    if (W.cur.length < 5) { toast('Zu kurz'); return; }
+    W.guesses.push(W.cur); const won = W.cur === W.target; W.cur = '';
+    if (won || W.guesses.length >= 6) {
+      W.done = true; W.won = won; const st = G.wordle;
+      if (W.mode === 'daily') { st.played++; if (won) { st.won++; st.streak++; st.best = Math.max(st.best, st.streak); st.dist[W.guesses.length - 1]++; } else st.streak = 0; }
+      const xp = won ? (W.mode === 'daily' ? 10 : 5) + (6 - W.guesses.length) * 4 : 2;
+      gain('wordle', xp); beep(won); toast(won ? `Gelöst! +${xp} XP` : `Das Wort war ${W.target}`);
+    }
+    if (W.mode === 'daily') G.wordle.daily = { date: today(), guesses: W.guesses, done: W.done, won: W.won };
+    save(); render(); return;
+  }
+  if (k === '⌫') W.cur = W.cur.slice(0, -1); else if (/^[A-Z]$/.test(k) && W.cur.length < 5) W.cur += k;
+  render();
+}
+function viewWordle() {
+  const rows = []; for (let r = 0; r < 6; r++) {
+    const g = W.guesses[r], sc = g ? scoreGuess(g, W.target) : null, txt = g || (r === W.guesses.length ? W.cur : '');
+    rows.push(`<div class="wrow">${[0, 1, 2, 3, 4].map(i => `<div class="wcell ${sc ? sc[i] : txt[i] ? 'filled' : ''}">${txt[i] || ''}</div>`).join('')}</div>`);
+  }
+  const keyState = {}; W.guesses.forEach(g => scoreGuess(g, W.target).forEach((s, i) => { const k = g[i], o = keyState[k]; if (s === 'g' || (s === 'y' && o !== 'g') || (!o)) keyState[k] = s === 'x' && o ? o : s; }));
+  const kb = ['QWERTZUIOP', 'ASDFGHJKL', '↵YXCVBNM⌫'].map(r => `<div class="kbrow">${[...r].map(k => k === '↵' ? `<button class="wide" data-key="ENTER">Enter</button>` : `<button class="${k === '⌫' ? 'wide' : ''} ${keyState[k] || ''}" data-key="${k}">${k}</button>`).join('')}</div>`).join('');
+  const st = G.wordle;
+  return `${back}<div class="row spread"><div style="display:grid;gap:2px"><span class="eyebrow">${W.mode === 'daily' ? 'Wort des Tages' : 'Übungsrunde'}</span><h2>Wordle</h2></div><span class="small muted mono">🔥 ${st.streak} · ${st.won}/${st.played}</span></div>
+  <p class="small muted" style="margin:0">Deutsches Wort mit 5 Buchstaben, ohne Umlaute (ß = SS). Grün: richtige Stelle, gelb: kommt vor.</p>
+  <div class="wgrid">${rows.join('')}</div>
+  ${W.done ? `<section class="card" style="text-align:center"><b>${W.won ? 'Geschafft in ' + W.guesses.length + '!' : 'Gesucht war: ' + W.target}</b><div class="row" style="gap:8px"><button class="btn primary grow" data-act="wordle-free">Übungsrunde</button><button class="btn grow" data-act="home">Übersicht</button></div></section>` : `<div class="kb">${kb}</div>`}`;
+}
+
+/* ================= Kopfrechnen ================= */
+const R = { on: false, end: 0, n: 0, wrong: 0, q: null, timer: 0, level: 1 };
+function mkTask(level) {
+  const r = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const kinds = level < 4 ? ['+', '−'] : level < 8 ? ['+', '−', '×'] : level < 12 ? ['+', '−', '×', '÷'] : ['×', '÷', '%', '²', '+'];
+  const k = kinds[Math.floor(Math.random() * kinds.length)], big = Math.min(9, 1 + Math.floor(level / 3));
+  if (k === '+') { const a = r(10, 10 * big * 3), b = r(5, 10 * big * 3); return { t: `${a} + ${b}`, a: a + b }; }
+  if (k === '−') { const a = r(20, 10 * big * 4), b = r(5, a); return { t: `${a} − ${b}`, a: a - b }; }
+  if (k === '×') { const a = r(2, level < 10 ? 10 : 19), b = r(2, 12); return { t: `${a} × ${b}`, a: a * b }; }
+  if (k === '÷') { const b = r(2, 12), a = b * r(2, 12); return { t: `${a} ÷ ${b}`, a: a / b }; }
+  if (k === '%') { const p = [10, 20, 25, 50, 5, 15][r(0, 5)], b = r(2, 40) * 20; return { t: `${p} % von ${b}`, a: b * p / 100 }; }
+  const a = r(11, 25); return { t: `${a}²`, a: a * a };
+}
+function rechnenStart() { Object.assign(R, { on: true, end: Date.now() + 60e3, n: 0, wrong: 0, level: 1 }); R.q = mkTask(1); clearInterval(R.timer); R.timer = setInterval(() => { const el = document.getElementById('rclock'); const s = Math.ceil((R.end - Date.now()) / 1000); if (s <= 0) rechnenEnd(); else if (el) el.textContent = '⏱ ' + s + ' s'; }, 250); view = 'rechnen'; render(); }
+function rechnenEnd() {
+  clearInterval(R.timer); if (!R.on) return; R.on = false;
+  const xp = Math.max(2, R.n * 2); const best = R.n > (G.rechnen.best || 0); if (best) G.rechnen.best = R.n;
+  gain('rechnen', xp); R.result = { xp, best }; render();
+}
+function viewRechnen() {
+  if (!R.on) return `${back}<h2>Kopfrechnen</h2><section class="card" style="text-align:center;justify-items:center">${R.result ? `<span class="eyebrow">Ergebnis</span><div class="sum">${R.n} richtig</div><p class="muted" style="margin:0">${R.result.best ? 'Neuer Bestwert! · ' : ''}+${R.result.xp} XP · Bestwert ${G.rechnen.best}</p>` : `<p class="muted" style="margin:0">60 Sekunden, so viele Aufgaben wie möglich. Es wird mit jeder richtigen Antwort schwerer: erst Plus/Minus, dann Mal, Geteilt, Prozent und Quadratzahlen.</p>`}
+    <button class="btn primary big" data-act="rechnen-go" id="rgo">${R.result ? 'Nochmal' : 'Start'}</button></section>`;
+  return `${back}<div class="row spread"><span class="mono" id="rclock">⏱ ${Math.ceil((R.end - Date.now()) / 1000)} s</span><span class="mono">${R.n} richtig · Stufe ${R.level}</span></div>
+    <div class="sum" style="padding:30px 0">${esc(R.q.t)} = ?</div>
+    <input class="numin" id="rin" inputmode="decimal" autocomplete="off" aria-label="Ergebnis"><p class="hint" style="text-align:center">Richtige Antworten werden sofort erkannt. Enter überspringt.</p>`;
+}
+function rechnenInput(v) {
+  if (!R.on) return;
+  if (Number(String(v).replace(',', '.')) === R.q.a) { R.n++; R.level = 1 + Math.floor(R.n / 2); R.q = mkTask(R.level); beep(true); render(); }
+}
+
+/* ================= Quiz ================= */
+const Q = { bank: null, seq: [], i: 0, ans: null, ok: 0, xp: 0, wrong: [] };
+const qs = (bank, id) => { const b = G.quiz[bank] || (G.quiz[bank] = {}); return b[id] || (b[id] = { b: 0, d: 0, n: 0, w: 0 }); };
+const IV = [0, 10 * 60e3, 3600e3, 86400e3, 3 * 86400e3, 7 * 86400e3, 21 * 86400e3, 60 * 86400e3];
+function quizStart(bank) {
+  const items = QUIZ[bank].items, now = Date.now();
+  const due = shuffle(items.filter(it => { const s = (G.quiz[bank] || {})[it[0]]; return s && s.d <= now; }));
+  const fresh = shuffle(items.filter(it => !(G.quiz[bank] || {})[it[0]]));
+  const rest = shuffle(items.filter(it => !due.includes(it) && !fresh.includes(it)));
+  const seq = [...due.slice(0, 6), ...fresh].slice(0, 10); while (seq.length < 10 && rest.length) seq.push(rest.shift());
+  Object.assign(Q, { bank, seq: shuffle(seq).map(it => ({ it, opts: shuffle(it[2]) })), i: 0, ans: null, ok: 0, xp: 0, wrong: [] });
+  view = 'quiz'; render();
+}
+function viewQuiz() {
+  const bank = QUIZ[Q.bank];
+  if (Q.i >= Q.seq.length) return `${back}<section class="card" style="text-align:center;justify-items:center"><span class="eyebrow">${esc(bank.title)}</span><div class="sum">${Q.ok}/${Q.seq.length}</div><p class="muted" style="margin:0">+${Q.xp} XP</p></section>
+    ${Q.wrong.length ? `<section class="card"><h3>Das solltest du dir merken</h3>${Q.wrong.map(it => `<div style="display:grid;gap:2px"><b>${esc(it[1])}</b><span class="small">→ ${esc(it[2][0])}</span></div>`).join('')}</section>` : ''}
+    <button class="btn primary big" data-act="quiz-go" data-v="${Q.bank}">Nächste Runde</button><button class="btn" data-act="home">Übersicht</button>`;
+  const cur = Q.seq[Q.i], it = cur.it;
+  return `${back}<div class="progress">${Q.seq.map((x, i) => `<i class="${i < Q.i ? (x.ok ? 'ok' : 'bad') : i === Q.i ? 'cur' : ''}"></i>`).join('')}</div>
+    <span class="eyebrow">${bank.icon} ${esc(bank.title)}</span><div class="q">${esc(it[1])}</div>
+    <div class="opts" style="grid-template-columns:1fr">${cur.opts.map((o, i) => { const cls = Q.ans == null ? '' : o === it[2][0] ? 'ok' : o === Q.ans ? 'bad' : ''; return `<button class="opt ${cls}" data-act="quiz-ans" data-v="${i}" ${Q.ans == null ? '' : 'disabled'}><span class="k">${i + 1}</span><span>${esc(o)}</span></button>`; }).join('')}</div>
+    ${Q.ans == null ? '' : `<div class="expl"><b>${Q.ans === it[2][0] ? '✓ Richtig. ' : '✗ '}</b>${esc(it[3])}</div><button class="btn primary big" data-act="quiz-next" id="qnext">Weiter</button>`}`;
+}
+function quizAnswer(i) {
+  const cur = Q.seq[Q.i], it = cur.it; if (Q.ans != null) return;
+  Q.ans = cur.opts[i]; const ok = Q.ans === it[2][0], s = qs(Q.bank, it[0]); cur.ok = ok;
+  if (ok) { s.n++; s.b = Math.min(IV.length - 1, s.b + 1); s.d = Date.now() + IV[s.b]; Q.ok++; Q.xp += 10; } else { s.w++; s.b = 0; s.d = Date.now(); Q.wrong.push(it); }
+  beep(ok); save(); render(); document.getElementById('qnext')?.focus();
+}
+function quizNext() { Q.i++; Q.ans = null; if (Q.i >= Q.seq.length) { gain('quiz_' + Q.bank, Q.xp); } render(); }
+
+/* ================= Home ================= */
+function viewHome() {
+  const d = G.days[today()] || {};
+  const card = (act, v, em, title, sub, meta, done) => `<button class="card" data-act="${act}" data-v="${v || ''}" style="text-align:left;cursor:pointer"><div class="row spread"><div class="row"><span style="font-size:28px">${em}</span><div style="display:grid"><h3>${title}</h3><span class="small muted">${sub}</span></div></div><span class="xp">${done ? '✓' : '+15'}</span></div><span class="small muted">${meta}</span></button>`;
+  const qb = b => { const m = G.quiz[b] || {}, items = QUIZ[b].items; return Object.keys(m).length + '/' + items.length + ' gesehen · ' + items.filter(it => (m[it[0]] || {}).b >= 3).length + ' sicher'; };
+  return `${back}<h2>Mehr Spiele</h2>
+  ${card('wordle-day', '', '🔤', 'Wordle', 'Wort des Tages + Übung', `Serie ${G.wordle.streak} · gewonnen ${G.wordle.won}/${G.wordle.played}`, d.wordle)}
+  ${card('rechnen-open', '', '🧮', 'Kopfrechnen', '60-Sekunden-Sprint', `Bestwert ${G.rechnen.best || 0}`, d.rechnen)}
+  ${Object.entries(QUIZ).map(([k, b]) => card('quiz-go', k, b.icon, esc(b.title), b.items.length + ' Fragen mit Erklärung', qb(k), d['quiz_' + k])).join('')}`;
+}
+
+/* ================= router ================= */
+let view = (location.hash || '').replace('#', '') || 'home';
+function render() {
+  if (view === 'wordle') app.innerHTML = viewWordle();
+  else if (view === 'rechnen') { app.innerHTML = viewRechnen(); document.getElementById('rin')?.focus(); document.getElementById('rgo')?.focus(); }
+  else if (view === 'quiz') app.innerHTML = viewQuiz();
+  else app.innerHTML = viewHome();
+}
+app.addEventListener('click', e => {
+  const k = e.target.closest('[data-key]'); if (k) return wordleKey(k.dataset.key);
+  const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act;
+  if (a === 'home') { view = 'home'; render(); }
+  else if (a === 'sound') { G.sound = G.sound === false; save(); render(); }
+  else if (a === 'wordle-day') wordleStart('daily');
+  else if (a === 'wordle-free') wordleStart('free');
+  else if (a === 'rechnen-open') { R.result = null; view = 'rechnen'; render(); }
+  else if (a === 'rechnen-go') rechnenStart();
+  else if (a === 'quiz-go') quizStart(b.dataset.v);
+  else if (a === 'quiz-ans') quizAnswer(+b.dataset.v);
+  else if (a === 'quiz-next') quizNext();
+});
+app.addEventListener('input', e => { if (e.target.id === 'rin') rechnenInput(e.target.value); });
+document.addEventListener('keydown', e => {
+  if (view === 'wordle' && !e.metaKey && !e.ctrlKey) { const k = e.key === 'Enter' ? 'ENTER' : e.key === 'Backspace' ? '⌫' : e.key.toUpperCase(); if (k === 'ENTER' || k === '⌫' || /^[A-Z]$/.test(k)) { e.preventDefault(); wordleKey(k); } }
+  if (view === 'rechnen' && R.on && e.key === 'Enter') { R.q = mkTask(R.level); R.wrong++; render(); }
+  if (view === 'quiz') { const n = parseInt(e.key, 10); if (Q.ans == null && n >= 1 && n <= 4) quizAnswer(n - 1); else if (Q.ans != null && e.key === 'Enter') { e.preventDefault(); quizNext(); } }
+});
+function route() {
+  view = (location.hash || '').replace('#', '') || 'home';
+  if (view.startsWith('quiz-') && QUIZ[view.slice(5)]) quizStart(view.slice(5)); else if (view === 'wordle') wordleStart('daily'); else { if (view !== 'rechnen') view = 'home'; R.result = null; render(); }
+}
+window.addEventListener('hashchange', route);
+route();
+</script>
+</body>
+</html>

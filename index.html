@@ -365,7 +365,7 @@ const icon = (n, cls = '') => '<svg class="i ' + cls + '" viewBox="0 0 24 24" ar
 const plural = (n, one, many) => n === 1 ? one : many;
 const I18N = {
   de: {
-    tabToday: 'Heute', tabHistory: 'Verlauf', tabGames: 'Spiele', gamesSub: 'Freiwillig · je Spiel +15 XP pro Tag', gamesAtlas: 'Atlas', gamesAtlasSub: 'Alle Länder · Flagge und Lage', gamesXw: 'Kreuzworträtsel', gamesXwSub: 'Ernmed & Allgemeinwissen · DE/EN', gamesPlay: 'Spielen', gamesToday: 'Heute erledigt', gamesSeen: (a, b) => a + '/' + b + ' Länder entdeckt', gamesXwCount: (n, d) => n + ' offen · ' + d + ' gelöst', tabSocratic: 'Sokrates', tabRecap: 'Rückblick',
+    tabToday: 'Heute', tabHistory: 'Verlauf', tabGames: 'Spiele', gamesSub: 'Freiwillig · je Spiel +15 XP pro Tag', gamesAtlas: 'Atlas', gamesAtlasSub: 'Alle Länder · Flagge und Lage', gamesXw: 'Kreuzworträtsel', gamesXwSub: 'Ernmed & Allgemeinwissen · DE/EN', gamesPlay: 'Spielen', gamesToday: 'Heute erledigt', gamesLevel: n => 'Spiele-Level ' + n, gamesWeek: n => n + ' XP diese Woche', gamesWordleSub: 'Wort des Tages + Übung', gamesCalc: 'Kopfrechnen', gamesCalcSub: '60-Sekunden-Sprint', gamesBest: n => 'Bestwert ' + n, gamesErnmed: 'Ernmed-Quiz', gamesTax: 'Steuer-Fallquiz', gamesQuizSub: 'Fragen mit Erklärung und Wiederholung', gamesSeenQ: (a, b) => a + '/' + b + ' Fragen gesehen', gamesSeen: (a, b) => a + '/' + b + ' Länder entdeckt', gamesXwCount: (n, d) => n + ' offen · ' + d + ' gelöst', tabSocratic: 'Sokrates', tabRecap: 'Rückblick',
     greet: (h, name) => (h < 5 ? 'Gute Nacht' : h < 11 ? 'Guten Morgen' : h < 17 ? 'Hallo' : h < 22 ? 'Guten Abend' : 'Gute Nacht') + (name ? ', ' + name : ''),
     streak: 'Serie', days: n => n + ' ' + plural(n, 'Tag', 'Tage'), streakOpen: 'heute noch offen', streakDone: 'heute erledigt',
     freezeInfo: 'Ein verpasster Tag pro Woche bricht die Serie nicht.',
@@ -481,7 +481,7 @@ const I18N = {
     install: 'Tipp: Über das Browser-Menü "Zum Startbildschirm hinzufügen", dann startet Echo wie eine App.',
   },
   en: {
-    tabToday: 'Today', tabHistory: 'History', tabGames: 'Games', gamesSub: 'Optional · +15 XP per game per day', gamesAtlas: 'Atlas', gamesAtlasSub: 'Every country · flag and location', gamesXw: 'Crosswords', gamesXwSub: 'Nutrition & general knowledge · DE/EN', gamesPlay: 'Play', gamesToday: 'Done today', gamesSeen: (a, b) => a + '/' + b + ' countries discovered', gamesXwCount: (n, d) => n + ' open · ' + d + ' solved', tabSocratic: 'Socrates', tabRecap: 'Recap',
+    tabToday: 'Today', tabHistory: 'History', tabGames: 'Games', gamesSub: 'Optional · +15 XP per game per day', gamesAtlas: 'Atlas', gamesAtlasSub: 'Every country · flag and location', gamesXw: 'Crosswords', gamesXwSub: 'Nutrition & general knowledge · DE/EN', gamesPlay: 'Play', gamesToday: 'Done today', gamesLevel: n => 'Games level ' + n, gamesWeek: n => n + ' XP this week', gamesWordleSub: 'Word of the day + practice', gamesCalc: 'Mental maths', gamesCalcSub: '60-second sprint', gamesBest: n => 'Best ' + n, gamesErnmed: 'Nutrition quiz', gamesTax: 'Tax case quiz', gamesQuizSub: 'Questions with explanations and review', gamesSeenQ: (a, b) => a + '/' + b + ' questions seen', gamesSeen: (a, b) => a + '/' + b + ' countries discovered', gamesXwCount: (n, d) => n + ' open · ' + d + ' solved', tabSocratic: 'Socrates', tabRecap: 'Recap',
     greet: (h, name) => (h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 17 ? 'Hello' : h < 22 ? 'Good evening' : 'Good night') + (name ? ', ' + name : ''),
     streak: 'Streak', days: n => n + ' ' + plural(n, 'day', 'days'), streakOpen: 'still open today', streakDone: 'done today',
     freezeInfo: 'One missed day per week does not break the streak.',
@@ -718,6 +718,10 @@ function computeStats() {
   // Echo Atlas (laender.html): +15 XP per day with at least one finished round.
   const geoDays = Object.entries((LS.get('echo-geo', null) || {}).days || {}).filter(([, v]) => v && v.r > 0).map(([k]) => k);
   xp += geoDays.length * 15;
+  // More games (spiele.html): +15 XP per game and day.
+  const GAMES = ['wordle', 'rechnen', 'quiz_ernmed', 'quiz_steuer'], gDays = (LS.get('echo-games', null) || {}).days || {};
+  for (const v of Object.values(gDays)) for (const g of GAMES) if (v && v[g]) xp += 15;
+  const gToday = gDays[td] || {};
   const pl = played(); let echoCount = 0;
   for (const ids of Object.values(pl)) { echoCount += ids.length; xp += 2 * Math.min(5, ids.length); }
   const socDays = new Set(socDone.map(d => d.day)), recapSet = new Set(recapDays);
@@ -729,7 +733,7 @@ function computeStats() {
   xp = Math.max(0, xp); // revealed crossword words can subtract, never below zero overall
   const level = levelFrom(xp);
   const quests = { memo: dayMin.has(td), socratic: socDays.has(td), recap: recapSet.has(td), echo: (pl[td] || []).length > 0,
-    es: esDone.some(d => d.day === td), xw: xwDoneDays.has(td), geo: geoDays.includes(td) };
+    es: esDone.some(d => d.day === td), xw: xwDoneDays.has(td), geo: geoDays.includes(td), wordle: !!gToday.wordle, rechnen: !!gToday.rechnen, quiz_ernmed: !!gToday.quiz_ernmed, quiz_steuer: !!gToday.quiz_steuer };
   // Extra counters for badges.
   const perDay = new Map(), imps = new Set(); let longest = 0, night = 0, early = 0, pi = 0, mirror = 0, holiday = 0;
   for (const m of S.memos) {
@@ -1496,9 +1500,20 @@ function viewGames() {
       <span class="xp">${done ? '✓' : '+15'}</span></div>
     ${extra}
     <div class="row spread"><span class="small muted">${esc(meta)}</span><span class="small" style="font-weight:700;color:${done ? 'var(--calm)' : 'var(--ink)'}">${esc(done ? t('gamesToday') : t('gamesPlay'))} →</span></div></button>`;
+  const gm = LS.get('echo-games', null) || { xp: 0, days: {}, wordle: {}, rechnen: {} };
+  const gx = (g.xp || 0) + (gm.xp || 0); let gl = 1, gneed = 150, grest = gx; while (grest >= gneed) { grest -= gneed; gl++; gneed = 150 + 60 * (gl - 1); }
+  const wk = []; for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); const k = dayKey(d); wk.push({ k, xp: (((g.days || {})[k] || {}).xp || 0) + (((gm.days || {})[k] || {}).xp || 0) }); }
+  const wmax = Math.max(20, ...wk.map(w => w.xp)), wsum = wk.reduce((a, w) => a + w.xp, 0);
+  const link = (href, em, title, sub, meta, done) => `<a class="card" href="${href}" style="text-align:left;cursor:pointer;text-decoration:none;color:inherit"><div class="row spread"><div class="row"><span style="font-size:28px">${em}</span><div class="stack" style="gap:0"><h3>${esc(title)}</h3><span class="small muted">${esc(sub)}</span></div></div><span class="xp">${done ? '✓' : '+15'}</span></div><span class="small muted">${esc(meta)}</span></a>`;
   return `<header class="top"><div class="stack" style="gap:4px"><span class="eyebrow">${esc(t('gamesSub'))}</span><h1>${esc(t('tabGames'))}</h1></div></header>
+  <section class="card"><div class="row spread"><div class="row"><div class="ring" style="--p:${Math.round(grest / gneed * 100)}"><span>${gl}</span></div><div class="stack" style="gap:0"><h3>${esc(t('gamesLevel', gl))}</h3><span class="small muted mono">${grest} / ${gneed} XP</span></div></div><span class="small muted">${esc(t('gamesWeek', wsum))}</span></div>
+    <div class="row" style="align-items:flex-end;gap:6px;height:70px">${wk.map(w => `<div class="stack grow" style="gap:3px;align-items:center"><i style="display:block;width:100%;height:${Math.max(3, Math.round(w.xp / wmax * 54))}px;border-radius:6px 6px 2px 2px;background:${w.k === today() ? 'var(--gold)' : 'var(--calm)'}"></i><span class="small muted" style="font-size:11px">${esc(new Date(w.k + 'T12:00').toLocaleDateString(locale(), { weekday: 'narrow' }))}</span></div>`).join('')}</div></section>
   ${game('🌍', t('gamesAtlas'), t('gamesAtlasSub'), 'Level ' + lv + ' · ' + t('gamesSeen', seen, 197), q.geo, 'geo-open', `<div class="bar"><i style="width:${Math.round(seen / 197 * 100)}%"></i></div>`)}
-  ${XW.puzzles.length ? game('🧩', t('gamesXw'), t('gamesXwSub'), t('gamesXwCount', xwOpen, xwDone), q.xw, 'xw-hub') : ''}`;
+  ${XW.puzzles.length ? game('🧩', t('gamesXw'), t('gamesXwSub'), t('gamesXwCount', xwOpen, xwDone), q.xw, 'xw-hub') : ''}
+  ${link('spiele.html#wordle', '🔤', 'Wordle', t('gamesWordleSub'), '🔥 ' + ((gm.wordle || {}).streak || 0) + ' · ' + ((gm.wordle || {}).won || 0) + '/' + ((gm.wordle || {}).played || 0), q.wordle)}
+  ${link('spiele.html#rechnen', '🧮', t('gamesCalc'), t('gamesCalcSub'), t('gamesBest', (gm.rechnen || {}).best || 0), q.rechnen)}
+  ${link('spiele.html#quiz-ernmed', '🥗', t('gamesErnmed'), t('gamesQuizSub'), t('gamesSeenQ', Object.keys((gm.quiz || {}).ernmed || {}).length, (window.QUIZ_N || {}).ernmed || 40), q.quiz_ernmed)}
+  ${link('spiele.html#quiz-steuer', '🧾', t('gamesTax'), t('gamesQuizSub'), t('gamesSeenQ', Object.keys((gm.quiz || {}).steuer || {}).length, (window.QUIZ_N || {}).steuer || 25), q.quiz_steuer)}`;
 }
 function viewXwHub() {
   const f = LS.get('echo-xw-cat', 'all'), lg = LS.get('echo-xw-lang', 'all'), sec = LS.get('echo-xw-sec', 'new');
@@ -2023,7 +2038,7 @@ async function buildBackup() {
   const memos = [];
   for (const m of S.memos) memos.push(Object.assign({}, m, { blob: m.blob ? await blobToDataURL(m.blob) : null, status: '' }));
   const settings = Object.assign({}, S.set); delete settings.anthropicKey; delete settings.openaiKey; // keys never leave the browser
-  const data = { app: 'echo-journal', version: 1, exportedAt: new Date().toISOString(), memos, dialogs: S.dialogs, recaps: Object.values(S.recaps), goals: Object.values(S.goals), commitments: S.commitments, xw: Object.values(S.xw), played: played(), geo: LS.get('echo-geo', null), settings };
+  const data = { app: 'echo-journal', version: 1, exportedAt: new Date().toISOString(), memos, dialogs: S.dialogs, recaps: Object.values(S.recaps), goals: Object.values(S.goals), commitments: S.commitments, xw: Object.values(S.xw), played: played(), geo: LS.get('echo-geo', null), games: LS.get('echo-games', null), settings };
   return new Blob([JSON.stringify(data)], { type: 'application/json' });
 }
 async function exportBackup() {
@@ -2046,6 +2061,7 @@ async function importBackup(file) {
     for (const m of data.memos || []) { if (m.blob) m.blob = await (await fetch(m.blob)).blob(); await DB.put('memos', m); n++; }
     for (const [store, list] of [['dialogs', data.dialogs], ['recaps', data.recaps], ['goals', data.goals], ['commitments', data.commitments], ['xw', data.xw]]) for (const x of list || []) { await DB.put(store, x); n++; }
     if (data.geo && (data.geo.xp || 0) > ((LS.get('echo-geo', null) || {}).xp || 0)) LS.set('echo-geo', data.geo);
+    if (data.games && (data.games.xp || 0) > ((LS.get('echo-games', null) || {}).xp || 0)) LS.set('echo-games', data.games);
     if (data.played) { const pl = played(); for (const [d, ids] of Object.entries(data.played)) pl[d] = [...new Set([...(pl[d] || []), ...ids])]; LS.set('echo-played', pl); }
     if (data.settings) { const keep = { anthropicKey: S.set.anthropicKey, openaiKey: S.set.openaiKey }; S.set = Object.assign({}, S.set, data.settings, keep); saveSettings(); applyTheme(); }
     await loadAll(); toast(t('imported', n), 'ok'); closeSheet(); afterChange();
@@ -2457,7 +2473,7 @@ if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListen
   { const tv = LS.get('echo-tabs', []); if (!tv.includes('today')) LS.set('echo-tabs', [...tv, 'today']); }
   if (location.hash === '#games') { S.tab = 'games'; try { history.replaceState(null, '', location.pathname); } catch { /* ignore */ } }
   await abInit();
-  { const g = LS.get('echo-geo', null); if (g && g.updated > (AB.last || 0)) abSchedule(); }
+  { const g = LS.get('echo-geo', null), gm = LS.get('echo-games', null); if ((g && g.updated > (AB.last || 0)) || (gm && gm.updated > (AB.last || 0))) abSchedule(); }
   if (!journalEmpty()) LS.set('echo-restore-hide', false);
   render(); celebrate();
   if (IS_ARTIFACT) window.claude.use('sample').then(fn => { SAMPLE = fn; render(); }).catch(() => {});
