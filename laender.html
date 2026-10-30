@@ -86,6 +86,8 @@ h3 { font-size: 17px; font-weight: 700; }
 .stage.clickable .land:hover { fill: var(--gold); fill-opacity: .55; }
 .stage .land.target { fill: var(--target); }
 .stage .land.wrong { fill: var(--hl); }
+.stage .cap { fill: var(--ink); fill-opacity: .55; stroke: var(--surface); stroke-width: .8; pointer-events: none; }
+.stage .cap.tcap { fill: #fff; fill-opacity: 1; stroke: var(--ink); stroke-width: 1.2; }
 .stage .ring { fill: none; stroke: var(--target); stroke-width: 2.5; }
 .stage .ring.wrong { stroke: var(--hl); }
 .stage .ring.pulse { animation: pulse 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
@@ -165,6 +167,7 @@ h3 { font-size: 17px; font-weight: 700; }
 <script src="geo/flags.js"></script>
 <script src="geo/facts.js"></script>
 <script src="geo/capfacts.js"></script>
+<script src="geo/caps.js"></script>
 <script>
 'use strict';
 /* ---------- storage (same origin as Echo: key echo-geo is part of Echo's backup) ---------- */
@@ -354,6 +357,11 @@ function mapSVG(proj, opts = {}) {
     const fill = opts.fills && opts.fills[code] ? ` style="fill:${opts.fills[code]}"` : '';
     s += `<path class="${cls.join(' ')}" data-c="${code}" d="${d}"${fill}/>`;
   }
+  // Capitals as small dots, without names.
+  if (window.CAPS && opts.caps !== false) {
+    const cp = d3.geoPath(proj).pointRadius(opts.capR || 4.5), tp = d3.geoPath(proj).pointRadius((opts.capR || 4.5) * 1.5);
+    for (const c of COUNTRIES) { const ll = CAPS[c.c]; if (!ll) continue; const tgt = opts.marks && opts.marks[c.c] === 'target'; const d = (tgt ? tp : cp)({ type: 'Point', coordinates: [ll[1], ll[0]] }); if (d) s += `<path class="cap${tgt ? ' tcap' : ''}" d="${d}"/>`; }
+  }
   for (const [code, kind] of Object.entries(opts.marks || {})) {
     const f = featOf(code); let small = true, pt;
     if (f) { const b = path.bounds(f); small = (b[1][0] - b[0][0]) * (b[1][1] - b[0][1]) < 90; pt = proj(centerOf(code)); }
@@ -500,7 +508,7 @@ function renderCollection() {
   const list = COUNTRIES.filter(c => S.filter === 'all' || String(c.t) === S.filter || c.r === S.filter);
   app.innerHTML = `${topBar()}
   <div class="row spread"><h2>Sammlung</h2><span class="small muted mono">${seenList().length}/${COUNTRIES.length}</span></div>
-  <div class="stage">${mapSVG(proj, { fills, label: 'Weltkarte nach Prestige gefärbt' })}</div>
+  <div class="stage">${mapSVG(proj, { fills, capR: 2, label: 'Weltkarte nach Prestige gefärbt' })}</div>
   <div class="legend">${PRESTIGE.slice(1).map(p => `<span><i class="pdot" style="background:${p.color}"></i>${p.name} ${p.min}+</span>`).join('')}</div>
   <div class="chips" role="group" aria-label="Filter">${filters.map(([k, l]) => `<button class="chip" data-act="filter" data-v="${k}" aria-pressed="${S.filter === k}">${l}</button>`).join('')}</div>
   ${S.sheet ? infoSheet(S.sheet) : ''}
