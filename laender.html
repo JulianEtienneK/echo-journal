@@ -359,8 +359,9 @@ function mapSVG(proj, opts = {}) {
   }
   // Capitals as small dots, without names.
   if (window.CAPS && opts.caps !== false) {
-    const cp = d3.geoPath(proj).pointRadius(opts.capR || 4.5), tp = d3.geoPath(proj).pointRadius((opts.capR || 4.5) * 1.5);
-    for (const c of COUNTRIES) { const ll = CAPS[c.c]; if (!ll) continue; const tgt = opts.marks && opts.marks[c.c] === 'target'; const d = (tgt ? tp : cp)({ type: 'Point', coordinates: [ll[1], ll[0]] }); if (d) s += `<path class="cap${tgt ? ' tcap' : ''}" d="${d}"/>`; }
+    const tp = d3.geoPath(proj).pointRadius((opts.capR || 4.5) * 1.5);
+    // Only the capital of the country being asked about.
+    for (const [code, kind] of Object.entries(opts.marks || {})) { if (kind !== 'target') continue; const ll = CAPS[code]; if (!ll) continue; const d = tp({ type: 'Point', coordinates: [ll[1], ll[0]] }); if (d) s += `<path class="cap tcap" d="${d}"/>`; }
   }
   for (const [code, kind] of Object.entries(opts.marks || {})) {
     const f = featOf(code); let small = true, pt;
