@@ -311,6 +311,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
 <script src="puzzles2.js"></script>
 <script src="xwinfo.js"></script>
 <script src="xwgen.js"></script>
+<script src="notes.js"></script>
 <script>window.ECHO_SEED = {"goals": [{"week": "2026-10-26", "text": "! 🎤 JournalClub: großartiger Vortrag am Donnerstag [Hauptziel]\n- Mo · 4 Durchläufe\n- Di · 3 Durchläufe\n- Mi · 2 Durchläufe\n- Do · 1 Durchlauf, dann rocken\n> 10 Durchläufe bis Donnerstag. Jeder macht den nächsten leichter.\n+ 🦉 Sokratisches Teaching · mind. 45 min\n- Mo\n- Di\n- Mi\n- Do\n> Diskussion simulieren, bis keine Frage mehr überrascht.\n+ 🔬 Scoping Review\n- Datenextraktion fertig (Mo)\n- Gender-Papers: Aufgabe 1\n- Gender-Papers: Aufgabe 2 (Bonus)\n+ 🥗 NM · täglich\n+ 🧘 Meditation · täglich [Serie halten]\n+ 📵 Gesunde Beziehung zum Handy · täglich\n> Abends ehrlich abhaken: Hatte ich heute das Handy im Griff?\n🏋️ 1 Gym-Session (Mo)\n> Mehr geht wegen der CK-Werte gerade nicht. Eine gute Session zählt.\n🏐 Volleyball am Montag\n🎹 Fr: „Don't Stop Me Now\" (Queen) anfangen [Bonus-Fun]\n🍻 Eine soziale Sache am Wochenende\n🗓️ Monat zusammenfassen\n📈 Anchor: TikTok-Ads Runde 3 starten"}]};</script>
 <script>
 'use strict';
@@ -433,7 +434,7 @@ const I18N = {
     wipeConfirm: 'Alle Memos, Dialoge, Ziele und Rückblicke auf diesem Gerät löschen? Das lässt sich nicht rückgängig machen.',
     imported: n => n + ' Einträge importiert', exported: 'Backup erstellt', importFail: 'Die Datei ist kein Echo-Backup.',
     privacy: 'Alles liegt lokal in diesem Browser. Mach ab und zu ein Backup: Browserdaten löschen heißt Memos löschen.',
-    q_bonus: 'Bonus · freiwillig', q_es: 'Español mit deinem Sparringspartner', q_xw: 'Ein Kreuzworträtsel lösen', q_geo: 'Eine Atlas-Runde (Länder & Flaggen)',
+    q_bonus: 'Bonus · freiwillig', q_note: 'Gedanke des Tages', noteTitle: 'Gedanke des Tages', noteAsk: 'Kurz innehalten', noteRead: n => 'Gelesen & nachgedacht · +' + n + ' XP', noteDone: 'Heute schon gelesen', noteThanks: n => 'Gut gedacht · +' + n + ' XP', q_es: 'Español mit deinem Sparringspartner', q_xw: 'Ein Kreuzworträtsel lösen', q_geo: 'Eine Atlas-Runde (Länder & Flaggen)',
     xwErn: 'Ernährungsmedizin', xwAw: 'Allgemeinwissen', xwGeo: 'Länder & Hauptstädte', xwPsy: 'Psychiatrie & Pharmakologie', xwTax: 'Steuern', xwEs: 'Spanisch', xwRev: 'Wiederholung', xwRevTitle: 'Wiederholungs-Rätsel', xwRevSub: n => n + ' aufgedeckte Wörter warten · neues Rätsel daraus bauen', xwRevOpen: n => n + ' Wörter, die du aufgedeckt hattest', xwRec: 'Empfohlen für dich', xwSmall: 'Klein', xwLarge: 'Groß', xwKb: 'Bildschirmtastatur', xwBack: 'Zurück', xwLevel: n => 'Stufe ' + n, xwAcross: 'Waagerecht', xwDown: 'Senkrecht',
     xwHelp: 'Umlaute als AE, OE, UE, ß als SS. Feld antippen, nochmal tippen wechselt die Richtung.', xwCheck: 'Prüfen', xwReveal: 'Lösung zeigen', xwRevealIn: s => 'Lösung in ' + s, xwWord: 'Wort aufdecken', xwWordCost: n => 'Wort aufdecken · −' + n + ' XP', xwWordDone: n => 'Wort aufgedeckt · −' + n + ' XP', xwPickFirst: 'Tippe zuerst ein Feld des Wortes an.', xwSolvedXP: (n, w) => 'Gelöst · ' + (n >= 0 ? '+' : '') + n + ' XP' + (w ? ' (' + w + ' aufgedeckt)' : ''), xwTime: s => 'Zeit ' + s, xwBestT: s => 'Bestzeit ' + s,
     xwSolved: 'Gelöst · +15 XP', xwRevealed: 'Mit Lösung beendet · +5 XP', xwWrong: n => n + ' Buchstaben stimmen noch nicht', xwAllOk: 'Bisher alles richtig',
@@ -546,7 +547,7 @@ const I18N = {
     liveStt: 'Live transcript in the browser (free, less accurate; on Android it may not run alongside recording)',
     autoAI: 'Transcribe and summarize new memos automatically', dataSection: 'Data',
     exportBtn: 'Export backup', importBtn: 'Import backup', used: s => 'Used: ' + s, wipe: 'Delete everything',
-    q_bonus: 'Bonus · optional', q_es: 'Español with your sparring partner', q_xw: 'Solve a crossword', q_geo: 'One Atlas round (countries & flags)',
+    q_bonus: 'Bonus · optional', q_note: 'Thought of the day', noteTitle: 'Thought of the day', noteAsk: 'Pause for a moment', noteRead: n => 'Read & reflected · +' + n + ' XP', noteDone: 'Already read today', noteThanks: n => 'Well thought · +' + n + ' XP', q_es: 'Español with your sparring partner', q_xw: 'Solve a crossword', q_geo: 'One Atlas round (countries & flags)',
     xwErn: 'Nutritional medicine', xwAw: 'General knowledge', xwGeo: 'Countries & capitals', xwPsy: 'Psychiatry & pharmacology', xwTax: 'Tax', xwEs: 'Spanish', xwRev: 'Review', xwRevTitle: 'Review puzzle', xwRevSub: n => n + ' revealed words waiting · build a puzzle from them', xwRevOpen: n => n + ' words you had revealed', xwRec: 'Recommended for you', xwSmall: 'Small', xwLarge: 'Large', xwKb: 'On-screen keyboard', xwBack: 'Back', xwLevel: n => 'Level ' + n, xwAcross: 'Across', xwDown: 'Down',
     xwHelp: 'Umlauts as AE, OE, UE, ß as SS. Tap a square, tap again to switch direction.', xwCheck: 'Check', xwReveal: 'Show solution', xwRevealIn: s => 'Solution in ' + s, xwWord: 'Reveal word', xwWordCost: n => 'Reveal word · −' + n + ' XP', xwWordDone: n => 'Word revealed · −' + n + ' XP', xwPickFirst: 'Tap a square of the word first.', xwSolvedXP: (n, w) => 'Solved · ' + (n >= 0 ? '+' : '') + n + ' XP' + (w ? ' (' + w + ' revealed)' : ''), xwTime: s => 'time ' + s, xwBestT: s => 'best ' + s,
     xwSolved: 'Solved · +15 XP', xwRevealed: 'Finished with solution · +5 XP', xwWrong: n => n + ' letters are not right yet', xwAllOk: 'All correct so far',
@@ -731,6 +732,7 @@ function computeStats() {
   const gameXP = Math.max(0, geo.xp || 0) + Math.max(0, games.xp || 0);
   xp += gameXP;
   const gDays = games.days || {}, gToday = gDays[td] || {};
+  const nr = notesRead(); xp += Object.keys(nr).length * NOTE_XP;
   const pl = played(); let echoCount = 0;
   for (const ids of Object.values(pl)) { echoCount += ids.length; xp += 2 * JX * Math.min(5, ids.length); }
   const socDays = new Set(socDone.map(d => d.day)), recapSet = new Set(recapDays);
@@ -742,7 +744,7 @@ function computeStats() {
   xp = Math.max(0, xp); // revealed crossword words can subtract, never below zero overall
   const level = levelFrom(xp);
   const quests = { memo: dayMin.has(td), socratic: socDays.has(td), recap: recapSet.has(td), echo: (pl[td] || []).length > 0,
-    es: esDone.some(d => d.day === td), xw: xwDoneDays.has(td), geo: geoDays.includes(td), wordle: !!gToday.wordle, rechnen: !!gToday.rechnen, quiz_ernmed: !!gToday.quiz_ernmed, quiz_steuer: !!gToday.quiz_steuer };
+    es: esDone.some(d => d.day === td), xw: xwDoneDays.has(td), geo: geoDays.includes(td), note: !!nr[td], wordle: !!gToday.wordle, rechnen: !!gToday.rechnen, quiz_ernmed: !!gToday.quiz_ernmed, quiz_steuer: !!gToday.quiz_steuer };
   // Extra counters for badges.
   const perDay = new Map(), imps = new Set(); let longest = 0, night = 0, early = 0, pi = 0, mirror = 0, holiday = 0;
   for (const m of S.memos) {
@@ -1327,6 +1329,7 @@ function viewToday() {
     </div>
     <span class="eyebrow" style="margin-top:4px">${esc(t('q_bonus'))}</span>
     <div class="stack" style="gap:2px">
+      ${quest('note', '🏛️ ' + t('q_note'), NOTE_XP, 'note-open')}
       ${quest('es', '🗣️ ' + t('q_es'), 15 * JX, 'quest-es')}
     </div>
   </section>
@@ -2021,6 +2024,19 @@ function viewRecap() {
 }
 
 /* ---------- sheets ---------- */
+/* Daily Socratic note: one thought + one question, read once a day for XP. */
+const NOTE_XP = 5 * JX;
+const notesRead = () => LS.get('echo-notes', {});
+function noteOfDay(d = today()) { const N = window.ECHO_NOTES || []; if (!N.length) return null; const n = Math.floor((parseDay(d) - parseDay('2026-01-01')) / 864e5); return N[((n % N.length) + N.length) % N.length]; }
+function openNote() {
+  const n = noteOfDay(); if (!n) return;
+  const done = !!notesRead()[today()];
+  openSheet(`${sheetHead(t('noteTitle'))}
+    <blockquote style="margin:0;font:600 21px/1.4 var(--f-display);text-wrap:balance">„${esc(n[0])}“</blockquote>
+    <span class="small muted">${esc(n[1])}</span>
+    <div class="card flat" style="gap:6px"><span class="eyebrow">${esc(t('noteAsk'))}</span><b>${esc(n[2])}</b></div>
+    <div class="row wrap">${done ? `<span class="small muted">✓ ${esc(t('noteDone'))}</span>` : `<button class="btn primary" data-act="note-read">${esc(t('noteRead', NOTE_XP))}</button><button class="btn ghost" data-act="note-later">${esc(t('later'))}</button>`}</div>`);
+}
 function openSheet(html) {
   const el = $('#sheet');
   el.innerHTML = `<div class="panel" role="dialog" aria-modal="true">${html}</div>`;
@@ -2099,7 +2115,7 @@ async function buildBackup() {
   const memos = [];
   for (const m of S.memos) memos.push(Object.assign({}, m, { blob: m.blob ? await blobToDataURL(m.blob) : null, status: '' }));
   const settings = Object.assign({}, S.set); delete settings.anthropicKey; delete settings.openaiKey; // keys never leave the browser
-  const data = { app: 'echo-journal', version: 1, exportedAt: new Date().toISOString(), memos, dialogs: S.dialogs, recaps: Object.values(S.recaps), goals: Object.values(S.goals), commitments: S.commitments, xw: Object.values(S.xw), played: played(), geo: LS.get('echo-geo', null), games: LS.get('echo-games', null), settings };
+  const data = { app: 'echo-journal', version: 1, exportedAt: new Date().toISOString(), memos, dialogs: S.dialogs, recaps: Object.values(S.recaps), goals: Object.values(S.goals), commitments: S.commitments, xw: Object.values(S.xw), played: played(), geo: LS.get('echo-geo', null), games: LS.get('echo-games', null), notes: notesRead(), settings };
   return new Blob([JSON.stringify(data)], { type: 'application/json' });
 }
 async function exportBackup() {
@@ -2122,6 +2138,7 @@ async function importBackup(file) {
     for (const m of data.memos || []) { if (m.blob) m.blob = await (await fetch(m.blob)).blob(); await DB.put('memos', m); n++; }
     for (const [store, list] of [['dialogs', data.dialogs], ['recaps', data.recaps], ['goals', data.goals], ['commitments', data.commitments], ['xw', data.xw]]) for (const x of list || []) { await DB.put(store, x); n++; }
     if (data.geo && (data.geo.xp || 0) > ((LS.get('echo-geo', null) || {}).xp || 0)) LS.set('echo-geo', data.geo);
+    if (data.notes) LS.set('echo-notes', Object.assign({}, notesRead(), data.notes));
     if (data.games && (data.games.xp || 0) > ((LS.get('echo-games', null) || {}).xp || 0)) LS.set('echo-games', data.games);
     if (data.played) { const pl = played(); for (const [d, ids] of Object.entries(data.played)) pl[d] = [...new Set([...(pl[d] || []), ...ids])]; LS.set('echo-played', pl); }
     if (data.settings) { const keep = { anthropicKey: S.set.anthropicKey, openaiKey: S.set.openaiKey }; S.set = Object.assign({}, S.set, data.settings, keep); saveSettings(); applyTheme(); }
@@ -2315,6 +2332,9 @@ document.addEventListener('click', async e => {
     case 'gday': updateGoal(b.dataset.w, id, it => { it.days[+v] = !it.days[+v]; }); break;
     case 'tab-socratic': S.tab = 'socratic'; render(); scrollTo(0, 0); break;
     case 'geo-open': location.href = 'laender.html'; break;
+    case 'note-open': openNote(); break;
+    case 'note-read': { const r = notesRead(); r[today()] = true; LS.set('echo-notes', r); closeSheet(); toast(t('noteThanks', NOTE_XP), 'ok'); afterChange(); break; }
+    case 'note-later': LS.set('echo-note-later', today()); closeSheet(); break;
     case 'quest-es': S.tab = 'socratic'; S.socMode = 'es'; LS.set('echo-soc-mode', 'es'); render(); scrollTo(0, 0); break;
     case 'xw-open': xwOpen(v); break;
     case 'xw-back': if (S.tab === 'xw' && S.xwId) { S.xwId = null; } else S.tab = 'games'; render(); scrollTo(0, 0); break;
@@ -2549,6 +2569,7 @@ if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListen
   { const g = LS.get('echo-geo', null), gm = LS.get('echo-games', null); if ((g && g.updated > (AB.last || 0)) || (gm && gm.updated > (AB.last || 0))) abSchedule(); }
   if (!journalEmpty()) LS.set('echo-restore-hide', false);
   render(); celebrate();
+  if (!notesRead()[today()] && LS.get('echo-note-later', '') !== today() && !journalEmpty()) setTimeout(openNote, 600);
   if (IS_ARTIFACT) window.claude.use('sample').then(fn => { SAMPLE = fn; render(); }).catch(() => {});
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch { /* optional */ }
   if (LS.get('echo-just-updated', false)) { LS.set('echo-just-updated', false); toast(t('updated'), 'ok'); }
