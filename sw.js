@@ -1,5 +1,5 @@
 // Network first, cache as fallback: updates arrive immediately, the app still opens offline.
-const CACHE = 'echo-v4';
+const CACHE = 'echo-v5';
 const CORE = ['./', 'index.html', 'manifest.json', 'icon.svg', 'icon-192.png', 'icon-512.png', 'puzzles.js', 'laender.html', 'geo/d3.min.js', 'geo/topojson-client.min.js', 'geo/data.js', 'geo/flags.js'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

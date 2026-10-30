@@ -347,7 +347,7 @@ function renderHome() {
   const due = seenList().filter(c => cs(c.c).due <= now).length, d = ST.days[today()];
   const nextNew = unseenList().slice(0, 4);
   app.innerHTML = `
-  <div class="topbar"><a class="link" href="./">← Echo</a><span class="small muted mono">${streak()} ${streak() === 1 ? 'Tag' : 'Tage'} Serie</span></div>
+  <div class="topbar"><a class="link" href="./#games">← Spiele</a><span class="small muted mono">${streak()} ${streak() === 1 ? 'Tag' : 'Tage'} Serie</span></div>
   <header style="display:grid;gap:4px"><span class="eyebrow">Echo Atlas</span><h1>Alle Länder der Welt</h1>
     <p class="muted" style="margin:0">${total} Länder, Flagge und Lage. Von leicht nach schwer, mit Wiederholung, bis jedes Land Legende ist.</p></header>
   <section class="card">
@@ -457,7 +457,7 @@ function renderDone() {
   const R = S.round, okN = R.res.filter(x => x === true).length, qN = R.res.filter(x => x !== null).length;
   const lv = levelOf(ST.xp);
   app.innerHTML = `
-  <div class="topbar"><a class="link" href="./">← Echo</a><span class="small muted mono">${streak()} ${streak() === 1 ? 'Tag' : 'Tage'} Serie</span></div>
+  <div class="topbar"><a class="link" href="./#games">← Spiele</a><span class="small muted mono">${streak()} ${streak() === 1 ? 'Tag' : 'Tage'} Serie</span></div>
   <section class="card" style="text-align:center;justify-items:center">
     <span class="eyebrow">Runde geschafft</span><div class="big-num">+${R.xp} XP</div>
     <p class="muted" style="margin:0">${okN} von ${qN} richtig${R.perfect ? ' · fehlerfrei, +30 XP Bonus' : ''} · Level ${lv.l}</p>

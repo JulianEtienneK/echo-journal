@@ -238,7 +238,7 @@ i[data-l="0"] { background: var(--surface-2); }
 /* Tabs + player */
 #tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--surface); border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
-#tabs .in { max-width: 560px; margin: 0 auto; height: var(--tabh); display: grid; grid-template-columns: repeat(5, 1fr); }
+#tabs .in { max-width: 560px; margin: 0 auto; height: var(--tabh); display: grid; grid-template-columns: repeat(6, 1fr); }
 #tabs button { border: 0; background: none; display: grid; justify-items: center; align-content: center; gap: 2px; font-size: 12px; color: var(--muted); }
 #tabs button[aria-current="page"] { color: var(--ink); font-weight: 700; }
 #tabs button[aria-current="page"] svg.i { stroke: var(--rec); }
@@ -352,6 +352,7 @@ const ICONS = {
   headphones: '<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/>',
   send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
   bulb: '<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/>',
+  game: '<rect x="2" y="6" width="20" height="12" rx="6"/><path d="M6 12h4M8 10v4"/><circle cx="15.5" cy="11" r=".6"/><circle cx="18" cy="13" r=".6"/>',
   target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
   trophy: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
   download: '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
@@ -364,7 +365,7 @@ const icon = (n, cls = '') => '<svg class="i ' + cls + '" viewBox="0 0 24 24" ar
 const plural = (n, one, many) => n === 1 ? one : many;
 const I18N = {
   de: {
-    tabToday: 'Heute', tabHistory: 'Verlauf', tabSocratic: 'Sokrates', tabRecap: 'Rückblick',
+    tabToday: 'Heute', tabHistory: 'Verlauf', tabGames: 'Spiele', gamesSub: 'Freiwillig · je Spiel +15 XP pro Tag', gamesAtlas: 'Atlas', gamesAtlasSub: 'Alle Länder · Flagge und Lage', gamesXw: 'Kreuzworträtsel', gamesXwSub: 'Ernmed & Allgemeinwissen · DE/EN', gamesPlay: 'Spielen', gamesToday: 'Heute erledigt', gamesSeen: (a, b) => a + '/' + b + ' Länder entdeckt', gamesXwCount: (n, d) => n + ' offen · ' + d + ' gelöst', tabSocratic: 'Sokrates', tabRecap: 'Rückblick',
     greet: (h, name) => (h < 5 ? 'Gute Nacht' : h < 11 ? 'Guten Morgen' : h < 17 ? 'Hallo' : h < 22 ? 'Guten Abend' : 'Gute Nacht') + (name ? ', ' + name : ''),
     streak: 'Serie', days: n => n + ' ' + plural(n, 'Tag', 'Tage'), streakOpen: 'heute noch offen', streakDone: 'heute erledigt',
     freezeInfo: 'Ein verpasster Tag pro Woche bricht die Serie nicht.',
@@ -480,7 +481,7 @@ const I18N = {
     install: 'Tipp: Über das Browser-Menü "Zum Startbildschirm hinzufügen", dann startet Echo wie eine App.',
   },
   en: {
-    tabToday: 'Today', tabHistory: 'History', tabSocratic: 'Socrates', tabRecap: 'Recap',
+    tabToday: 'Today', tabHistory: 'History', tabGames: 'Games', gamesSub: 'Optional · +15 XP per game per day', gamesAtlas: 'Atlas', gamesAtlasSub: 'Every country · flag and location', gamesXw: 'Crosswords', gamesXwSub: 'Nutrition & general knowledge · DE/EN', gamesPlay: 'Play', gamesToday: 'Done today', gamesSeen: (a, b) => a + '/' + b + ' countries discovered', gamesXwCount: (n, d) => n + ' open · ' + d + ' solved', tabSocratic: 'Socrates', tabRecap: 'Recap',
     greet: (h, name) => (h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 17 ? 'Hello' : h < 22 ? 'Good evening' : 'Good night') + (name ? ', ' + name : ''),
     streak: 'Streak', days: n => n + ' ' + plural(n, 'day', 'days'), streakOpen: 'still open today', streakDone: 'done today',
     freezeInfo: 'One missed day per week does not break the streak.',
@@ -1313,8 +1314,6 @@ function viewToday() {
     <span class="eyebrow" style="margin-top:4px">${esc(t('q_bonus'))}</span>
     <div class="stack" style="gap:2px">
       ${quest('es', '🗣️ ' + t('q_es'), 15, 'quest-es')}
-      ${XW.puzzles.length ? quest('xw', '🧩 ' + t('q_xw'), 15, 'xw-hub') : ''}
-      ${quest('geo', '🌍 ' + t('q_geo'), 15, 'geo-open')}
     </div>
   </section>
   ${commits.length ? `<section class="card">
@@ -1474,6 +1473,20 @@ function viewXw() {
     <span class="small muted" id="xwMsg"></span></div>`}
   <div class="xwcols"><div class="stack" style="gap:6px"><h3>${esc(t('xwAcross'))}</h3><div class="xwlist">${list('a')}</div></div>
     <div class="stack" style="gap:6px"><h3>${esc(t('xwDown'))}</h3><div class="xwlist">${list('d')}</div></div></div>`;
+}
+function viewGames() {
+  const q = computeStats().quests, g = LS.get('echo-geo', null) || { xp: 0, cs: {} };
+  const seen = Object.values(g.cs || {}).filter(c => c && c.seen).length;
+  let lv = 1, need = 100, rest = g.xp || 0; while (rest >= need) { rest -= need; lv++; need = 100 + 40 * (lv - 1); }
+  const xwOpen = XW.puzzles.filter(p => xwStatus(p) !== 'done').length, xwDone = XW.puzzles.length - xwOpen;
+  const game = (em, title, sub, meta, done, act, extra = '') => `<button class="card" data-act="${act}" style="text-align:left;cursor:pointer">
+    <div class="row spread"><div class="row"><span style="font-size:28px">${em}</span><div class="stack" style="gap:0"><h3>${esc(title)}</h3><span class="small muted">${esc(sub)}</span></div></div>
+      <span class="xp">${done ? '✓' : '+15'}</span></div>
+    ${extra}
+    <div class="row spread"><span class="small muted">${esc(meta)}</span><span class="small" style="font-weight:700;color:${done ? 'var(--calm)' : 'var(--ink)'}">${esc(done ? t('gamesToday') : t('gamesPlay'))} →</span></div></button>`;
+  return `<header class="top"><div class="stack" style="gap:4px"><span class="eyebrow">${esc(t('gamesSub'))}</span><h1>${esc(t('tabGames'))}</h1></div></header>
+  ${game('🌍', t('gamesAtlas'), t('gamesAtlasSub'), 'Level ' + lv + ' · ' + t('gamesSeen', seen, 197), q.geo, 'geo-open', `<div class="bar"><i style="width:${Math.round(seen / 197 * 100)}%"></i></div>`)}
+  ${XW.puzzles.length ? game('🧩', t('gamesXw'), t('gamesXwSub'), t('gamesXwCount', xwOpen, xwDone), q.xw, 'xw-hub') : ''}`;
 }
 function viewXwHub() {
   const f = LS.get('echo-xw-cat', 'all'), lg = LS.get('echo-xw-lang', 'all'), sec = LS.get('echo-xw-sec', 'new');
@@ -2157,12 +2170,13 @@ function applyTheme() {
   if (meta) meta.content = getComputedStyle(r).getPropertyValue('--bg').trim();
 }
 function renderTabs() {
-  const tabs = [['today', 'home', 'tabToday'], ['goals', 'target', 'tabGoals'], ['history', 'history', 'tabHistory'], ['socratic', 'socrates', 'tabSocratic'], ['recap', 'book', 'tabRecap']];
-  $('#tabs').innerHTML = `<div class="in">${tabs.map(([k, ic, lab]) => `<button data-act="tab" data-v="${k}" ${S.tab === k ? 'aria-current="page"' : ''}>${icon(ic)}<span>${esc(t(lab))}</span></button>`).join('')}</div>`;
+  const tabs = [['today', 'home', 'tabToday'], ['goals', 'target', 'tabGoals'], ['history', 'history', 'tabHistory'], ['games', 'game', 'tabGames'], ['socratic', 'socrates', 'tabSocratic'], ['recap', 'book', 'tabRecap']];
+  const cur = S.tab === 'xw' ? 'games' : S.tab;
+  $('#tabs').innerHTML = `<div class="in">${tabs.map(([k, ic, lab]) => `<button data-act="tab" data-v="${k}" ${cur === k ? 'aria-current="page"' : ''}>${icon(ic)}<span>${esc(t(lab))}</span></button>`).join('')}</div>`;
 }
 function render() {
   const active = document.activeElement, id = active && active.id, sel = active && 'selectionStart' in active ? [active.selectionStart, active.selectionEnd] : null;
-  const views = { today: viewToday, goals: viewGoals, history: viewHistory, socratic: viewSocratic, recap: viewRecap, xw: viewXw };
+  const views = { today: viewToday, goals: viewGoals, history: viewHistory, socratic: viewSocratic, recap: viewRecap, xw: viewXw, games: viewGames };
   $('#app').innerHTML = views[S.tab]();
   renderTabs();
   if (id) { const el = document.getElementById(id); if (el && el !== active) { el.focus(); if (sel && el.setSelectionRange) try { el.setSelectionRange(sel[0], sel[1]); } catch { /* type without selection */ } } }
@@ -2213,7 +2227,7 @@ document.addEventListener('click', async e => {
     case 'geo-open': location.href = 'laender.html'; break;
     case 'quest-es': S.tab = 'socratic'; S.socMode = 'es'; LS.set('echo-soc-mode', 'es'); render(); scrollTo(0, 0); break;
     case 'xw-open': xwOpen(v); break;
-    case 'xw-back': if (S.tab === 'xw' && S.xwId) { S.xwId = null; } else S.tab = 'today'; render(); scrollTo(0, 0); break;
+    case 'xw-back': if (S.tab === 'xw' && S.xwId) { S.xwId = null; } else S.tab = 'games'; render(); scrollTo(0, 0); break;
     case 'xw-hub': S.tab = 'xw'; S.xwId = null; { const st = XW.puzzles.some(p => xwStatus(p) === 'started'); if (st && LS.get('echo-xw-sec', 'new') === 'new' && !XW.puzzles.some(p => xwStatus(p) === 'new')) LS.set('echo-xw-sec', 'started'); } render(); scrollTo(0, 0); break;
     case 'xw-filter': LS.set('echo-xw-' + b.dataset.k, v); render(); break;
     case 'xw-again': {
@@ -2417,6 +2431,7 @@ if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListen
   const open = S.dialogs.filter(d => !d.completed && d.day === today() && d.messages.some(m => m.role === 'assistant')).sort((a, b) => b.createdAt - a.createdAt)[0];
   if (open) S.activeDialog = open.id;
   { const tv = LS.get('echo-tabs', []); if (!tv.includes('today')) LS.set('echo-tabs', [...tv, 'today']); }
+  if (location.hash === '#games') { S.tab = 'games'; try { history.replaceState(null, '', location.pathname); } catch { /* ignore */ } }
   await abInit();
   { const g = LS.get('echo-geo', null); if (g && g.updated > (AB.last || 0)) abSchedule(); }
   if (!journalEmpty()) LS.set('echo-restore-hide', false);
