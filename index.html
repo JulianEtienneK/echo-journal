@@ -1908,7 +1908,9 @@ function viewSocratic() {
     return `<div class="esrow"><span class="av" aria-hidden="true">${ec.em}</span><div class="bubble a md">${fix ? `<p class="fix">${esc(fix)}</p>` : ''}${md(rest)}
       <button class="saybtn" data-act="es-say" data-v="${i}">${esSpeakingId === key ? '⏹ ' + esc(t('esStop')) : '🔊 ' + esc(t('esSay'))}</button></div></div>`;
   };
-  return head + `${d.topic || es ? `<div class="row spread"><span class="chip" aria-pressed="true" style="white-space:normal">${es ? ec.em + ' ' + esc(ec.name) + (d.topic ? ' · ' : '') : ''}${esc(d.topic || '')}</span><span class="small muted mono">${Math.max(1, Math.round((Date.now() - d.createdAt) / 60000))} min</span></div>` : ''}
+  // Mode switch also during a round; the open round stays and can be resumed.
+  const modeSeg = d.completed ? '' : `<div class="seg" style="justify-self:start">${[['nutri', 'socModeNutri'], ['talk', 'socModeTalk'], ['es', 'socModeEs']].map(([k, l]) => `<button data-act="soc-mode" data-v="${k}" aria-pressed="${(d.mode || 'nutri') === k}">${esc(t(l))}</button>`).join('')}</div>`;
+  return head + modeSeg + `${d.topic || es ? `<div class="row spread"><span class="chip" aria-pressed="true" style="white-space:normal">${es ? ec.em + ' ' + esc(ec.name) + (d.topic ? ' · ' : '') : ''}${esc(d.topic || '')}</span><span class="small muted mono">${Math.max(1, Math.round((Date.now() - d.createdAt) / 60000))} min</span></div>` : ''}
   <div class="chat">${visible.map(bubble).join('')}
     ${S.socBusy ? `<div class="status"><span class="spin"></span>${esc(es ? t('esThinking', ec.name) : t('thinking'))}</div>` : ''}</div>
   ${d.completed ? `<section class="card"><h3>✓ ${esc(t('socDone'))}</h3>${socSummary(d)}
@@ -2436,7 +2438,16 @@ document.addEventListener('click', async e => {
       break;
     }
     case 'soc-start': socStart(); break;
-    case 'soc-mode': S.socMode = v; LS.set('echo-soc-mode', v); render(); break;
+    case 'soc-mode': {
+      S.socMode = v; LS.set('echo-soc-mode', v);
+      const cur = S.dialogs.find(x => x.id === S.activeDialog);
+      if (cur && (cur.mode || 'nutri') !== v) {
+        // switch to an open round of the chosen mode from today, otherwise to the start screen
+        const open = S.dialogs.filter(x => !x.completed && x.day === today() && (x.mode || 'nutri') === v && x.messages.some(m => m.role === 'assistant')).sort((a, b) => b.createdAt - a.createdAt)[0];
+        S.activeDialog = open ? open.id : null; S.draft = '';
+      }
+      render(); break;
+    }
     case 'soc-send': socSend(($('#socInput') || {}).value || ''); break;
     case 'soc-hint': { const d = S.dialogs.find(x => x.id === S.activeDialog); socSend(d && d.mode === 'es' ? t('esHint') : t('hintMsg')); break; }
     case 'es-char': LS.set('echo-es-char', v); render(); break;
