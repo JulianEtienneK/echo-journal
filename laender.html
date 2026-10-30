@@ -164,6 +164,7 @@ h3 { font-size: 17px; font-weight: 700; }
 <script src="geo/data.js"></script>
 <script src="geo/flags.js"></script>
 <script src="geo/facts.js"></script>
+<script src="geo/capfacts.js"></script>
 <script>
 'use strict';
 /* ---------- storage (same origin as Echo: key echo-geo is part of Echo's backup) ---------- */
@@ -185,6 +186,10 @@ const save = () => { ST.updated = Date.now(); LS.set(KEY, ST); };
 /* ---------- data ---------- */
 const COUNTRIES = GEO.countries.map(c => Object.assign({}, c, { n: (window.NAME_FIX || {})[c.c] || c.n, k: ((window.FACTS || {})[c.c] || [c.cap])[0] || c.cap, fact: ((window.FACTS || {})[c.c] || [])[1] || '' }));
 const BY = Object.fromEntries(COUNTRIES.map(c => [c.c, c]));
+// Languages and currencies, named in German by the browser.
+const DN = (type, code) => { try { const n = new Intl.DisplayNames('de', { type }).of(code); return n && n !== code ? n : ''; } catch { return ''; } };
+for (const c of COUNTRIES) { c.langs = (c.lg || []).map(l => ({ code: l, name: DN('language', l) })).filter(x => x.name); c.curs = (c.cu || []).map(x => ({ code: x, name: DN('currency', x) })).filter(x => x.name); }
+const uniq = (arr) => { const m = new Map(); for (const x of arr) if (!m.has(x.code)) m.set(x.code, x); return [...m.values()]; };
 const FEATS = topojson.feature(GEO.topo, GEO.topo.objects.countries).features;
 // Several features can share an id (e.g. Australia and Ashmore Islands): keep the largest.
 const FEAT_BY_ID = new Map();
@@ -230,6 +235,8 @@ const INDEX = {
   country: COUNTRIES.map(c => ({ code: c.c, label: c.n, keys: [c.n, GEO.countries.find(g => g.c === c.c).n, ...((window.ALIASES || {})[c.c] || [])].map(norm) })),
   cap: COUNTRIES.map(c => ({ code: c.c, label: c.k, sub: c.n, keys: [c.k, c.cap, ...(c.c === 'LK' ? ['Colombo'] : c.c === 'SZ' ? ['Lobamba'] : c.c === 'BO' ? ['La Paz'] : c.c === 'ZA' ? ['Kapstadt', 'Bloemfontein'] : [])].filter(Boolean).map(norm) })),
 };
+INDEX.lang = uniq(COUNTRIES.flatMap(c => c.langs)).map(x => ({ code: x.code, label: x.name, keys: [norm(x.name)] }));
+INDEX.cur = uniq(COUNTRIES.flatMap(c => c.curs)).map(x => ({ code: x.code, label: x.name, keys: [norm(x.name), norm(x.name.split(' ').slice(-1)[0])] }));
 function search(kind, q) {
   const nq = norm(q), nq2 = norm2(q); if (!nq) return [];
   const out = [];
@@ -374,11 +381,13 @@ const TYPES = {
   capOf: { skill: 'cap', q: c => `Was ist die Hauptstadt von ${c.n}?`, input: 'cap', xp: 10 },
   capRev: { skill: 'cap', q: c => `${c.k} ist die Hauptstadt von …?`, input: 'country', xp: 15 },
   neighbor: { skill: 'map', q: c => `Nenne ein Nachbarland von ${c.n}.`, input: 'country', xp: 15 },
+  currency: { skill: 'cap', q: c => `Mit welcher Währung bezahlt man in ${c.n}?`, input: 'cur', xp: 15 },
+  language: { skill: 'cap', q: c => `Nenne eine Amtssprache von ${c.n}.`, input: 'lang', xp: 15 },
 };
 function typeFor(code, skill, challenge) {
   const b = isSeen(code) ? cs(code).sk[skill].b : 0;
   if (skill === 'flag') return b >= 3 && Math.random() < .35 ? 'flagTap' : 'flagName';
-  if (skill === 'cap') return b >= 3 && Math.random() < .4 ? 'capRev' : 'capOf';
+  if (skill === 'cap') { if (b < 3) return 'capOf'; const o = ['capOf', 'capRev']; if (BY[code].curs.length) o.push('currency'); if (BY[code].langs.length) o.push('language'); return pick(o); }
   if (challenge || b < 2) return 'mapName';
   const opts = ['mapName', 'mapTap'];
   if (b >= 3) opts.push('outlineName', 'mapTap');
@@ -507,9 +516,11 @@ function infoCard(code, opts = {}) {
   <div class="row" style="gap:16px;align-items:flex-start">
     <img src="${flag(code)}" alt="Flagge von ${esc(c.n)}" style="width:110px;aspect-ratio:4/3;border-radius:8px;object-fit:cover;box-shadow:0 2px 10px rgba(0,0,0,.2);flex:none">
     <div class="grow" style="display:grid;gap:6px"><div class="intro-name">${esc(c.n)}</div>
-      <div class="facts"><span class="tag">🏛️ ${esc(c.k)}</span><span class="tag">${esc(SUB_DE[c.s] || c.s)}</span></div>
+      <div class="facts"><button class="tag" data-act="capfact" data-c="${code}" style="border:0;cursor:pointer" title="Fakt zur Hauptstadt">🏛️ ${esc(c.k)} ›</button><span class="tag">${esc(SUB_DE[c.s] || c.s)}</span>${c.curs.length ? `<span class="tag">💰 ${esc(c.curs.map(x => x.name).join(', '))}</span>` : ''}</div>
+      ${c.langs.length ? `<span class="small muted">🗣️ ${esc(c.langs.map(x => x.name).join(', '))}</span>` : ''}
       ${st.seen ? `<div class="row small" style="gap:6px">${skillDots(code)}<i class="pdot" style="background:${p.color}"></i><span>${p.name} · ${st.n}×${np ? ` · noch ${np.min - st.n} bis ${np.name}` : ''}</span></div>` : ''}
     </div></div>
+  <div data-cap="${code}"></div>
   ${nb.length && opts.neighbours !== false ? `<p class="small muted" style="margin:0">Nachbarn: ${esc(nb.join(', '))}</p>` : ''}
   ${opts.fact && c.fact ? `<div class="fact"><b>Fun Fact</b><span>${esc(c.fact)}</span></div>` : ''}`;
 }
@@ -529,11 +540,11 @@ function renderRound() {
   if (it.type === 'mapName') stage = `<div class="stage">${mapSVG(makeProjection(it.code, 'zoom'), { marks: { [it.code]: 'target' }, pulse: true, label: 'Markiertes Land' })}</div>`;
   if (it.type === 'outlineName') stage = `<div class="stage" style="background:var(--surface-2)">${outlineSVG(it.code)}</div>`;
   if (it.type === 'mapTap' || it.type === 'flagTap') stage += `<div class="stage ${R.answered ? '' : 'clickable'}" id="clickmap">${mapSVG(R.proj, { marks: R.answered ? answerMarks(it) : {}, label: 'Karte zum Antippen' })}</div>`;
-  if ((it.type === 'capOf' || it.type === 'capRev' || it.type === 'neighbor') && !R.answered) stage = `<div class="flagbig" style="padding:14px"><img src="${flag(it.code)}" alt="" style="width:min(160px,50%)"></div>`;
+  if ((it.type === 'capOf' || it.type === 'capRev' || it.type === 'neighbor' || it.type === 'currency' || it.type === 'language') && !R.answered) stage = `<div class="flagbig" style="padding:14px"><img src="${flag(it.code)}" alt="" style="width:min(160px,50%)"></div>`;
   if (it.type === 'capRev' && !R.answered) stage = '';
   let input = '';
   if (!R.answered && T.input !== 'tap') {
-    input = `<div class="ac"><input id="guess" type="text" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" placeholder="${T.input === 'cap' ? 'Hauptstadt eintippen …' : 'Land eintippen …'}" aria-label="Antwort">
+    input = `<div class="ac"><input id="guess" type="text" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" placeholder="${({ cap: 'Hauptstadt', cur: 'Währung', lang: 'Sprache' })[T.input] || 'Land'} eintippen …" aria-label="Antwort">
       <div class="aclist" id="aclist" role="listbox"></div>
       <div class="row spread"><span class="hint" id="achint">Erste Buchstaben tippen, Enter wählt den obersten Vorschlag.</span><button class="link" data-act="skip">Weiß ich nicht</button></div></div>`;
   }
@@ -541,14 +552,14 @@ function renderRound() {
   if (R.answered) {
     const ok = R.ok, st = cs(it.code), p = prestigeOf(st.n);
     const given = R.givenLabel ? `Deine Antwort: ${esc(R.givenLabel)}. ` : '';
-    const solution = it.type === 'capOf' ? `Hauptstadt von ${esc(c.n)}: <b>${esc(c.k)}</b>` : it.type === 'neighbor' ? `Nachbarn von ${esc(c.n)}: <b>${esc((NEIGH[it.code] || []).map(x => BY[x].n).join(', '))}</b>` : `Das war <b>${esc(c.n)}</b>`;
+    const solution = it.type === 'currency' ? `Währung in ${esc(c.n)}: <b>${esc(c.curs.map(x => x.name).join(', '))}</b>` : it.type === 'language' ? `Amtssprachen in ${esc(c.n)}: <b>${esc(c.langs.map(x => x.name).join(', '))}</b>` : it.type === 'capOf' || it.type === 'capRev' ? `Hauptstadt von ${esc(c.n)}: <button class="link" data-act="capfact" data-c="${it.code}" style="padding:0;color:var(--ink);font-weight:700;text-decoration:underline dotted">${esc(c.k)}</button>` : it.type === 'neighbor' ? `Nachbarn von ${esc(c.n)}: <b>${esc((NEIGH[it.code] || []).map(x => BY[x].n).join(', '))}</b>` : `Das war <b>${esc(c.n)}</b>`;
     const showFact = !ok || R.firstMeet;
     fb = `<div class="fb ${ok ? 'ok' : 'bad'}"><div class="grow" style="display:grid;gap:2px">
         <b>${ok ? 'Richtig!' + (R.speedBonus ? ' ⚡ schnell' : '') : 'Leider nicht'}</b>
         <span class="small">${ok ? (it.type === 'neighbor' && R.givenLabel ? esc(R.givenLabel) + ' grenzt an ' + esc(c.n) + '.' : solution) : given + solution}</span>
         <span class="small row" style="gap:6px">${skillDots(it.code)}<i class="pdot" style="background:${p.color}"></i>${p.name} · ${st.n}×</span></div>
         ${ok ? `<span class="xp">+${R.lastXP}</span>` : ''}</div>
-      ${!ok || R.firstMeet ? `<section class="card">${infoCard(it.code, { fact: showFact, marks: answerMarks(it) })}</section>` : `<button class="link" data-act="fact" style="justify-self:start">💡 Fun Fact zeigen</button><div id="factbox"></div>`}
+      ${!ok || R.firstMeet ? `<section class="card">${infoCard(it.code, { fact: showFact, marks: answerMarks(it) })}</section>` : `<div class="row" style="gap:14px"><button class="link" data-act="fact">💡 Fun Fact</button><button class="link" data-act="capfact" data-c="${it.code}">🏛️ ${esc(c.k)}</button></div><div id="factbox"></div><div data-cap="${it.code}"></div>`}
       <button class="btn primary big" data-act="next" id="next">Weiter</button>`;
   }
   app.innerHTML = `${head}${prog}<div class="row" style="gap:6px;flex-wrap:wrap">${tags}</div><div class="q">${esc(T.q(c))}</div>${R.answered && (it.type === 'mapName' || it.type === 'outlineName' || it.type === 'flagName') && !R.ok ? '' : stage}${input}${fb}`;
@@ -611,10 +622,12 @@ function prepItem() {
 function answer(givenCode, typed) {
   const R = S.round, it = R.seq[R.i], T = TYPES[it.type]; if (R.answered) return;
   let ok;
-  if (it.type === 'neighbor') ok = !!givenCode && (NEIGH[it.code] || []).includes(givenCode) || (!givenCode && typed && (NEIGH[it.code] || []).some(n => matchesTarget('country', n, typed)));
+  const listOf = it.type === 'currency' ? BY[it.code].curs : it.type === 'language' ? BY[it.code].langs : null;
+  if (listOf) ok = (!!givenCode && listOf.some(x => x.code === givenCode)) || (!givenCode && !!typed && listOf.some(x => { const k = norm(x.name), q = norm(typed); return k === q || (k.length >= 5 && lev(q, k) <= 1); }));
+  else if (it.type === 'neighbor') ok = !!givenCode && (NEIGH[it.code] || []).includes(givenCode) || (!givenCode && typed && (NEIGH[it.code] || []).some(n => matchesTarget('country', n, typed)));
   else ok = givenCode === it.code || (!givenCode && typed != null && matchesTarget(T.input === 'cap' ? 'cap' : 'country', it.code, typed));
   R.answered = true; R.ok = ok; R.given = givenCode;
-  R.givenLabel = givenCode ? (T.input === 'cap' ? BY[givenCode].k : BY[givenCode].n) : (typed || '');
+  R.givenLabel = givenCode ? (T.input === 'cap' ? BY[givenCode].k : T.input === 'cur' || T.input === 'lang' ? ((INDEX[T.input].find(x => x.code === givenCode) || {}).label || givenCode) : BY[givenCode].n) : (typed || '');
   const st = cs(it.code), sk = st.sk[it.skill], now = Date.now(), d = dayRec();
   R.firstMeet = !st.seen;
   st.seen = st.seen || now; d.q++;
@@ -666,7 +679,7 @@ function submitTyped() {
   if (!g.value.trim()) { g.classList.remove('shake'); void g.offsetWidth; g.classList.add('shake'); return; }
   // Typed text that already matches the target (with small typos) wins over the list's first entry.
   const it = R.seq[R.i], T = TYPES[it.type];
-  if (it.type !== 'neighbor' && matchesTarget(T.input === 'cap' ? 'cap' : 'country', it.code, g.value)) return answer(it.code);
+  if (!['neighbor', 'currency', 'language'].includes(it.type) && matchesTarget(T.input === 'cap' ? 'cap' : 'country', it.code, g.value)) return answer(it.code);
   if (sel) return answer(sel.code);
   answer(null, g.value);
 }
@@ -706,6 +719,10 @@ app.addEventListener('click', e => {
   else if (a === 'pick') answer(b.dataset.v);
   else if (a === 'skip') answer(null, '');
   else if (a === 'next') next();
+  else if (a === 'capfact') {
+    const code = b.dataset.c, c = BY[code], f = (window.CAPFACTS || {})[code];
+    document.querySelectorAll(`[data-cap="${code}"]`).forEach(box => { box.innerHTML = box.innerHTML ? '' : `<div class="fact"><b>🏛️ ${esc(c.k)}</b><span>${esc(f || 'Hauptstadt von ' + c.n + '.')}</span></div>`; });
+  }
   else if (a === 'fact') { const c = BY[S.round.seq[S.round.i].code]; const box = document.getElementById('factbox'); if (box) box.innerHTML = `<div class="fact"><b>Fun Fact</b><span>${esc(c.fact)}</span></div>`; b.remove(); }
   else if (a === 'filter') { S.filter = b.dataset.v; S.sheet = null; render(); }
   else if (a === 'info') { S.sheet = b.dataset.c; render(); document.getElementById('sheet')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
