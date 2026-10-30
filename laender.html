@@ -403,7 +403,8 @@ function typeFor(code, skill, challenge) {
   if (b >= 3 && (NEIGH[code] || []).length) opts.push('neighbor');
   return pick(opts);
 }
-const task = (code, skill, extra = {}) => Object.assign({ code, skill, type: extra.type || typeFor(code, skill, extra.challenge) }, extra);
+// extra.type may be undefined on purpose; it must not overwrite the chosen type.
+const task = (code, skill, extra = {}) => Object.assign({ code, skill }, extra, { type: extra.type || typeFor(code, skill, extra.challenge) });
 // Spread tasks of the same country apart.
 function spread(list) {
   const out = []; let pool = list.slice();
