@@ -195,6 +195,11 @@ i[data-l="0"] { background: var(--surface-2); }
 .xwcell input.wrong { color: #c0392b; background: #fbe3df; }
 .xwcell input.rev { color: var(--muted, #888); }
 .xwcell input.ok { border-color: var(--calm); }
+.xwkb { position: fixed; left: 0; right: 0; bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0px)); z-index: 19; background: var(--surface-2); border-top: 1px solid var(--line); padding: 6px max(6px, env(safe-area-inset-left, 0px)) 8px max(6px, env(safe-area-inset-right, 0px)); display: grid; gap: 6px; }
+.xwkb .kbr { display: flex; gap: 5px; justify-content: center; max-width: 560px; margin: 0 auto; width: 100%; }
+.xwkb button { flex: 1; max-width: 46px; height: 46px; border: 0; border-radius: 8px; background: var(--surface); color: var(--ink); font: 700 17px/1 var(--f-body); box-shadow: 0 1px 0 var(--line); touch-action: manipulation; }
+.xwkb button.w { max-width: 64px; flex: 1.5; }
+.xwkb button:active { background: var(--calm-soft); }
 .xwcell .num { position: absolute; top: 1px; left: 3px; font-size: 8.5px; line-height: 1; color: var(--muted, #888); pointer-events: none; z-index: 1; }
 .xwclue { position: sticky; top: 0; z-index: 3; background: var(--bg); padding: 8px 0; font-weight: 600; min-height: 2.6em; }
 .xwlist { display: grid; gap: 4px; }
@@ -303,6 +308,9 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
 <div id="toasts"></div>
 
 <script src="puzzles.js"></script>
+<script src="puzzles2.js"></script>
+<script src="xwinfo.js"></script>
+<script src="xwgen.js"></script>
 <script>window.ECHO_SEED = {"goals": [{"week": "2026-10-26", "text": "! 🎤 JournalClub: großartiger Vortrag am Donnerstag [Hauptziel]\n- Mo · 4 Durchläufe\n- Di · 3 Durchläufe\n- Mi · 2 Durchläufe\n- Do · 1 Durchlauf, dann rocken\n> 10 Durchläufe bis Donnerstag. Jeder macht den nächsten leichter.\n+ 🦉 Sokratisches Teaching · mind. 45 min\n- Mo\n- Di\n- Mi\n- Do\n> Diskussion simulieren, bis keine Frage mehr überrascht.\n+ 🔬 Scoping Review\n- Datenextraktion fertig (Mo)\n- Gender-Papers: Aufgabe 1\n- Gender-Papers: Aufgabe 2 (Bonus)\n+ 🥗 NM · täglich\n+ 🧘 Meditation · täglich [Serie halten]\n+ 📵 Gesunde Beziehung zum Handy · täglich\n> Abends ehrlich abhaken: Hatte ich heute das Handy im Griff?\n🏋️ 1 Gym-Session (Mo)\n> Mehr geht wegen der CK-Werte gerade nicht. Eine gute Session zählt.\n🏐 Volleyball am Montag\n🎹 Fr: „Don't Stop Me Now\" (Queen) anfangen [Bonus-Fun]\n🍻 Eine soziale Sache am Wochenende\n🗓️ Monat zusammenfassen\n📈 Anchor: TikTok-Ads Runde 3 starten"}]};</script>
 <script>
 'use strict';
@@ -426,7 +434,7 @@ const I18N = {
     imported: n => n + ' Einträge importiert', exported: 'Backup erstellt', importFail: 'Die Datei ist kein Echo-Backup.',
     privacy: 'Alles liegt lokal in diesem Browser. Mach ab und zu ein Backup: Browserdaten löschen heißt Memos löschen.',
     q_bonus: 'Bonus · freiwillig', q_es: 'Español mit deinem Sparringspartner', q_xw: 'Ein Kreuzworträtsel lösen', q_geo: 'Eine Atlas-Runde (Länder & Flaggen)',
-    xwErn: 'Ernährungsmedizin', xwAw: 'Allgemeinwissen', xwBack: 'Zurück', xwLevel: n => 'Stufe ' + n, xwAcross: 'Waagerecht', xwDown: 'Senkrecht',
+    xwErn: 'Ernährungsmedizin', xwAw: 'Allgemeinwissen', xwGeo: 'Länder & Hauptstädte', xwPsy: 'Psychiatrie & Pharmakologie', xwTax: 'Steuern', xwEs: 'Spanisch', xwRev: 'Wiederholung', xwRevTitle: 'Wiederholungs-Rätsel', xwRevSub: n => n + ' aufgedeckte Wörter warten · neues Rätsel daraus bauen', xwRevOpen: n => n + ' Wörter, die du aufgedeckt hattest', xwRec: 'Empfohlen für dich', xwSmall: 'Klein', xwLarge: 'Groß', xwKb: 'Bildschirmtastatur', xwBack: 'Zurück', xwLevel: n => 'Stufe ' + n, xwAcross: 'Waagerecht', xwDown: 'Senkrecht',
     xwHelp: 'Umlaute als AE, OE, UE, ß als SS. Feld antippen, nochmal tippen wechselt die Richtung.', xwCheck: 'Prüfen', xwReveal: 'Lösung zeigen', xwRevealIn: s => 'Lösung in ' + s, xwWord: 'Wort aufdecken', xwWordCost: n => 'Wort aufdecken · −' + n + ' XP', xwWordDone: n => 'Wort aufgedeckt · −' + n + ' XP', xwPickFirst: 'Tippe zuerst ein Feld des Wortes an.', xwSolvedXP: (n, w) => 'Gelöst · ' + (n >= 0 ? '+' : '') + n + ' XP' + (w ? ' (' + w + ' aufgedeckt)' : ''), xwTime: s => 'Zeit ' + s, xwBestT: s => 'Bestzeit ' + s,
     xwSolved: 'Gelöst · +15 XP', xwRevealed: 'Mit Lösung beendet · +5 XP', xwWrong: n => n + ' Buchstaben stimmen noch nicht', xwAllOk: 'Bisher alles richtig',
     xwHub: 'Kreuzworträtsel', xwHubSub: n => n + ' Rätsel im Pool · lös so viele du magst', xwAll: 'Alle', xwStarted: 'Angefangen', xwOpenL: 'Neu', xwRepeat: 'Wiederholen', xwEmpty: 'Hier ist gerade nichts.',
@@ -539,7 +547,7 @@ const I18N = {
     autoAI: 'Transcribe and summarize new memos automatically', dataSection: 'Data',
     exportBtn: 'Export backup', importBtn: 'Import backup', used: s => 'Used: ' + s, wipe: 'Delete everything',
     q_bonus: 'Bonus · optional', q_es: 'Español with your sparring partner', q_xw: 'Solve a crossword', q_geo: 'One Atlas round (countries & flags)',
-    xwErn: 'Nutritional medicine', xwAw: 'General knowledge', xwBack: 'Back', xwLevel: n => 'Level ' + n, xwAcross: 'Across', xwDown: 'Down',
+    xwErn: 'Nutritional medicine', xwAw: 'General knowledge', xwGeo: 'Countries & capitals', xwPsy: 'Psychiatry & pharmacology', xwTax: 'Tax', xwEs: 'Spanish', xwRev: 'Review', xwRevTitle: 'Review puzzle', xwRevSub: n => n + ' revealed words waiting · build a puzzle from them', xwRevOpen: n => n + ' words you had revealed', xwRec: 'Recommended for you', xwSmall: 'Small', xwLarge: 'Large', xwKb: 'On-screen keyboard', xwBack: 'Back', xwLevel: n => 'Level ' + n, xwAcross: 'Across', xwDown: 'Down',
     xwHelp: 'Umlauts as AE, OE, UE, ß as SS. Tap a square, tap again to switch direction.', xwCheck: 'Check', xwReveal: 'Show solution', xwRevealIn: s => 'Solution in ' + s, xwWord: 'Reveal word', xwWordCost: n => 'Reveal word · −' + n + ' XP', xwWordDone: n => 'Word revealed · −' + n + ' XP', xwPickFirst: 'Tap a square of the word first.', xwSolvedXP: (n, w) => 'Solved · ' + (n >= 0 ? '+' : '') + n + ' XP' + (w ? ' (' + w + ' revealed)' : ''), xwTime: s => 'time ' + s, xwBestT: s => 'best ' + s,
     xwSolved: 'Solved · +15 XP', xwRevealed: 'Finished with solution · +5 XP', xwWrong: n => n + ' letters are not right yet', xwAllOk: 'All correct so far',
     xwHub: 'Crosswords', xwHubSub: n => n + ' puzzles in the pool · solve as many as you like', xwAll: 'All', xwStarted: 'In progress', xwOpenL: 'New', xwRepeat: 'Repeat', xwEmpty: 'Nothing here right now.',
@@ -1421,6 +1429,47 @@ function md(text) {
 
 /* Crossword: one puzzle a day from puzzles.js, alternating Ernmed / Allgemeinwissen and German / English. */
 const XW = window.ECHO_XW || { start: today(), puzzles: [] };
+XW.puzzles = XW.puzzles.concat(window.ECHO_XW2 || [], LS.get('echo-xw-gen', []));
+const XW_CATS = { ern: ['🥗', 'xwErn'], aw: ['🌍', 'xwAw'], geo: ['🗺️', 'xwGeo'], psy: ['🧠', 'xwPsy'], tax: ['🧾', 'xwTax'], es: ['🇪🇸', 'xwEs'], rev: ['🔁', 'xwRev'] };
+const XW_TOUCH = () => (window.matchMedia && matchMedia('(pointer: coarse)').matches) || (navigator.maxTouchPoints > 0 && innerWidth < 900);
+const XW_KB = () => XW_TOUCH() && LS.get('echo-xw-kb', true);
+function xwKbKey(k) {
+  const pz = xwFind(S.xwId); if (!pz) return;
+  if (k === 'DIR') { XS.dir = XS.dir === 'a' ? 'd' : 'a'; xwPaint(); return; }
+  let inp = document.querySelector(`[data-xw="${XS.r}_${XS.c}"]`);
+  if (!inp) { const m = $('#xwMsg'); if (m) m.textContent = t('xwPickFirst'); return; }
+  if (k === 'DEL') { if (!inp.value) { xwStep(-1); inp = document.querySelector(`[data-xw="${XS.r}_${XS.c}"]`); } if (inp) { inp.value = ''; xwInput(inp); } return; }
+  inp.value = k; xwInput(inp);
+}
+const xwInfo = e => e.info || (window.XW_INFO || {})[e.a] || '';
+// Revealed words come back later in a review puzzle.
+const xwReview = () => LS.get('echo-xw-review', []);
+function xwQueueReview(pz, x) {
+  const list = xwReview(), have = new Set(list.map(w => w.a));
+  for (const i of x.words || []) { const e = pz.entries[i]; if (e && !have.has(e.a)) { list.push({ a: e.a, q: e.q, info: xwInfo(e) || undefined }); have.add(e.a); } }
+  if (pz.cat === 'rev') { const kept = new Set((x.words || []).map(i => pz.entries[i] && pz.entries[i].a)); const solved = new Set(pz.entries.map(e => e.a).filter(a => !kept.has(a))); LS.set('echo-xw-review', list.filter(w => !solved.has(w.a))); return; }
+  LS.set('echo-xw-review', list);
+}
+function xwMakeReview() {
+  const words = xwReview().slice(0, 10); if (words.length < 4 || !window.XWGEN) return null;
+  let g = null; for (let i = 0; i < 80; i++) { const tr = XWGEN.generate(words); if (!g || tr.skipped.length < g.skipped.length || (tr.skipped.length === g.skipped.length && tr.w * tr.h < g.w * g.h)) g = tr; }
+  const pz = { id: 'rev-' + Date.now(), cat: 'rev', lang: S.set.lang, level: 0, title: t('xwRevTitle'), w: g.w, h: g.h, x: g.x, entries: g.entries };
+  const gen = LS.get('echo-xw-gen', []).filter(p => !(S.xw[p.id] && (S.xw[p.id].solvedAt || S.xw[p.id].revealedAt)));
+  gen.push(pz); LS.set('echo-xw-gen', gen); XW.puzzles.push(pz); return pz;
+}
+// Recommendation: step the level up after clean solves, down after many revealed words.
+function xwRecommend() {
+  const done = XW.puzzles.filter(p => p.cat !== 'rev' && S.xw[p.id] && S.xw[p.id].solvedAt).sort((a, b) => S.xw[b.id].solvedAt - S.xw[a.id].solvedAt);
+  let target = 1;
+  if (done.length) {
+    const last = done.slice(0, 3), lvl = Math.max(...last.map(p => p.level));
+    const revRate = last.reduce((a, p) => a + (S.xw[p.id].words || []).length / p.entries.length, 0) / last.length;
+    target = revRate <= 0.1 ? lvl + 1 : revRate <= 0.3 ? lvl : Math.max(1, lvl - 1);
+  }
+  const open = XW.puzzles.filter(p => p.cat !== 'rev' && xwStatus(p) !== 'done');
+  open.sort((a, b) => Math.abs(a.level - target) - Math.abs(b.level - target) || (xwStatus(a) === 'started' ? -1 : 1));
+  return open[0] || null;
+}
 // Word value grows with length. A revealed word costs its own value (strict, as Julian chose).
 const xwWordXP = e => Math.max(2, e.a.length - 2);
 function xwScore(x) {
@@ -1432,7 +1481,7 @@ function xwScore(x) {
 const xwCompletions = x => (x.history || []).concat(x.solvedAt || x.revealedAt ? [{ at: x.solvedAt || x.revealedAt, rev: !x.solvedAt, words: (x.words || []).length, xp: x.v2 && x.solvedAt ? xwScore(x) : undefined, dur: x.solvedAt && x.openedAt ? Math.round((x.solvedAt - x.openedAt) / 1000) : undefined }] : []);
 const xwBest = x => { const d = xwCompletions(x).filter(c => !c.rev && !c.words && c.dur).map(c => c.dur); return d.length ? Math.min(...d) : 0; };
 const xwStatus = pz => { const x = S.xw[pz.id]; if (!x) return 'new'; if (x.solvedAt || x.revealedAt) return 'done'; if (Object.keys(x.cells || {}).length) return 'started'; return xwCompletions(x).length ? 'done' : 'new'; };
-const xwCatName = pz => (pz.cat === 'ern' ? t('xwErn') : t('xwAw')) + ' · ' + (pz.lang === 'de' ? 'DE' : 'EN');
+const xwCatName = pz => t((XW_CATS[pz.cat] || XW_CATS.aw)[1]) + (pz.cat === 'rev' ? '' : ' · ' + String(pz.lang || '').toUpperCase());
 const xwFind = id => XW.puzzles.find(p => p.id === id);
 const XS = { dir: 'a', r: -1, c: -1, timer: 0, saveT: 0, wrong: false };
 function xwCells(pz) {
@@ -1472,9 +1521,9 @@ function viewXw() {
     const k = r + '_' + c, cell = cells[k];
     if (!cell) { grid.push('<div></div>'); continue; }
     const v = x.cells[k] || '', cls = [x.revealedAt && v === cell.ch && x.revealed && x.revealed[k] ? 'rev' : '', done && v === cell.ch ? 'ok' : '', XS.wrong && v && v !== cell.ch ? 'wrong' : ''].filter(Boolean).join(' ');
-    grid.push(`<div class="xwcell">${cell.n ? `<span class="num">${cell.n}</span>` : ''}<input data-xw="${k}" data-r="${r}" data-c="${c}" value="${esc(v)}" maxlength="2" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text" class="${cls}" aria-label="${r + 1}/${c + 1}" ${done ? 'readonly' : ''}></div>`);
+    grid.push(`<div class="xwcell">${cell.n ? `<span class="num">${cell.n}</span>` : ''}<input data-xw="${k}" data-r="${r}" data-c="${c}" value="${esc(v)}" maxlength="2" autocomplete="off" autocapitalize="characters" spellcheck="false" ${XW_KB() ? 'inputmode="none"' : ''} inputmode="text" class="${cls}" aria-label="${r + 1}/${c + 1}" ${done ? 'readonly' : ''}></div>`);
   }
-  const list = d => pz.entries.map((e, i) => e.d !== d ? '' : `<button data-act="xw-clue" data-v="${i}" class="${xwEntryDone(pz, x, e) ? 'solved' : ''}"><b>${e.n}</b> ${esc(e.q)} <span class="muted mono small">(${e.a.length}) · ${(x.words || []).includes(i) ? '−' : '+'}${xwWordXP(e)}</span></button>`).join('');
+  const list = d => pz.entries.map((e, i) => e.d !== d ? '' : `<button data-act="xw-clue" data-v="${i}" class="${xwEntryDone(pz, x, e) ? 'solved' : ''}"><b>${e.n}</b> ${esc(e.q)} <span class="muted mono small">(${e.a.length}) · ${(x.words || []).includes(i) ? '−' : '+'}${xwWordXP(e)}</span>${xwEntryDone(pz, x, e) && xwInfo(e) ? `<span class="small muted" style="display:block;margin-top:2px">💡 ${esc(xwInfo(e))}</span>` : ''}</button>`).join('');
   const reps = (x.history || []).length, times = xwCompletions(x).length;
   const best = xwBest(x), cur = x.solvedAt && x.openedAt ? Math.round((x.solvedAt - x.openedAt) / 1000) : 0;
   const status = x.solvedAt ? (reps ? t('xwRepeatXP') : (x.v2 ? t('xwSolvedXP', xwScore(x), (x.words || []).length) : t('xwSolved'))) + (cur ? ' · ' + t('xwTime', fmtDur(cur)) : '') + (best ? ' · ' + t('xwBestT', fmtDur(best)) : '') : x.revealedAt ? t('xwRevealed') : '';
@@ -1488,7 +1537,8 @@ function viewXw() {
     <button class="btn sm ${left ? 'ghost' : ''}" data-act="xw-reveal" id="xwReveal" ${left ? 'disabled' : ''}>${esc(left ? t('xwRevealIn', fmtDur(left)) : t('xwReveal'))}</button>
     <span class="small muted" id="xwMsg"></span></div>`}
   <div class="xwcols"><div class="stack" style="gap:6px"><h3>${esc(t('xwAcross'))}</h3><div class="xwlist">${list('a')}</div></div>
-    <div class="stack" style="gap:6px"><h3>${esc(t('xwDown'))}</h3><div class="xwlist">${list('d')}</div></div></div>`;
+    <div class="stack" style="gap:6px"><h3>${esc(t('xwDown'))}</h3><div class="xwlist">${list('d')}</div></div></div>
+  ${!done && XW_KB() ? `<div style="height:190px"></div><div class="xwkb">${['QWERTZUIOP', 'ASDFGHJKL', '⇄YXCVBNM⌫'].map(r => `<div class="kbr">${[...r].map(k => `<button type="button" data-xwk="${k === '⇄' ? 'DIR' : k === '⌫' ? 'DEL' : k}" class="${k === '⇄' || k === '⌫' ? 'w' : ''}">${k}</button>`).join('')}</div>`).join('')}</div>` : ''}`;
 }
 function viewGames() {
   const q = computeStats().quests, g = LS.get('echo-geo', null) || { xp: 0, cs: {} };
@@ -1517,18 +1567,24 @@ function viewGames() {
 }
 function viewXwHub() {
   const f = LS.get('echo-xw-cat', 'all'), lg = LS.get('echo-xw-lang', 'all'), sec = LS.get('echo-xw-sec', 'new');
-  const pool = XW.puzzles.filter(p => (f === 'all' || p.cat === f) && (lg === 'all' || p.lang === lg));
+  const sz = LS.get('echo-xw-size', 'all');
+  const pool = XW.puzzles.filter(p => p.cat !== 'rev' && (f === 'all' || p.cat === f) && (lg === 'all' || p.lang === lg) && (sz === 'all' || (sz === 's' ? p.entries.length <= 8 : p.entries.length > 8)));
   const by = st => pool.filter(p => xwStatus(p) === st);
   const groups = { started: by('started'), new: by('new'), done: by('done') };
   const cur = groups[sec] || groups.new;
   const seg = (key, val, opts) => `<div class="seg">${opts.map(([v, l]) => `<button data-act="xw-filter" data-k="${key}" data-v="${v}" aria-pressed="${val === v}">${esc(l)}</button>`).join('')}</div>`;
   const card = p => { const x = S.xw[p.id], n = x ? xwCompletions(x).length : 0;
-    return `<button class="card flat" data-act="xw-open" data-v="${p.id}" style="text-align:left;cursor:pointer"><div class="row spread"><b>${p.cat === 'ern' ? '🥗' : '🌍'} ${esc(p.title)}</b><span class="small muted mono">${esc(t('xwLevel', p.level))}</span></div>
+    return `<button class="card flat" data-act="xw-open" data-v="${p.id}" style="text-align:left;cursor:pointer"><div class="row spread"><b>${(XW_CATS[p.cat] || XW_CATS.aw)[0]} ${esc(p.title)}</b><span class="small muted mono">${esc(t('xwLevel', p.level))}</span></div>
       <span class="small muted">${esc(xwCatName(p))}${n ? ' · ✓ ' + esc(t('xwTimes', n)) : ''}${xwStatus(p) === 'started' ? ' · ' + Object.keys(x.cells).length + '/' + Object.keys(xwCells(p)).length : ''}</span></button>`; };
   const allDone = !groups.new.length && !groups.started.length && XW.puzzles.every(p => xwStatus(p) === 'done');
   return `<header class="top"><div class="stack" style="gap:4px"><span class="eyebrow">🧩 ${esc(t('xwHubSub', XW.puzzles.length))}</span><h1>${esc(t('xwHub'))}</h1></div>
     <button class="btn ghost sm" data-act="xw-back">${icon('left')} ${esc(t('xwBack'))}</button></header>
-  <div class="row wrap">${seg('cat', f, [['all', t('xwAll')], ['ern', t('xwErn')], ['aw', t('xwAw')]])}${seg('lang', lg, [['all', t('xwAll')], ['de', 'DE'], ['en', 'EN']])}</div>
+  ${(() => { const rec = xwRecommend(), rv = xwReview().length, revOpen = XW.puzzles.find(p => p.cat === 'rev' && xwStatus(p) !== 'done');
+    return `${rec ? `<button class="card" data-act="xw-open" data-v="${rec.id}" style="text-align:left;cursor:pointer;border:2px solid var(--calm)"><span class="eyebrow">${esc(t('xwRec'))}</span><div class="row spread"><b>${(XW_CATS[rec.cat] || XW_CATS.aw)[0]} ${esc(rec.title)}</b><span class="small muted mono">${esc(t('xwLevel', rec.level))} · ${rec.entries.length}</span></div></button>` : ''}
+    ${revOpen ? `<button class="card flat" data-act="xw-open" data-v="${revOpen.id}" style="text-align:left;cursor:pointer"><b>🔁 ${esc(revOpen.title)}</b><span class="small muted">${esc(t('xwRevOpen', revOpen.entries.length))}</span></button>` : rv >= 4 ? `<button class="card flat" data-act="xw-review" style="text-align:left;cursor:pointer"><b>🔁 ${esc(t('xwRevTitle'))}</b><span class="small muted">${esc(t('xwRevSub', rv))}</span></button>` : ''}`; })()}
+  <div class="row wrap">${seg('cat', f, [['all', t('xwAll')], ...Object.entries(XW_CATS).filter(([k]) => k !== 'rev').map(([k, v]) => [k, v[0]])])}</div>
+  <div class="row wrap">${seg('lang', lg, [['all', t('xwAll')], ['de', 'DE'], ['en', 'EN'], ['es', 'ES']])}${seg('size', sz, [['all', t('xwAll')], ['s', t('xwSmall')], ['l', t('xwLarge')]])}</div>
+  ${XW_TOUCH() ? `<button class="btn ghost sm" data-act="xw-kb" style="justify-self:start">⌨️ ${esc(t('xwKb'))}: ${LS.get('echo-xw-kb', true) ? 'an' : 'aus'}</button>` : ''}
   ${seg('sec', sec, [['new', t('xwOpenL') + ' · ' + groups.new.length], ['started', t('xwStarted') + ' · ' + groups.started.length], ['done', t('xwRepeat') + ' · ' + groups.done.length]])}
   ${allDone ? `<p class="small muted">${esc(t('xwAllDone'))}</p>` : ''}
   <div class="stack" style="gap:8px">${cur.length ? cur.map(card).join('') : `<p class="muted">${esc(t('xwEmpty'))}</p>`}</div>`;
@@ -1557,7 +1613,7 @@ function xwSave(pz, x) {
   clearTimeout(XS.saveT); XS.saveT = setTimeout(() => DB.put('xw', x), 500);
   const cells = xwCells(pz);
   if (!x.solvedAt && !x.revealedAt && Object.entries(cells).every(([k, cell]) => x.cells[k] === cell.ch)) {
-    x.solvedAt = Date.now(); DB.put('xw', x); toast(t('xwSolved'), 'ok'); burst(); afterChange();
+    x.solvedAt = Date.now(); DB.put('xw', x); xwQueueReview(pz, x); toast(x.v2 ? t('xwSolvedXP', xwScore(x), (x.words || []).length) : t('xwSolved'), 'ok'); burst(); afterChange();
   } else {
     // keep the clue list's strike-through current
     pz.entries.forEach((e, i) => { const b = document.querySelector(`.xwlist [data-v="${i}"]`); if (b) b.classList.toggle('solved', xwEntryDone(pz, x, e)); });
@@ -1586,6 +1642,8 @@ function xwTick() {
   }, 1000);
 }
 document.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.xw) xwInput(e.target); });
+// On-screen keyboard: pointerdown keeps the focus in the grid.
+document.addEventListener('pointerdown', e => { const k = e.target.closest && e.target.closest('[data-xwk]'); if (!k) return; e.preventDefault(); xwKbKey(k.dataset.xwk); });
 document.addEventListener('focusin', e => {
   const d = e.target.dataset; if (!d || !d.xw) return;
   const fresh = XS.r < 0; XS.r = +d.r; XS.c = +d.c;
@@ -2259,6 +2317,8 @@ document.addEventListener('click', async e => {
     case 'xw-back': if (S.tab === 'xw' && S.xwId) { S.xwId = null; } else S.tab = 'games'; render(); scrollTo(0, 0); break;
     case 'xw-hub': S.tab = 'xw'; S.xwId = null; { const st = XW.puzzles.some(p => xwStatus(p) === 'started'); if (st && LS.get('echo-xw-sec', 'new') === 'new' && !XW.puzzles.some(p => xwStatus(p) === 'new')) LS.set('echo-xw-sec', 'started'); } render(); scrollTo(0, 0); break;
     case 'xw-filter': LS.set('echo-xw-' + b.dataset.k, v); render(); break;
+    case 'xw-kb': LS.set('echo-xw-kb', !LS.get('echo-xw-kb', true)); render(); break;
+    case 'xw-review': { const pz = xwMakeReview(); if (pz) xwOpen(pz.id); break; }
     case 'xw-again': {
       const pz = xwFind(S.xwId), x = pz && S.xw[pz.id]; if (!x) break;
       x.history = xwCompletions(x); x.cells = {}; x.revealed = {}; x.words = []; x.v2 = true; delete x.solvedAt; delete x.revealedAt; x.openedAt = Date.now();
@@ -2287,7 +2347,8 @@ document.addEventListener('click', async e => {
       const pz = xwFind(S.xwId), x = pz && S.xw[pz.id]; if (!x || xwRevealLeft(x) || x.solvedAt) break;
       const cells = xwCells(pz); x.revealed = {};
       for (const [k, cell] of Object.entries(cells)) { if (x.cells[k] !== cell.ch) x.revealed[k] = true; x.cells[k] = cell.ch; }
-      x.revealedAt = Date.now(); await DB.put('xw', x); toast(t('xwRevealed'), 'ok'); afterChange(); break;
+      x.words = pz.entries.map((e, i) => i).filter(i => !xwEntryDone(pz, { cells: Object.fromEntries(Object.entries(x.cells).filter(([k]) => !x.revealed[k])) }, pz.entries[i]));
+      x.revealedAt = Date.now(); await DB.put('xw', x); xwQueueReview(pz, x); toast(t('xwRevealed'), 'ok'); afterChange(); break;
     }
     case 'tab-recap': S.tab = 'recap'; S.recapDay = today(); render(); scrollTo(0, 0); break;
     case 'shuffle': S.promptShift++; render(); break;
