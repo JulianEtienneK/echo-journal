@@ -434,7 +434,7 @@ const I18N = {
     wipeConfirm: 'Alle Memos, Dialoge, Ziele und Rückblicke auf diesem Gerät löschen? Das lässt sich nicht rückgängig machen.',
     imported: n => n + ' Einträge importiert', exported: 'Backup erstellt', importFail: 'Die Datei ist kein Echo-Backup.',
     privacy: 'Alles liegt lokal in diesem Browser. Mach ab und zu ein Backup: Browserdaten löschen heißt Memos löschen.',
-    q_bonus: 'Bonus · freiwillig', q_note: 'Gedanke des Tages', noteTitle: 'Gedanke des Tages', noteAsk: 'Kurz innehalten', noteRead: n => 'Gelesen & nachgedacht · +' + n + ' XP', noteDone: 'Heute schon gelesen', noteThanks: n => 'Gut gedacht · +' + n + ' XP', q_es: 'Español mit deinem Sparringspartner', q_xw: 'Ein Kreuzworträtsel lösen', q_geo: 'Eine Atlas-Runde (Länder & Flaggen)',
+    q_bonus: 'Bonus · freiwillig', q_note: 'Gedanke des Tages', noteTitle: 'Gedanke des Tages', noteAsk: 'Kurz innehalten', noteRead: n => 'Gelesen & nachgedacht · +' + n + ' XP', noteDone: 'Heute schon gelesen', noteThanks: n => 'Gut gedacht · +' + n + ' XP', noteAnsLabel: 'Deine Gedanken (optional)', noteAnsPh: 'Ein, zwei Sätze reichen …', noteSave: 'Antwort speichern', noteSaved: 'Gespeichert', notePast: 'Frühere Antworten', q_es: 'Español mit deinem Sparringspartner', q_xw: 'Ein Kreuzworträtsel lösen', q_geo: 'Eine Atlas-Runde (Länder & Flaggen)',
     xwErn: 'Ernährungsmedizin', xwAw: 'Allgemeinwissen', xwGeo: 'Länder & Hauptstädte', xwPsy: 'Psychiatrie & Pharmakologie', xwTax: 'Steuern', xwEs: 'Spanisch', xwRev: 'Wiederholung', xwRevTitle: 'Wiederholungs-Rätsel', xwRevSub: n => n + ' aufgedeckte Wörter warten · neues Rätsel daraus bauen', xwRevOpen: n => n + ' Wörter, die du aufgedeckt hattest', xwRec: 'Empfohlen für dich', xwSmall: 'Klein', xwLarge: 'Groß', xwKb: 'Bildschirmtastatur', xwBack: 'Zurück', xwLevel: n => 'Stufe ' + n, xwAcross: 'Waagerecht', xwDown: 'Senkrecht',
     xwHelp: 'Umlaute als AE, OE, UE, ß als SS. Feld antippen, nochmal tippen wechselt die Richtung.', xwCheck: 'Prüfen', xwReveal: 'Lösung zeigen', xwRevealIn: s => 'Lösung in ' + s, xwWord: 'Wort aufdecken', xwWordCost: n => 'Wort aufdecken · −' + n + ' XP', xwWordDone: n => 'Wort aufgedeckt · −' + n + ' XP', xwPickFirst: 'Tippe zuerst ein Feld des Wortes an.', xwSolvedXP: (n, w) => 'Gelöst · ' + (n >= 0 ? '+' : '') + n + ' XP' + (w ? ' (' + w + ' aufgedeckt)' : ''), xwTime: s => 'Zeit ' + s, xwBestT: s => 'Bestzeit ' + s,
     xwSolved: 'Gelöst · +15 XP', xwRevealed: 'Mit Lösung beendet · +5 XP', xwWrong: n => n + ' Buchstaben stimmen noch nicht', xwAllOk: 'Bisher alles richtig',
@@ -547,7 +547,7 @@ const I18N = {
     liveStt: 'Live transcript in the browser (free, less accurate; on Android it may not run alongside recording)',
     autoAI: 'Transcribe and summarize new memos automatically', dataSection: 'Data',
     exportBtn: 'Export backup', importBtn: 'Import backup', used: s => 'Used: ' + s, wipe: 'Delete everything',
-    q_bonus: 'Bonus · optional', q_note: 'Thought of the day', noteTitle: 'Thought of the day', noteAsk: 'Pause for a moment', noteRead: n => 'Read & reflected · +' + n + ' XP', noteDone: 'Already read today', noteThanks: n => 'Well thought · +' + n + ' XP', q_es: 'Español with your sparring partner', q_xw: 'Solve a crossword', q_geo: 'One Atlas round (countries & flags)',
+    q_bonus: 'Bonus · optional', q_note: 'Thought of the day', noteTitle: 'Thought of the day', noteAsk: 'Pause for a moment', noteRead: n => 'Read & reflected · +' + n + ' XP', noteDone: 'Already read today', noteThanks: n => 'Well thought · +' + n + ' XP', noteAnsLabel: 'Your thoughts (optional)', noteAnsPh: 'A sentence or two is enough …', noteSave: 'Save answer', noteSaved: 'Saved', notePast: 'Earlier answers', q_es: 'Español with your sparring partner', q_xw: 'Solve a crossword', q_geo: 'One Atlas round (countries & flags)',
     xwErn: 'Nutritional medicine', xwAw: 'General knowledge', xwGeo: 'Countries & capitals', xwPsy: 'Psychiatry & pharmacology', xwTax: 'Tax', xwEs: 'Spanish', xwRev: 'Review', xwRevTitle: 'Review puzzle', xwRevSub: n => n + ' revealed words waiting · build a puzzle from them', xwRevOpen: n => n + ' words you had revealed', xwRec: 'Recommended for you', xwSmall: 'Small', xwLarge: 'Large', xwKb: 'On-screen keyboard', xwBack: 'Back', xwLevel: n => 'Level ' + n, xwAcross: 'Across', xwDown: 'Down',
     xwHelp: 'Umlauts as AE, OE, UE, ß as SS. Tap a square, tap again to switch direction.', xwCheck: 'Check', xwReveal: 'Show solution', xwRevealIn: s => 'Solution in ' + s, xwWord: 'Reveal word', xwWordCost: n => 'Reveal word · −' + n + ' XP', xwWordDone: n => 'Word revealed · −' + n + ' XP', xwPickFirst: 'Tap a square of the word first.', xwSolvedXP: (n, w) => 'Solved · ' + (n >= 0 ? '+' : '') + n + ' XP' + (w ? ' (' + w + ' revealed)' : ''), xwTime: s => 'time ' + s, xwBestT: s => 'best ' + s,
     xwSolved: 'Solved · +15 XP', xwRevealed: 'Finished with solution · +5 XP', xwWrong: n => n + ' letters are not right yet', xwAllOk: 'All correct so far',
@@ -2027,6 +2027,7 @@ function viewRecap() {
 /* Daily Socratic note: one thought + one question, read once a day for XP. */
 const NOTE_XP = 5 * JX;
 const notesRead = () => LS.get('echo-notes', {});
+const noteAnswers = () => LS.get('echo-note-ans', {});
 function noteOfDay(d = today()) { const N = window.ECHO_NOTES || []; if (!N.length) return null; const n = Math.floor((parseDay(d) - parseDay('2026-01-01')) / 864e5); return N[((n % N.length) + N.length) % N.length]; }
 function openNote() {
   const n = noteOfDay(); if (!n) return;
@@ -2035,7 +2036,9 @@ function openNote() {
     <blockquote style="margin:0;font:600 21px/1.4 var(--f-display);text-wrap:balance">„${esc(n[0])}“</blockquote>
     <span class="small muted">${esc(n[1])}</span>
     <div class="card flat" style="gap:6px"><span class="eyebrow">${esc(t('noteAsk'))}</span><b>${esc(n[2])}</b></div>
-    <div class="row wrap">${done ? `<span class="small muted">✓ ${esc(t('noteDone'))}</span>` : `<button class="btn primary" data-act="note-read">${esc(t('noteRead', NOTE_XP))}</button><button class="btn ghost" data-act="note-later">${esc(t('later'))}</button>`}</div>`);
+    <div class="field"><label for="noteAns">${esc(t('noteAnsLabel'))}</label><textarea class="input" id="noteAns" rows="3" placeholder="${esc(t('noteAnsPh'))}">${esc(noteAnswers()[today()] || '')}</textarea></div>
+    <div class="row wrap">${done ? `<span class="small muted">✓ ${esc(t('noteDone'))}</span><button class="btn sm" data-act="note-save">${esc(t('noteSave'))}</button>` : `<button class="btn primary" data-act="note-read">${esc(t('noteRead', NOTE_XP))}</button><button class="btn ghost" data-act="note-later">${esc(t('later'))}</button>`}</div>
+    ${(() => { const a = noteAnswers(), past = Object.keys(a).filter(k => k !== today() && a[k]).sort().reverse().slice(0, 5); return past.length ? `<details><summary class="small muted" style="cursor:pointer">${esc(t('notePast'))}</summary><div class="stack" style="gap:10px;margin-top:8px">${past.map(k => { const pn = noteOfDay(k); return `<div class="stack" style="gap:2px"><span class="small muted">${esc(fmtDate(k, { day: 'numeric', month: 'short' }))} · ${esc(pn ? pn[2] : '')}</span><span>${esc(a[k])}</span></div>`; }).join('')}</div></details>` : ''; })()}`);
 }
 function openSheet(html) {
   const el = $('#sheet');
@@ -2115,7 +2118,7 @@ async function buildBackup() {
   const memos = [];
   for (const m of S.memos) memos.push(Object.assign({}, m, { blob: m.blob ? await blobToDataURL(m.blob) : null, status: '' }));
   const settings = Object.assign({}, S.set); delete settings.anthropicKey; delete settings.openaiKey; // keys never leave the browser
-  const data = { app: 'echo-journal', version: 1, exportedAt: new Date().toISOString(), memos, dialogs: S.dialogs, recaps: Object.values(S.recaps), goals: Object.values(S.goals), commitments: S.commitments, xw: Object.values(S.xw), played: played(), geo: LS.get('echo-geo', null), games: LS.get('echo-games', null), notes: notesRead(), settings };
+  const data = { app: 'echo-journal', version: 1, exportedAt: new Date().toISOString(), memos, dialogs: S.dialogs, recaps: Object.values(S.recaps), goals: Object.values(S.goals), commitments: S.commitments, xw: Object.values(S.xw), played: played(), geo: LS.get('echo-geo', null), games: LS.get('echo-games', null), notes: notesRead(), noteAns: noteAnswers(), settings };
   return new Blob([JSON.stringify(data)], { type: 'application/json' });
 }
 async function exportBackup() {
@@ -2139,6 +2142,7 @@ async function importBackup(file) {
     for (const [store, list] of [['dialogs', data.dialogs], ['recaps', data.recaps], ['goals', data.goals], ['commitments', data.commitments], ['xw', data.xw]]) for (const x of list || []) { await DB.put(store, x); n++; }
     if (data.geo && (data.geo.xp || 0) > ((LS.get('echo-geo', null) || {}).xp || 0)) LS.set('echo-geo', data.geo);
     if (data.notes) LS.set('echo-notes', Object.assign({}, notesRead(), data.notes));
+    if (data.noteAns) LS.set('echo-note-ans', Object.assign({}, data.noteAns, noteAnswers()));
     if (data.games && (data.games.xp || 0) > ((LS.get('echo-games', null) || {}).xp || 0)) LS.set('echo-games', data.games);
     if (data.played) { const pl = played(); for (const [d, ids] of Object.entries(data.played)) pl[d] = [...new Set([...(pl[d] || []), ...ids])]; LS.set('echo-played', pl); }
     if (data.settings) { const keep = { anthropicKey: S.set.anthropicKey, openaiKey: S.set.openaiKey }; S.set = Object.assign({}, S.set, data.settings, keep); saveSettings(); applyTheme(); }
@@ -2333,7 +2337,12 @@ document.addEventListener('click', async e => {
     case 'tab-socratic': S.tab = 'socratic'; render(); scrollTo(0, 0); break;
     case 'geo-open': location.href = 'laender.html'; break;
     case 'note-open': openNote(); break;
-    case 'note-read': { const r = notesRead(); r[today()] = true; LS.set('echo-notes', r); closeSheet(); toast(t('noteThanks', NOTE_XP), 'ok'); afterChange(); break; }
+    case 'note-read': case 'note-save': {
+      const txt = ($('#noteAns') && $('#noteAns').value || '').trim(), ans = noteAnswers();
+      if (txt) ans[today()] = txt; else delete ans[today()]; LS.set('echo-note-ans', ans);
+      if (act === 'note-read') { const r = notesRead(); r[today()] = true; LS.set('echo-notes', r); toast(t('noteThanks', NOTE_XP), 'ok'); } else toast(t('noteSaved'), 'ok');
+      closeSheet(); afterChange(); break;
+    }
     case 'note-later': LS.set('echo-note-later', today()); closeSheet(); break;
     case 'quest-es': S.tab = 'socratic'; S.socMode = 'es'; LS.set('echo-soc-mode', 'es'); render(); scrollTo(0, 0); break;
     case 'xw-open': xwOpen(v); break;
