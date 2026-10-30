@@ -373,14 +373,14 @@ const icon = (n, cls = '') => '<svg class="i ' + cls + '" viewBox="0 0 24 24" ar
 const plural = (n, one, many) => n === 1 ? one : many;
 const I18N = {
   de: {
-    tabToday: 'Heute', tabHistory: 'Verlauf', tabGames: 'Spiele', gamesSub: 'Freiwillig · je Spiel +15 XP pro Tag', gamesAtlas: 'Atlas', gamesAtlasSub: 'Alle Länder · Flagge und Lage', gamesXw: 'Kreuzworträtsel', gamesXwSub: 'Ernmed & Allgemeinwissen · DE/EN', gamesPlay: 'Spielen', gamesToday: 'Heute erledigt', gamesLevel: n => 'Spiele-Level ' + n, gamesWeek: n => n + ' XP diese Woche', gamesWordleSub: 'Wort des Tages + Übung', gamesCalc: 'Kopfrechnen', gamesCalcSub: '60-Sekunden-Sprint', gamesBest: n => 'Bestwert ' + n, gamesErnmed: 'Ernmed-Quiz', gamesTax: 'Steuer-Fallquiz', gamesQuizSub: 'Fragen mit Erklärung und Wiederholung', gamesSeenQ: (a, b) => a + '/' + b + ' Fragen gesehen', gamesSeen: (a, b) => a + '/' + b + ' Länder entdeckt', gamesXwCount: (n, d) => n + ' offen · ' + d + ' gelöst', tabSocratic: 'Sokrates', tabRecap: 'Rückblick',
+    tabToday: 'Heute', tabHistory: 'Verlauf', tabGames: 'Spiele', gamesSub: 'Freiwillig · alle Spiel-XP zählen fürs Echo-Level', gamesAtlas: 'Atlas', gamesAtlasSub: 'Alle Länder · Flagge und Lage', gamesXw: 'Kreuzworträtsel', gamesXwSub: 'Ernmed & Allgemeinwissen · DE/EN', gamesPlay: 'Spielen', gamesToday: 'Heute erledigt', gamesLevel: n => 'Spiele-Level ' + n, gamesWeek: n => n + ' XP diese Woche', gamesWordleSub: 'Wort des Tages + Übung', gamesCalc: 'Kopfrechnen', gamesCalcSub: '60-Sekunden-Sprint', gamesBest: n => 'Bestwert ' + n, gamesErnmed: 'Ernmed-Quiz', gamesTax: 'Steuer-Fallquiz', gamesQuizSub: 'Fragen mit Erklärung und Wiederholung', gamesSeenQ: (a, b) => a + '/' + b + ' Fragen gesehen', gamesSeen: (a, b) => a + '/' + b + ' Länder entdeckt', gamesXwCount: (n, d) => n + ' offen · ' + d + ' gelöst', tabSocratic: 'Sokrates', tabRecap: 'Rückblick',
     greet: (h, name) => (h < 5 ? 'Gute Nacht' : h < 11 ? 'Guten Morgen' : h < 17 ? 'Hallo' : h < 22 ? 'Guten Abend' : 'Gute Nacht') + (name ? ', ' + name : ''),
     streak: 'Serie', days: n => n + ' ' + plural(n, 'Tag', 'Tage'), streakOpen: 'heute noch offen', streakDone: 'heute erledigt',
     freezeInfo: 'Ein verpasster Tag pro Woche bricht die Serie nicht.',
     level: 'Level', xpTo: n => 'noch ' + n + ' XP', weekMin: 'Min. diese Woche',
     record: 'Aufnehmen', recordHint: 'Ein Tipp, dann einfach losreden. Perfekt muss es nicht sein.', newPrompt: 'Andere Frage',
     questsTitle: 'Heutige Runde', q_memo: 'Ein Memo sprechen', q_socratic: 'Eine Sokrates-Runde', q_recap: 'Tagesrückblick', q_echo: 'Bonus: ein älteres Memo wiederhören',
-    fullRound: 'Volle Runde geschafft', fullRoundXP: '+15 XP Bonus',
+    fullRound: 'Volle Runde geschafft', fullRoundXP: '+60 XP Bonus',
     commitTitle: 'Deine Vorsätze', commitAdd: 'Vorsatz hinzufügen', commitPlaceholder: 'z.B. Morgen 30 min Biochemie',
     commitHint: 'Kommen automatisch aus deinen Memos, wenn du sagst, was du vorhast.',
     goalsTitle: 'Wochenziele', goalsEmpty: 'Noch keine Ziele für diese Woche.', goalsEdit: 'Bearbeiten', goalsAdd: 'Ziele eintragen',
@@ -489,14 +489,14 @@ const I18N = {
     install: 'Tipp: Über das Browser-Menü "Zum Startbildschirm hinzufügen", dann startet Echo wie eine App.',
   },
   en: {
-    tabToday: 'Today', tabHistory: 'History', tabGames: 'Games', gamesSub: 'Optional · +15 XP per game per day', gamesAtlas: 'Atlas', gamesAtlasSub: 'Every country · flag and location', gamesXw: 'Crosswords', gamesXwSub: 'Nutrition & general knowledge · DE/EN', gamesPlay: 'Play', gamesToday: 'Done today', gamesLevel: n => 'Games level ' + n, gamesWeek: n => n + ' XP this week', gamesWordleSub: 'Word of the day + practice', gamesCalc: 'Mental maths', gamesCalcSub: '60-second sprint', gamesBest: n => 'Best ' + n, gamesErnmed: 'Nutrition quiz', gamesTax: 'Tax case quiz', gamesQuizSub: 'Questions with explanations and review', gamesSeenQ: (a, b) => a + '/' + b + ' questions seen', gamesSeen: (a, b) => a + '/' + b + ' countries discovered', gamesXwCount: (n, d) => n + ' open · ' + d + ' solved', tabSocratic: 'Socrates', tabRecap: 'Recap',
+    tabToday: 'Today', tabHistory: 'History', tabGames: 'Games', gamesSub: 'Optional · all game XP counts towards your Echo level', gamesAtlas: 'Atlas', gamesAtlasSub: 'Every country · flag and location', gamesXw: 'Crosswords', gamesXwSub: 'Nutrition & general knowledge · DE/EN', gamesPlay: 'Play', gamesToday: 'Done today', gamesLevel: n => 'Games level ' + n, gamesWeek: n => n + ' XP this week', gamesWordleSub: 'Word of the day + practice', gamesCalc: 'Mental maths', gamesCalcSub: '60-second sprint', gamesBest: n => 'Best ' + n, gamesErnmed: 'Nutrition quiz', gamesTax: 'Tax case quiz', gamesQuizSub: 'Questions with explanations and review', gamesSeenQ: (a, b) => a + '/' + b + ' questions seen', gamesSeen: (a, b) => a + '/' + b + ' countries discovered', gamesXwCount: (n, d) => n + ' open · ' + d + ' solved', tabSocratic: 'Socrates', tabRecap: 'Recap',
     greet: (h, name) => (h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 17 ? 'Hello' : h < 22 ? 'Good evening' : 'Good night') + (name ? ', ' + name : ''),
     streak: 'Streak', days: n => n + ' ' + plural(n, 'day', 'days'), streakOpen: 'still open today', streakDone: 'done today',
     freezeInfo: 'One missed day per week does not break the streak.',
     level: 'Level', xpTo: n => n + ' XP to go', weekMin: 'min this week',
     record: 'Record', recordHint: 'One tap, then just talk. It does not have to be perfect.', newPrompt: 'Another prompt',
     questsTitle: "Today's round", q_memo: 'Record a memo', q_socratic: 'One Socratic round', q_recap: 'Daily recap', q_echo: 'Bonus: replay an older memo',
-    fullRound: 'Full round done', fullRoundXP: '+15 XP bonus',
+    fullRound: 'Full round done', fullRoundXP: '+60 XP bonus',
     commitTitle: 'Your commitments', commitAdd: 'Add commitment', commitPlaceholder: 'e.g. 30 min biochemistry tomorrow',
     commitHint: 'Picked up from your memos automatically when you say what you plan to do.',
     goalsTitle: 'Weekly goals', goalsEmpty: 'No goals for this week yet.', goalsEdit: 'Edit', goalsAdd: 'Add goals',
@@ -675,10 +675,12 @@ async function loadAll() {
 }
 
 /* ---------- gamification ---------- */
-const memoXP = m => 10 + 2 * Math.min(10, Math.floor((m.dur || 0) / 60));
+// Journal XP is weighted ×4 since game XP counts towards the Echo level too (Oct 2026).
+const JX = 4;
+const memoXP = m => JX * (10 + 2 * Math.min(10, Math.floor((m.dur || 0) / 60)));
 const isRecapDone = r => !!r && (!!r.text || Object.values(r.reflection || {}).some(v => (v || '').trim().length >= 3));
-const levelFrom = xp => Math.floor((1 + Math.sqrt(1 + 4 * xp / 25)) / 2);
-const levelBase = n => 25 * n * (n - 1);
+const levelFrom = xp => Math.floor((1 + Math.sqrt(1 + 4 * xp / 100)) / 2);
+const levelBase = n => 100 * n * (n - 1);
 const levelName = n => { const L = t('levels'); return L[Math.min(n, L.length) - 1] + (n > L.length ? ' ' + (n - L.length + 1) : ''); };
 const played = () => LS.get('echo-played', {});
 
@@ -707,34 +709,33 @@ function computeStats() {
   }
   // Spanish rounds are an optional bonus task of their own, not the daily Socratic round.
   const socDone = S.dialogs.filter(d => d.completed && d.mode !== 'es');
-  xp += socDone.length * 20;
+  xp += socDone.length * 20 * JX;
   const esDone = S.dialogs.filter(d => d.completed && d.mode === 'es');
-  xp += esDone.length * 15;
+  xp += esDone.length * 15 * JX;
   // Crosswords: first completion +15 (+5 with solution), each repeat solved on your own +5.
   const xwDoneDays = new Set();
   for (const x of Object.values(S.xw)) xwCompletions(x).forEach((c, i) => { xp += i === 0 ? (c.rev ? 5 : (c.xp ?? 15)) : (c.rev ? 0 : 5); xwDoneDays.add(dayKey(new Date(c.at))); });
   const recapDays = Object.values(S.recaps).filter(r => !r.day.includes(':') && isRecapDone(r)).map(r => r.day);
-  xp += recapDays.length * 10;
+  xp += recapDays.length * 10 * JX;
   const commitDone = S.commitments.filter(c => c.done).length;
-  xp += commitDone * 5;
+  xp += commitDone * 5 * JX;
   let goalWeeks = 0;
   for (const g of Object.values(S.goals)) {
     const wp = weekProgress(g);
-    xp += 3 * wp.done;
+    xp += 3 * JX * wp.done;
     if (wp.items.length && wp.items.every(goalDone)) goalWeeks++;
   }
-  // Echo Atlas (laender.html): +15 XP per day with at least one finished round.
-  const geoDays = Object.entries((LS.get('echo-geo', null) || {}).days || {}).filter(([, v]) => v && v.r > 0).map(([k]) => k);
-  xp += geoDays.length * 15;
-  // More games (spiele.html): +15 XP per game and day.
-  const GAMES = ['wordle', 'rechnen', 'quiz_ernmed', 'quiz_steuer'], gDays = (LS.get('echo-games', null) || {}).days || {};
-  for (const v of Object.values(gDays)) for (const g of GAMES) if (v && v[g]) xp += 15;
-  const gToday = gDays[td] || {};
+  // Games count in full: Atlas (laender.html) and the other games (spiele.html).
+  const geo = LS.get('echo-geo', null) || {}, games = LS.get('echo-games', null) || {};
+  const geoDays = Object.entries(geo.days || {}).filter(([, v]) => v && v.r > 0).map(([k]) => k);
+  const gameXP = Math.max(0, geo.xp || 0) + Math.max(0, games.xp || 0);
+  xp += gameXP;
+  const gDays = games.days || {}, gToday = gDays[td] || {};
   const pl = played(); let echoCount = 0;
-  for (const ids of Object.values(pl)) { echoCount += ids.length; xp += 2 * Math.min(5, ids.length); }
+  for (const ids of Object.values(pl)) { echoCount += ids.length; xp += 2 * JX * Math.min(5, ids.length); }
   const socDays = new Set(socDone.map(d => d.day)), recapSet = new Set(recapDays);
   const fullDays = [...dayMin.keys()].filter(k => socDays.has(k) && recapSet.has(k));
-  xp += fullDays.length * 15;
+  xp += fullDays.length * 15 * JX;
   const st = streakInfo(new Set(dayMin.keys()));
   const best = Math.max(st.count, LS.get('echo-best', 0));
   if (best > LS.get('echo-best', 0)) LS.set('echo-best', best);
@@ -1319,19 +1320,19 @@ function viewToday() {
     <div class="row spread"><div class="stack" style="gap:2px"><span class="eyebrow">${esc(t('questsTitle'))}</span><h3>${done === 3 ? esc(t('fullRound')) : done + ' / 3'}</h3></div>
       <div class="ring" style="--p:${Math.round(done / 3 * 100)}"><span>${done}/3</span></div></div>
     <div class="stack" style="gap:2px">
-      ${quest('memo', t('q_memo'), 10, 'record')}
-      ${quest('socratic', t('q_socratic'), 20, 'tab-socratic')}
-      ${quest('recap', t('q_recap'), 10, 'tab-recap')}
-      ${echo ? quest('echo', t('q_echo'), 2, 'echo') : ''}
+      ${quest('memo', t('q_memo'), 10 * JX, 'record')}
+      ${quest('socratic', t('q_socratic'), 20 * JX, 'tab-socratic')}
+      ${quest('recap', t('q_recap'), 10 * JX, 'tab-recap')}
+      ${echo ? quest('echo', t('q_echo'), 2 * JX, 'echo') : ''}
     </div>
     <span class="eyebrow" style="margin-top:4px">${esc(t('q_bonus'))}</span>
     <div class="stack" style="gap:2px">
-      ${quest('es', '🗣️ ' + t('q_es'), 15, 'quest-es')}
+      ${quest('es', '🗣️ ' + t('q_es'), 15 * JX, 'quest-es')}
     </div>
   </section>
   ${commits.length ? `<section class="card">
     <div class="row spread"><h3>${esc(t('commitTitle'))}</h3><button class="icon-btn" data-act="commit-new" aria-label="${esc(t('commitAdd'))}">${icon('plus')}</button></div>
-    <div class="stack">${commits.map(c => `<label class="check ${c.done ? 'done' : ''}"><input type="checkbox" data-act="commit" data-id="${c.id}" ${c.done ? 'checked' : ''}><span class="grow">${esc(c.text)}${c.day < td ? ` <span class="tag">${esc(c.day === ydays ? t('echoAgo', 1) : fmtDate(c.day, { day: 'numeric', month: 'short' }))}</span>` : ''}</span><span class="xp">+5</span></label>`).join('')}</div>
+    <div class="stack">${commits.map(c => `<label class="check ${c.done ? 'done' : ''}"><input type="checkbox" data-act="commit" data-id="${c.id}" ${c.done ? 'checked' : ''}><span class="grow">${esc(c.text)}${c.day < td ? ` <span class="tag">${esc(c.day === ydays ? t('echoAgo', 1) : fmtDate(c.day, { day: 'numeric', month: 'short' }))}</span>` : ''}</span><span class="xp">+${5 * JX}</span></label>`).join('')}</div>
   </section>` : ''}
   ${todayGoalsCard(commits.length > 0)}
   ${echo ? `<section class="card">
@@ -1547,14 +1548,14 @@ function viewGames() {
   const xwOpen = XW.puzzles.filter(p => xwStatus(p) !== 'done').length, xwDone = XW.puzzles.length - xwOpen;
   const game = (em, title, sub, meta, done, act, extra = '') => `<button class="card" data-act="${act}" style="text-align:left;cursor:pointer">
     <div class="row spread"><div class="row"><span style="font-size:28px">${em}</span><div class="stack" style="gap:0"><h3>${esc(title)}</h3><span class="small muted">${esc(sub)}</span></div></div>
-      <span class="xp">${done ? '✓' : '+15'}</span></div>
+      <span class="xp">${done ? '✓' : 'XP'}</span></div>
     ${extra}
     <div class="row spread"><span class="small muted">${esc(meta)}</span><span class="small" style="font-weight:700;color:${done ? 'var(--calm)' : 'var(--ink)'}">${esc(done ? t('gamesToday') : t('gamesPlay'))} →</span></div></button>`;
   const gm = LS.get('echo-games', null) || { xp: 0, days: {}, wordle: {}, rechnen: {} };
   const gx = (g.xp || 0) + (gm.xp || 0); let gl = 1, gneed = 150, grest = gx; while (grest >= gneed) { grest -= gneed; gl++; gneed = 150 + 60 * (gl - 1); }
   const wk = []; for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); const k = dayKey(d); wk.push({ k, xp: (((g.days || {})[k] || {}).xp || 0) + (((gm.days || {})[k] || {}).xp || 0) }); }
   const wmax = Math.max(20, ...wk.map(w => w.xp)), wsum = wk.reduce((a, w) => a + w.xp, 0);
-  const link = (href, em, title, sub, meta, done) => `<a class="card" href="${href}" style="text-align:left;cursor:pointer;text-decoration:none;color:inherit"><div class="row spread"><div class="row"><span style="font-size:28px">${em}</span><div class="stack" style="gap:0"><h3>${esc(title)}</h3><span class="small muted">${esc(sub)}</span></div></div><span class="xp">${done ? '✓' : '+15'}</span></div><span class="small muted">${esc(meta)}</span></a>`;
+  const link = (href, em, title, sub, meta, done) => `<a class="card" href="${href}" style="text-align:left;cursor:pointer;text-decoration:none;color:inherit"><div class="row spread"><div class="row"><span style="font-size:28px">${em}</span><div class="stack" style="gap:0"><h3>${esc(title)}</h3><span class="small muted">${esc(sub)}</span></div></div><span class="xp">${done ? '✓' : 'XP'}</span></div><span class="small muted">${esc(meta)}</span></a>`;
   return `<header class="top"><div class="stack" style="gap:4px"><span class="eyebrow">${esc(t('gamesSub'))}</span><h1>${esc(t('tabGames'))}</h1></div></header>
   <section class="card"><div class="row spread"><div class="row"><div class="ring" style="--p:${Math.round(grest / gneed * 100)}"><span>${gl}</span></div><div class="stack" style="gap:0"><h3>${esc(t('gamesLevel', gl))}</h3><span class="small muted mono">${grest} / ${gneed} XP</span></div></div><span class="small muted">${esc(t('gamesWeek', wsum))}</span></div>
     <div class="row" style="align-items:flex-end;gap:6px;height:70px">${wk.map(w => `<div class="stack grow" style="gap:3px;align-items:center"><i style="display:block;width:100%;height:${Math.max(3, Math.round(w.xp / wmax * 54))}px;border-radius:6px 6px 2px 2px;background:${w.k === today() ? 'var(--gold)' : 'var(--calm)'}"></i><span class="small muted" style="font-size:11px">${esc(new Date(w.k + 'T12:00').toLocaleDateString(locale(), { weekday: 'narrow' }))}</span></div>`).join('')}</div></section>
