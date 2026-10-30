@@ -65,7 +65,7 @@ h3 { font-size: 17px; font-weight: 700; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.primary { color: #0F1211; } }
 .btn.big { padding: 17px 20px; font-size: 18px; width: 100%; }
 .btn:disabled { opacity: .45; cursor: default; }
-.link { background: none; border: 0; padding: 6px 0; color: var(--muted); font-weight: 500; }
+.link { background: none; border: 0; padding: 6px 0; color: var(--muted); font-weight: 500; white-space: nowrap; }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .bar { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
 .bar i { display: block; height: 100%; background: var(--calm); border-radius: 99px; transition: width .4s ease; }
@@ -137,6 +137,22 @@ h3 { font-size: 17px; font-weight: 700; }
 .intro-name { font-family: var(--f-display); font-size: 30px; font-weight: 700; letter-spacing: -.01em; }
 .facts { display: flex; flex-wrap: wrap; gap: 6px; }
 .loading { padding: 60px 0; text-align: center; color: var(--muted); }
+.ac { position: relative; display: grid; gap: 8px; }
+.ac input { width: 100%; font: 700 18px/1.3 var(--f-body); padding: 14px 16px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); }
+.ac input:focus { outline: none; border-color: var(--calm); }
+.aclist { display: grid; gap: 4px; max-height: 264px; overflow-y: auto; }
+.aclist button { border: 0; background: var(--surface); border-radius: 10px; padding: 10px 12px; text-align: left; font-weight: 500; display: flex; justify-content: space-between; gap: 10px; }
+.aclist button.on, .aclist button:hover { background: var(--calm-soft); }
+.aclist button small { color: var(--muted); font-weight: 400; }
+.aclist mark { background: none; color: var(--calm); font-weight: 700; }
+.hint { font-size: 13px; color: var(--muted); }
+.fact { background: var(--gold-soft); border-radius: 14px; padding: 12px 14px; font-size: 15px; display: flex; gap: 10px; }
+.fact b { color: var(--gold); flex: none; }
+.skills { display: inline-flex; gap: 4px; }
+.skills i { width: 8px; height: 8px; border-radius: 50%; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
+.skills i.on { background: var(--calm); box-shadow: none; }
+.shake { animation: shake .3s; }
+@keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 @media (max-width: 420px) { .opts { grid-template-columns: 1fr; } .opts.flags { grid-template-columns: repeat(2, minmax(0,1fr)); } .stats { grid-template-columns: repeat(3, minmax(0,1fr)); } .stat b { font-size: 19px; } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
@@ -147,30 +163,46 @@ h3 { font-size: 17px; font-weight: 700; }
 <script src="geo/topojson-client.min.js"></script>
 <script src="geo/data.js"></script>
 <script src="geo/flags.js"></script>
+<script src="geo/facts.js"></script>
 <script>
 'use strict';
-/* ---------- storage (shared origin with Echo: key echo-geo is included in Echo's backup) ---------- */
+/* ---------- storage (same origin as Echo: key echo-geo is part of Echo's backup) ---------- */
 const LS = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* blocked */ } },
 };
 const KEY = 'echo-geo';
-let ST = LS.get(KEY, null) || { v: 1, xp: 0, cs: {}, days: {}, best: 0, updated: 0 };
+let ST = LS.get(KEY, null) || { v: 2, xp: 0, cs: {}, days: {}, best: {}, badges: {}, sound: true, updated: 0 };
+// v1 → v2: one Leitner box per country becomes three skills (flag, map, capital).
+if (ST.v !== 2) {
+  for (const st of Object.values(ST.cs || {})) st.sk = st.sk || { flag: { b: st.box || 0, d: st.due || 0 }, map: { b: st.box || 0, d: st.due || 0 }, cap: { b: 0, d: 0 } };
+  ST.v = 2; ST.best = typeof ST.best === 'object' && ST.best ? ST.best : {}; ST.badges = ST.badges || {}; if (ST.sound == null) ST.sound = true;
+}
+ST.hist = ST.hist || [];
 const save = () => { ST.updated = Date.now(); LS.set(KEY, ST); };
-
-// Theme follows Echo's setting.
 (() => { const s = LS.get('echo-settings', {}); if (s.theme && s.theme !== 'system') document.documentElement.dataset.theme = s.theme; })();
 
 /* ---------- data ---------- */
-const COUNTRIES = GEO.countries;              // ordered: tier 1→4, big→small inside a tier
+const COUNTRIES = GEO.countries.map(c => Object.assign({}, c, { n: (window.NAME_FIX || {})[c.c] || c.n, k: ((window.FACTS || {})[c.c] || [c.cap])[0] || c.cap, fact: ((window.FACTS || {})[c.c] || [])[1] || '' }));
 const BY = Object.fromEntries(COUNTRIES.map(c => [c.c, c]));
 const FEATS = topojson.feature(GEO.topo, GEO.topo.objects.countries).features;
-const FEAT_BY_ID = new Map(FEATS.map(f => [String(f.id), f]));
+// Several features can share an id (e.g. Australia and Ashmore Islands): keep the largest.
+const FEAT_BY_ID = new Map();
+for (const f of FEATS) { const k = String(f.id), o = FEAT_BY_ID.get(k); if (!o || d3.geoArea(f) > d3.geoArea(o)) FEAT_BY_ID.set(k, f); }
+// For zooming, use the biggest polygon so overseas territories do not shrink the country.
+const MAIN = new Map();
+const mainPart = f => { if (MAIN.has(f)) return MAIN.get(f); let m = f; if (f.geometry.type === 'MultiPolygon') { let best = -1; for (const poly of f.geometry.coordinates) { const g = { type: 'Polygon', coordinates: poly }, a = d3.geoArea(g); if (a > best) { best = a; m = g; } } } MAIN.set(f, m); return m; };
 const CODE_BY_ID = new Map(COUNTRIES.filter(c => c.g).map(c => [String(c.g), c.c]));
 const featOf = code => { const c = BY[code]; return c && c.g ? FEAT_BY_ID.get(String(c.g)) : null; };
+// Neighbours from shared borders in the topology.
+const NEIGH = (() => {
+  const geoms = GEO.topo.objects.countries.geometries, nb = topojson.neighbors(geoms), out = {};
+  geoms.forEach((g, i) => { const a = CODE_BY_ID.get(String(g.id)); if (!a) return; out[a] = nb[i].map(j => CODE_BY_ID.get(String(geoms[j].id))).filter(Boolean); });
+  return out;
+})();
 const flagCache = {};
 const flag = code => flagCache[code] || (flagCache[code] = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(FLAGS[code] || ''));
-const REGION_DE = { Africa: 'Afrika', Americas: 'Amerika', Asia: 'Asien', Europe: 'Europa', Oceania: 'Ozeanien', Antarctic: 'Antarktis' };
+const REGION_DE = { Europe: 'Europa', Asia: 'Asien', Africa: 'Afrika', Americas: 'Amerika', Oceania: 'Ozeanien' };
 const SUB_DE = {
   'Western Europe': 'Westeuropa', 'Northern Europe': 'Nordeuropa', 'Southern Europe': 'Südeuropa', 'Eastern Europe': 'Osteuropa', 'Central Europe': 'Mitteleuropa', 'Southeast Europe': 'Südosteuropa',
   'Northern Africa': 'Nordafrika', 'Western Africa': 'Westafrika', 'Middle Africa': 'Zentralafrika', 'Eastern Africa': 'Ostafrika', 'Southern Africa': 'Südliches Afrika',
@@ -181,67 +213,133 @@ const SUB_DE = {
 const esc = s => String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const pick = a => a[Math.floor(Math.random() * a.length)];
-const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const dk = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const today = () => dk(new Date());
+
+/* ---------- answer matching ---------- */
+const norm = s => String(s).toLowerCase().replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss').replace(/[^a-z0-9]+/g, ' ').trim();
+const norm2 = s => norm(String(s).toLowerCase().replace(/ae/g, 'a').replace(/oe/g, 'o').replace(/ue/g, 'u'));
+function lev(a, b) {
+  if (Math.abs(a.length - b.length) > 3) return 9;
+  const m = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) { let prev = m[0]; m[0] = i; for (let j = 1; j <= b.length; j++) { const t = m[j]; m[j] = Math.min(m[j] + 1, m[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = t; } }
+  return m[b.length];
+}
+// Search index: label shown + all strings that may be typed for it.
+const INDEX = {
+  country: COUNTRIES.map(c => ({ code: c.c, label: c.n, keys: [c.n, GEO.countries.find(g => g.c === c.c).n, ...((window.ALIASES || {})[c.c] || [])].map(norm) })),
+  cap: COUNTRIES.map(c => ({ code: c.c, label: c.k, sub: c.n, keys: [c.k, c.cap, ...(c.c === 'LK' ? ['Colombo'] : c.c === 'SZ' ? ['Lobamba'] : c.c === 'BO' ? ['La Paz'] : c.c === 'ZA' ? ['Kapstadt', 'Bloemfontein'] : [])].filter(Boolean).map(norm) })),
+};
+function search(kind, q) {
+  const nq = norm(q), nq2 = norm2(q); if (!nq) return [];
+  const out = [];
+  for (const it of INDEX[kind]) {
+    let best = 9;
+    for (const k of it.keys) {
+      if (k.startsWith(nq) || k.startsWith(nq2)) best = Math.min(best, 0);
+      else if (k.split(' ').some(w => w.startsWith(nq) || w.startsWith(nq2))) best = Math.min(best, 1);
+      else if (nq.length >= 3 && (k.includes(nq) || k.includes(nq2))) best = Math.min(best, 2);
+      else if (nq.length >= 4) { const d = lev(nq, k.slice(0, Math.max(nq.length, Math.min(k.length, nq.length + 1)))); const tol = nq.length >= 8 ? 2 : 1; if (d <= tol) best = Math.min(best, 3 + d); }
+    }
+    if (best < 9) out.push({ it, score: best });
+  }
+  return out.sort((a, b) => a.score - b.score || a.it.label.localeCompare(b.it.label, 'de')).map(x => x.it);
+}
+// Free text without picking: accept small typos against the target's keys.
+function matchesTarget(kind, code, q) {
+  const nq = norm(q), it = INDEX[kind].find(x => x.code === code); if (!nq || !it) return false;
+  return it.keys.some(k => k === nq || norm2(k) === norm2(q) || (k.length >= 5 && lev(nq, k) <= (k.length >= 9 ? 2 : 1)));
+}
 
 /* ---------- progress model ---------- */
-// Prestige by number of correct answers (Wiederholungen) per country.
 const PRESTIGE = [
-  { min: 0, name: 'Neu', color: 'var(--surface-2)' },
-  { min: 1, name: 'Bronze', color: '#B87333' },
-  { min: 3, name: 'Silber', color: '#A7B0B8' },
-  { min: 6, name: 'Gold', color: '#E0B12E' },
-  { min: 10, name: 'Smaragd', color: '#1FA37A' },
-  { min: 20, name: 'Saphir', color: '#2F6FDB' },
-  { min: 35, name: 'Amethyst', color: '#8B4FD8' },
-  { min: 60, name: 'Legende', color: '#E8466A' },
+  { min: 0, name: 'Neu', color: 'var(--surface-2)' }, { min: 1, name: 'Bronze', color: '#B87333' }, { min: 4, name: 'Silber', color: '#A7B0B8' },
+  { min: 10, name: 'Gold', color: '#E0B12E' }, { min: 20, name: 'Smaragd', color: '#1FA37A' }, { min: 40, name: 'Saphir', color: '#2F6FDB' },
+  { min: 70, name: 'Amethyst', color: '#8B4FD8' }, { min: 120, name: 'Legende', color: '#E8466A' },
 ];
 const prestigeOf = n => { let p = PRESTIGE[0]; for (const x of PRESTIGE) if (n >= x.min) p = x; return p; };
 const nextPrestige = n => PRESTIGE.find(x => x.min > n) || null;
-// Leitner boxes: how long until a country comes back after a correct answer.
 const MIN = 60e3, HOUR = 60 * MIN, DAY = 24 * HOUR;
 const INTERVALS = [0, 4 * MIN, 25 * MIN, 3 * HOUR, DAY, 3 * DAY, 7 * DAY, 21 * DAY, 60 * DAY];
-const cs = code => ST.cs[code] || (ST.cs[code] = { n: 0, w: 0, box: 0, due: 0, seen: 0 });
-const seenList = () => COUNTRIES.filter(c => ST.cs[c.c] && ST.cs[c.c].seen);
-const unseenList = () => COUNTRIES.filter(c => !(ST.cs[c.c] && ST.cs[c.c].seen));
-const mastered = () => COUNTRIES.filter(c => (ST.cs[c.c] || {}).n >= 6).length;
+const SKILLS = ['flag', 'map', 'cap'];
+const SKILL_DE = { flag: 'Flagge', map: 'Lage', cap: 'Hauptstadt' };
+const cs = code => { const s = ST.cs[code] || (ST.cs[code] = { n: 0, w: 0, seen: 0 }); s.sk = s.sk || { flag: { b: 0, d: 0 }, map: { b: 0, d: 0 }, cap: { b: 0, d: 0 } }; return s; };
+const isSeen = code => !!(ST.cs[code] && ST.cs[code].seen);
+const seenList = () => COUNTRIES.filter(c => isSeen(c.c));
+const unseenList = () => COUNTRIES.filter(c => !isSeen(c.c));
+const skillOn = (code, k) => isSeen(code) && cs(code).sk[k].b >= 4;
+const masteredN = () => COUNTRIES.filter(c => (ST.cs[c.c] || {}).n >= 10).length;
 const levelOf = xp => { let l = 1, need = 100; while (xp >= need) { xp -= need; l++; need = 100 + 40 * (l - 1); } return { l, into: xp, need }; };
 const dayRec = () => ST.days[today()] || (ST.days[today()] = { r: 0, xp: 0, q: 0, ok: 0 });
-const streak = () => {
-  let n = 0; const d = new Date();
-  if (!(ST.days[today()] && ST.days[today()].r)) d.setDate(d.getDate() - 1);
-  for (;;) { const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); if (ST.days[k] && ST.days[k].r) { n++; d.setDate(d.getDate() - 1); } else break; }
-  return n;
-};
+const streak = () => { let n = 0; const d = new Date(); if (!(ST.days[today()] && ST.days[today()].r)) d.setDate(d.getDate() - 1); while (ST.days[dk(d)] && ST.days[dk(d)].r) { n++; d.setDate(d.getDate() - 1); } return n; };
+// Recent accuracy (last 60 answers) decides how many new countries a round brings.
+const accuracy = () => { const h = ST.hist.slice(-60); return h.length < 8 ? 0.8 : h.filter(Boolean).length / h.length; };
+const regionPct = r => { const all = COUNTRIES.filter(c => c.r === r); return { seen: all.filter(c => isSeen(c.c)).length, gold: all.filter(c => (ST.cs[c.c] || {}).n >= 10).length, total: all.length }; };
+
+/* ---------- badges ---------- */
+const BADGES = [
+  ['first', '🧭', 'Erster Schritt', 'Erste Runde gespielt', () => Object.values(ST.days).some(d => d.r)],
+  ['c25', '🗺️', 'Kartograf', '25 Länder entdeckt', () => seenList().length >= 25],
+  ['c100', '🌐', 'Weltenbummler', '100 Länder entdeckt', () => seenList().length >= 100],
+  ['call', '🌍', 'Ganze Welt', 'Alle 197 Länder entdeckt', () => seenList().length >= COUNTRIES.length],
+  ['eu', '🇪🇺', 'Europa komplett', 'Alle Länder Europas entdeckt', () => { const p = regionPct('Europe'); return p.seen === p.total; }],
+  ['af', '🦁', 'Afrika komplett', 'Alle Länder Afrikas entdeckt', () => { const p = regionPct('Africa'); return p.seen === p.total; }],
+  ['as', '🐉', 'Asien komplett', 'Alle Länder Asiens entdeckt', () => { const p = regionPct('Asia'); return p.seen === p.total; }],
+  ['am', '🦅', 'Amerika komplett', 'Alle Länder Amerikas entdeckt', () => { const p = regionPct('Americas'); return p.seen === p.total; }],
+  ['oc', '🐚', 'Ozeanien komplett', 'Alle Länder Ozeaniens entdeckt', () => { const p = regionPct('Oceania'); return p.seen === p.total; }],
+  ['g10', '🥇', 'Goldrausch', '10 Länder auf Gold', () => masteredN() >= 10],
+  ['g50', '👑', 'Goldene Welt', '50 Länder auf Gold', () => masteredN() >= 50],
+  ['s10', '🔥', 'Heiße Serie', '10 richtige in Folge', () => (ST.best.combo || 0) >= 10],
+  ['s25', '☄️', 'Unaufhaltsam', '25 richtige in Folge', () => (ST.best.combo || 0) >= 25],
+  ['perfect', '💎', 'Fehlerfrei', 'Eine Runde ohne Fehler', () => !!ST.best.perfect],
+  ['blitz20', '⚡', 'Blitzmerker', '20 in einer Blitzrunde', () => (ST.best.blitz || 0) >= 20],
+  ['endless30', '♾️', 'Ausdauer', '30 im Endlos-Modus', () => (ST.best.endless || 0) >= 30],
+  ['days7', '📅', 'Eine Woche', '7 Tage Serie', () => streak() >= 7],
+  ['cap50', '🏛️', 'Hauptstadt-Profi', '50 Hauptstädte sicher', () => COUNTRIES.filter(c => skillOn(c.c, 'cap')).length >= 50],
+];
+function checkBadges() {
+  const fresh = [];
+  for (const [id, em, name, , test] of BADGES) if (!ST.badges[id] && test()) { ST.badges[id] = Date.now(); fresh.push(em + ' ' + name); }
+  return fresh;
+}
+
+/* ---------- sound ---------- */
+let AC = null;
+function beep(ok) {
+  if (!ST.sound) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const notes = ok ? [660, 880] : [220, 180];
+    notes.forEach((f, i) => { const o = AC.createOscillator(), g = AC.createGain(); o.type = ok ? 'sine' : 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(.0001, AC.currentTime + i * .09); g.gain.exponentialRampToValueAtTime(.12, AC.currentTime + i * .09 + .02); g.gain.exponentialRampToValueAtTime(.0001, AC.currentTime + i * .09 + .16); o.connect(g).connect(AC.destination); o.start(AC.currentTime + i * .09); o.stop(AC.currentTime + i * .09 + .18); });
+  } catch { /* audio unavailable */ }
+}
 
 /* ---------- map ---------- */
 const W = 600, H = 400;
-function centerOf(code) { const f = featOf(code); return f ? d3.geoCentroid(f) : [BY[code].ll[1], BY[code].ll[0]]; }
+function centerOf(code) { const f = featOf(code); return f ? d3.geoCentroid(mainPart(f)) : [BY[code].ll[1], BY[code].ll[0]]; }
 function radiusOf(code) {
   const f = featOf(code); if (!f) return 0.5;
-  const c = d3.geoCentroid(f), b = d3.geoBounds(f);
-  const pts = [[b[0][0], b[0][1]], [b[1][0], b[1][1]], [b[0][0], b[1][1]], [b[1][0], b[0][1]]];
-  let r = 0; for (const p of pts) r = Math.max(r, d3.geoDistance(c, p) * 180 / Math.PI);
+  const m = mainPart(f), c = d3.geoCentroid(m), b = d3.geoBounds(m);
+  let r = 0; for (const p of [[b[0][0], b[0][1]], [b[1][0], b[1][1]], [b[0][0], b[1][1]], [b[1][0], b[0][1]]]) r = Math.max(r, d3.geoDistance(c, p) * 180 / Math.PI);
   return Math.min(r, 40);
 }
-// mode 'zoom': centred on one country with context; 'region': the country's subregion, for tapping.
 function makeProjection(code, mode) {
   let center, radius;
   if (mode === 'region') {
-    const sub = BY[code].s, members = COUNTRIES.filter(c => c.s === sub);
+    const members = COUNTRIES.filter(c => c.s === BY[code].s);
     center = d3.geoCentroid({ type: 'MultiPoint', coordinates: members.map(c => [c.ll[1], c.ll[0]]) });
     radius = 0; for (const c of members) radius = Math.max(radius, d3.geoDistance(center, [c.ll[1], c.ll[0]]) * 180 / Math.PI);
     radius = Math.max(14, Math.min(radius + 8, 75));
-  } else {
-    center = centerOf(code); radius = Math.max(7, Math.min(radiusOf(code) * 2.6, 70));
-  }
+    // jitter so the target is not always in the middle
+    center = [center[0] + (Math.random() - .5) * radius * .3, center[1] + (Math.random() - .5) * radius * .2];
+  } else { center = centerOf(code); radius = Math.max(7, Math.min(radiusOf(code) * 2.6, 70)); }
   const p = d3.geoOrthographic().rotate([-center[0], -center[1]]).precision(.3);
   p.fitExtent([[12, 12], [W - 12, H - 12]], d3.geoCircle().center(center).radius(radius)());
   return p;
 }
 function mapSVG(proj, opts = {}) {
   const path = d3.geoPath(proj);
-  const grat = path(d3.geoGraticule10());
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.label || 'Karte')}"><path class="sphere" d="${path({ type: 'Sphere' })}"/><path class="grat" d="${grat}"/>`;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.label || 'Karte')}"><path class="sphere" d="${path({ type: 'Sphere' })}"/><path class="grat" d="${path(d3.geoGraticule10())}"/>`;
   for (const f of FEATS) {
     const d = path(f); if (!d) continue;
     const code = CODE_BY_ID.get(String(f.id)) || '';
@@ -249,311 +347,373 @@ function mapSVG(proj, opts = {}) {
     const fill = opts.fills && opts.fills[code] ? ` style="fill:${opts.fills[code]}"` : '';
     s += `<path class="${cls.join(' ')}" data-c="${code}" d="${d}"${fill}/>`;
   }
-  // rings for countries too small to see (or without geometry)
   for (const [code, kind] of Object.entries(opts.marks || {})) {
     const f = featOf(code); let small = true, pt;
-    if (f) { const b = path.bounds(f); small = (b[1][0] - b[0][0]) * (b[1][1] - b[0][1]) < 90; pt = proj(d3.geoCentroid(f)); }
+    if (f) { const b = path.bounds(f); small = (b[1][0] - b[0][0]) * (b[1][1] - b[0][1]) < 90; pt = proj(centerOf(code)); }
     else pt = proj([BY[code].ll[1], BY[code].ll[0]]);
     if (small && pt && isFinite(pt[0])) s += `<circle class="ring ${kind === 'wrong' ? 'wrong' : ''} ${opts.pulse ? 'pulse' : ''}" cx="${pt[0].toFixed(1)}" cy="${pt[1].toFixed(1)}" r="11"/>`;
   }
   return s + '</svg>';
 }
-
-/* ---------- questions ---------- */
-function distractors(code, n, hard) {
-  const c = BY[code];
-  const sameSub = shuffle(COUNTRIES.filter(x => x.s === c.s && x.c !== code));
-  const sameReg = shuffle(COUNTRIES.filter(x => x.r === c.r && x.s !== c.s));
-  const any = shuffle(COUNTRIES.filter(x => x.r !== c.r));
-  const out = [];
-  const take = (list, k) => { for (const x of list) { if (out.length >= k) break; if (!out.includes(x.c)) out.push(x.c); } };
-  if (hard) { take(sameSub, n); take(sameReg, n); }
-  else { take(sameSub, 1); take(sameReg, n - 1); take(sameSub, n); }
-  take(any, n);
-  return out.slice(0, n);
+// Outline only: the country alone, scaled to fill the frame.
+function outlineSVG(code) {
+  const f = featOf(code);
+  if (!f) return `<svg viewBox="0 0 ${W} ${H}"><circle cx="300" cy="200" r="30" class="land target"/></svg>`;
+  const c = d3.geoCentroid(f), p = d3.geoAzimuthalEqualArea().rotate([-c[0], -c[1]]).fitExtent([[40, 30], [W - 40, H - 30]], f);
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Umriss"><path class="land target" d="${d3.geoPath(p)(f)}"/></svg>`;
 }
+
+/* ---------- tasks ---------- */
+// type: how it is asked. skill: which of the three progress tracks it trains.
 const TYPES = {
-  mapToName: { label: 'Welches Land ist markiert?', xp: 10 },
-  flagToName: { label: 'Zu welchem Land gehört diese Flagge?', xp: 10 },
-  nameToFlag: { label: c => `Welche Flagge hat ${c}?`, xp: 10 },
-  nameToMap: { label: c => `Wo liegt ${c}? Tippe es auf der Karte an.`, xp: 15 },
-  flagToMap: { label: 'Wo liegt das Land mit dieser Flagge?', xp: 20 },
+  flagName: { skill: 'flag', q: () => 'Welches Land hat diese Flagge?', input: 'country', xp: 10 },
+  mapName: { skill: 'map', q: () => 'Welches Land ist markiert?', input: 'country', xp: 10 },
+  outlineName: { skill: 'map', q: () => 'Welches Land hat diesen Umriss?', input: 'country', xp: 15 },
+  mapTap: { skill: 'map', q: c => `Wo liegt ${c.n}? Tippe es auf der Karte an.`, input: 'tap', xp: 15 },
+  flagTap: { skill: 'flag', q: () => 'Wo liegt das Land mit dieser Flagge?', input: 'tap', xp: 20 },
+  capOf: { skill: 'cap', q: c => `Was ist die Hauptstadt von ${c.n}?`, input: 'cap', xp: 10 },
+  capRev: { skill: 'cap', q: c => `${c.k} ist die Hauptstadt von …?`, input: 'country', xp: 15 },
+  neighbor: { skill: 'map', q: c => `Nenne ein Nachbarland von ${c.n}.`, input: 'country', xp: 15 },
 };
-function chooseType(box, challenge) {
-  if (challenge) return pick(['mapToName', 'flagToName']);
-  if (box <= 0) return pick(['mapToName', 'flagToName']);
-  if (box === 1) return pick(['mapToName', 'flagToName', 'nameToFlag']);
-  if (box === 2) return pick(['nameToFlag', 'mapToName', 'nameToMap']);
-  if (box === 3) return pick(['nameToMap', 'flagToName', 'flagToMap']);
-  return pick(['nameToMap', 'flagToMap', 'flagToMap', 'nameToFlag']);
+function typeFor(code, skill, challenge) {
+  const b = isSeen(code) ? cs(code).sk[skill].b : 0;
+  if (skill === 'flag') return b >= 3 && Math.random() < .35 ? 'flagTap' : 'flagName';
+  if (skill === 'cap') return b >= 3 && Math.random() < .4 ? 'capRev' : 'capOf';
+  if (challenge || b < 2) return 'mapName';
+  const opts = ['mapName', 'mapTap'];
+  if (b >= 3) opts.push('outlineName', 'mapTap');
+  if (b >= 3 && (NEIGH[code] || []).length) opts.push('neighbor');
+  return pick(opts);
 }
-function makeQ(code, opt = {}) {
-  const st = cs(code), type = opt.type || chooseType(opt.box ?? st.box, opt.challenge);
-  const hard = (st.box >= 3) && !opt.challenge;
-  const q = { kind: 'q', code, type, challenge: !!opt.challenge, retry: !!opt.retry };
-  if (type !== 'nameToMap' && type !== 'flagToMap') q.options = shuffle([code, ...distractors(code, hard ? 5 : 3, hard)]);
-  return q;
+const task = (code, skill, extra = {}) => Object.assign({ code, skill, type: extra.type || typeFor(code, skill, extra.challenge) }, extra);
+// Spread tasks of the same country apart.
+function spread(list) {
+  const out = []; let pool = list.slice();
+  while (pool.length) {
+    const last = out.slice(-2).map(t => t.code);
+    let i = pool.findIndex(t => !last.includes(t.code)); if (i < 0) i = 0;
+    out.push(pool.splice(i, 1)[0]);
+  }
+  return out;
 }
-
-/* ---------- round building ---------- */
-function buildRound(mode) {
-  const now = Date.now();
-  const due = shuffle(seenList().filter(c => cs(c.c).due <= now)).sort((a, b) => cs(a.c).due - cs(b.c).due).map(c => c.c);
-  const seq = [];
-  if (mode === 'review') {
-    let pool = due.length ? due : shuffle(seenList().map(c => c.c));
-    pool = pool.slice(0, 12);
-    for (const c of pool) seq.push(makeQ(c));
-    return seq;
+function newCount(dueN) {
+  const a = accuracy(); let n = a >= .9 ? 4 : a >= .78 ? 3 : a >= .6 ? 2 : 1;
+  if (dueN >= 12) n = Math.min(n, 1); else if (dueN >= 8) n = Math.min(n, 2);
+  return n;
+}
+function buildRound(mode, region) {
+  const now = Date.now(), LEN = 15;
+  const inScope = c => !region || c.r === region;
+  const due = shuffle(seenList().filter(inScope).flatMap(c => SKILLS.filter(k => cs(c.c).sk[k].d <= now).map(k => task(c.c, k))));
+  if (mode === 'hard') {
+    const ranked = seenList().filter(inScope).map(c => ({ c: c.c, s: (cs(c.c).w + 1) / (cs(c.c).n + 2) })).sort((a, b) => b.s - a.s).slice(0, 8);
+    return spread(shuffle(ranked.flatMap(r => shuffle(SKILLS).slice(0, 2).map(k => task(r.c, k)))).slice(0, LEN));
   }
-  const unseen = unseenList();
-  const nNew = Math.max(0, Math.min(unseen.length, due.length >= 9 ? 2 : due.length >= 5 ? 3 : 4));
-  const news = unseen.slice(0, nNew).map(c => c.c);
-  const reviews = due.slice(0, Math.max(4, 12 - nNew * 2)).map(c => makeQ(c));
-  // Intro → one other question → first check of the new country.
-  for (const n of news) {
-    seq.push({ kind: 'intro', code: n });
-    if (reviews.length) seq.push(reviews.shift());
-    seq.push(makeQ(n, { box: 0 }));
-  }
-  const tail = shuffle([...reviews, ...news.map(n => makeQ(n, { box: 1 }))]);
-  // One challenge from a harder tier than the current frontier, mixed in at about two thirds.
-  const frontier = news.length ? BY[news[news.length - 1]].t : (unseen[0] ? unseen[0].t : 4);
+  if (mode === 'review') return spread(due.length ? due.slice(0, LEN) : shuffle(seenList().filter(inScope).flatMap(c => SKILLS.map(k => task(c.c, k)))).slice(0, LEN));
+  const unseen = unseenList().filter(inScope);
+  const nNew = Math.min(unseen.length, newCount(due.length));
+  // A little randomness: new countries come from the next 10 in order, not strictly the next one.
+  const news = shuffle(unseen.slice(0, 10)).slice(0, nNew).map(c => c.c);
+  const newTasks = news.flatMap(c => SKILLS.map(k => task(c, k, { isNew: true })));
+  const reviews = due.slice(0, Math.max(0, LEN - newTasks.length - 1));
+  const list = shuffle([...reviews, ...newTasks]);
+  const frontier = unseen.length ? unseen[0].t : 4;
   const pool = unseen.filter(c => c.t >= Math.min(4, frontier + 1) && !news.includes(c.c));
-  if (pool.length) tail.splice(Math.floor(tail.length * 0.66), 0, makeQ(pick(pool.slice(0, 40)).c, { challenge: true }));
-  seq.push(...tail);
-  if (!seq.length) for (const c of shuffle(seenList()).slice(0, 12)) seq.push(makeQ(c.c));
+  if (pool.length) list.splice(Math.floor(list.length * .66), 0, task(pick(pool.slice(0, 40)).c, pick(['flag', 'map']), { challenge: true }));
+  let seq = spread(list);
+  if (seq.length < LEN) { const extra = shuffle(seenList().filter(inScope).flatMap(c => SKILLS.map(k => task(c.c, k)))).filter(t => !seq.some(s => s.code === t.code && s.skill === t.skill)); seq = spread([...seq, ...extra.slice(0, LEN - seq.length)]); }
   return seq;
 }
+function blitzPool() { const s = seenList(); return (s.length >= 12 ? s : COUNTRIES.filter(c => c.t === 1)).map(c => c.c); }
 
 /* ---------- state ---------- */
-const S = { view: 'home', round: null, filter: 'all', sheet: null };
+const S = { view: 'home', round: null, filter: 'all', sheet: null, region: null };
 const app = document.getElementById('app');
-function toast(msg) {
-  document.querySelectorAll('.toast').forEach(t => t.remove());
-  const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg; document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2600);
-}
+function toast(msg) { document.querySelectorAll('.toast').forEach(t => t.remove()); const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg; document.body.appendChild(el); setTimeout(() => el.remove(), 2600); }
 
 /* ---------- views ---------- */
 function render() {
   if (S.view === 'round') return renderRound();
   if (S.view === 'done') return renderDone();
   if (S.view === 'collection') return renderCollection();
+  if (S.view === 'badges') return renderBadges();
   renderHome();
 }
+const topBar = back => `<div class="topbar">${back === 'echo' ? '<a class="link" href="./#games">← Spiele</a>' : '<button class="link" data-act="home">← Zurück</button>'}<span class="row" style="gap:12px"><button class="link" data-act="sound" aria-label="Ton">${ST.sound ? '🔊' : '🔇'}</button><span class="small muted mono">🔥 ${streak()}</span></span></div>`;
 function renderHome() {
   const lv = levelOf(ST.xp), seen = seenList().length, total = COUNTRIES.length, now = Date.now();
-  const due = seenList().filter(c => cs(c.c).due <= now).length, d = ST.days[today()];
-  const nextNew = unseenList().slice(0, 4);
-  app.innerHTML = `
-  <div class="topbar"><a class="link" href="./#games">← Spiele</a><span class="small muted mono">${streak()} ${streak() === 1 ? 'Tag' : 'Tage'} Serie</span></div>
+  const dueN = seenList().reduce((n, c) => n + SKILLS.filter(k => cs(c.c).sk[k].d <= now).length, 0), d = ST.days[today()];
+  const nb = Object.keys(ST.badges).length;
+  app.innerHTML = `${topBar('echo')}
   <header style="display:grid;gap:4px"><span class="eyebrow">Echo Atlas</span><h1>Alle Länder der Welt</h1>
-    <p class="muted" style="margin:0">${total} Länder, Flagge und Lage. Von leicht nach schwer, mit Wiederholung, bis jedes Land Legende ist.</p></header>
+    <p class="muted" style="margin:0">${total} Länder · Flagge, Lage und Hauptstadt. Tippe deine Antwort, die Liste hilft beim Schreiben.</p></header>
   <section class="card">
     <div class="lvl"><div class="lvlbadge">${lv.l}</div><div class="grow" style="display:grid;gap:6px">
       <div class="row spread"><h3>Level ${lv.l}</h3><span class="xp">${lv.into} / ${lv.need} XP</span></div>
       <div class="bar gold"><i style="width:${Math.round(lv.into / lv.need * 100)}%"></i></div></div></div>
     <div class="stats">
       <div class="stat"><span class="eyebrow">Entdeckt</span><b class="mono">${seen}<span class="small muted">/${total}</span></b></div>
-      <div class="stat"><span class="eyebrow">Gold+</span><b class="mono">${mastered()}</b></div>
+      <div class="stat"><span class="eyebrow">Gold+</span><b class="mono">${masteredN()}</b></div>
       <div class="stat"><span class="eyebrow">Heute</span><b class="mono">${d ? d.xp : 0}<span class="small muted"> XP</span></b></div>
     </div>
-    <div style="display:grid;gap:6px"><div class="row spread small"><span class="muted">Weltkarte entdeckt</span><span class="mono">${Math.round(seen / total * 100)} %</span></div>
-      <div class="bar"><i style="width:${seen / total * 100}%"></i></div></div>
+    <p class="small muted" style="margin:0">${d && d.r ? '✓ Tagesziel geschafft: 1 Runde. Serie läuft.' : 'Tagesziel: 1 Runde, damit die Serie weiterläuft.'}</p>
   </section>
   <section class="card">
-    <div class="row spread"><div style="display:grid;gap:2px"><span class="eyebrow">Nächste Runde</span>
-      <h3>${nextNew.length ? nextNew.length + ' neue Länder' : 'Alles entdeckt'}${due ? ' · ' + due + ' fällig' : ''}</h3></div>
-      <span class="tag challenge">+1 Challenge</span></div>
-    ${nextNew.length ? `<div class="row" style="flex-wrap:wrap;gap:6px">${nextNew.map(c => `<span class="tag new">${esc(c.n)}</span>`).join('')}</div>` : ''}
-    <button class="btn primary big" id="start" data-act="start">Runde starten</button>
-    <div class="row" style="gap:8px"><button class="btn grow" data-act="review" ${seen ? '' : 'disabled'}>Nur wiederholen</button><button class="btn grow" data-act="collection">Sammlung</button></div>
+    <div class="row spread"><div style="display:grid;gap:2px"><span class="eyebrow">Lernrunde · 15 Aufgaben</span><h3>${unseenList().length ? newCount(dueN) + ' neue Länder' : 'Alles entdeckt'} · ${dueN} fällig</h3></div><span class="tag challenge">+1 Challenge</span></div>
+    <button class="btn primary big" data-act="start" id="start">Runde starten</button>
+    <div class="chips" role="group" aria-label="Kontinent">${[['', 'Alle Kontinente'], ...Object.entries(REGION_DE)].map(([k, l]) => `<button class="chip" data-act="region" data-v="${k}" aria-pressed="${(S.region || '') === k}">${l}</button>`).join('')}</div>
   </section>
   <section class="card">
-    <div class="row spread"><h3>Prestige je Land</h3><span class="small muted">richtige Antworten</span></div>
-    <div class="legend">${PRESTIGE.slice(1).map(p => `<span><i class="pdot" style="background:${p.color}"></i>${p.name} · ${p.min}+</span>`).join('')}</div>
-  </section>`;
+    <h3>Modi</h3>
+    <div class="row" style="gap:8px;flex-wrap:wrap">
+      <button class="btn grow" data-act="review" ${seen ? '' : 'disabled'}>🔁 Wiederholen</button>
+      <button class="btn grow" data-act="hard" ${seen >= 4 ? '' : 'disabled'}>🎯 Schwierigste</button>
+    </div>
+    <div class="row" style="gap:8px;flex-wrap:wrap">
+      <button class="btn grow" data-act="blitz">⚡ Blitz 60 s <span class="small muted mono">${ST.best.blitz || 0}</span></button>
+      <button class="btn grow" data-act="endless">♾️ Endlos <span class="small muted mono">${ST.best.endless || 0}</span></button>
+    </div>
+  </section>
+  <section class="card">
+    <div class="row spread"><h3>Kontinente</h3><span class="small muted">entdeckt · Gold</span></div>
+    ${Object.entries(REGION_DE).map(([r, l]) => { const p = regionPct(r); return `<div style="display:grid;gap:4px"><div class="row spread small"><span>${l}</span><span class="mono muted">${p.seen}/${p.total} · ${p.gold}</span></div><div class="bar"><i style="width:${p.seen / p.total * 100}%"></i></div></div>`; }).join('')}
+  </section>
+  <div class="row" style="gap:8px"><button class="btn grow" data-act="collection">Sammlung</button><button class="btn grow" data-act="badges">Abzeichen ${nb}/${BADGES.length}</button></div>`;
+}
+function renderBadges() {
+  app.innerHTML = `${topBar()}<h2>Abzeichen</h2><div class="grid">${BADGES.map(([id, em, name, desc]) => `<div class="cell" style="grid-template-columns:44px minmax(0,1fr);${ST.badges[id] ? '' : 'opacity:.45'}"><span style="font-size:30px;text-align:center">${em}</span><span style="min-width:0"><span class="nm" style="display:block">${name}</span><span class="cnt">${desc}</span></span></div>`).join('')}</div>`;
 }
 function renderCollection() {
   const fills = {};
   for (const c of COUNTRIES) { const st = ST.cs[c.c]; if (st && st.seen) fills[c.c] = prestigeOf(st.n).color; }
   const proj = d3.geoNaturalEarth1().fitExtent([[6, 6], [W - 6, H - 6]], { type: 'Sphere' });
-  const filters = [['all', 'Alle'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3'], ['4', 'Stufe 4'], ...Object.entries(REGION_DE).filter(([k]) => k !== 'Antarctic')];
+  const filters = [['all', 'Alle'], ['1', 'Stufe 1'], ['2', 'Stufe 2'], ['3', 'Stufe 3'], ['4', 'Stufe 4'], ...Object.entries(REGION_DE)];
   const list = COUNTRIES.filter(c => S.filter === 'all' || String(c.t) === S.filter || c.r === S.filter);
-  app.innerHTML = `
-  <div class="topbar"><button class="link" data-act="home">← Zurück</button><span class="small muted mono">${seenList().length}/${COUNTRIES.length} entdeckt</span></div>
-  <h2>Sammlung</h2>
+  app.innerHTML = `${topBar()}
+  <div class="row spread"><h2>Sammlung</h2><span class="small muted mono">${seenList().length}/${COUNTRIES.length}</span></div>
   <div class="stage">${mapSVG(proj, { fills, label: 'Weltkarte nach Prestige gefärbt' })}</div>
-  <div class="legend">${PRESTIGE.slice(1).map(p => `<span><i class="pdot" style="background:${p.color}"></i>${p.name}</span>`).join('')}</div>
+  <div class="legend">${PRESTIGE.slice(1).map(p => `<span><i class="pdot" style="background:${p.color}"></i>${p.name} ${p.min}+</span>`).join('')}</div>
   <div class="chips" role="group" aria-label="Filter">${filters.map(([k, l]) => `<button class="chip" data-act="filter" data-v="${k}" aria-pressed="${S.filter === k}">${l}</button>`).join('')}</div>
+  ${S.sheet ? infoSheet(S.sheet) : ''}
   <div class="grid">${list.map(c => { const st = ST.cs[c.c] || { n: 0 }, p = prestigeOf(st.n), seen = st.seen;
-    return `<button class="cell ${seen ? '' : 'unseen'}" data-act="info" data-c="${c.c}"><span class="stripe" style="background:${seen ? p.color : 'transparent'}"></span><img src="${flag(c.c)}" alt="" loading="lazy"><span style="min-width:0"><span class="nm" style="display:block">${seen ? esc(c.n) : '???'}</span><span class="cnt">${seen ? `<i class="pdot" style="background:${p.color}"></i>${p.name} · ${st.n}×` : 'Stufe ' + c.t}</span></span></button>`; }).join('')}</div>
-  ${S.sheet ? infoSheet(S.sheet) : ''}`;
+    return `<button class="cell ${seen ? '' : 'unseen'}" data-act="info" data-c="${c.c}"><span class="stripe" style="background:${seen ? p.color : 'transparent'}"></span><img src="${flag(c.c)}" alt="" loading="lazy"><span style="min-width:0"><span class="nm" style="display:block">${seen ? esc(c.n) : '???'}</span><span class="cnt">${seen ? `${skillDots(c.c)} ${p.name} · ${st.n}×` : 'Stufe ' + c.t}</span></span></button>`; }).join('')}</div>`;
 }
-function infoCard(code, extra = '') {
-  const c = BY[code], st = ST.cs[code] || { n: 0, w: 0 }, p = prestigeOf(st.n), np = nextPrestige(st.n);
+const skillDots = code => `<span class="skills" title="Flagge · Lage · Hauptstadt">${SKILLS.map(k => `<i class="${skillOn(code, k) ? 'on' : ''}"></i>`).join('')}</span>`;
+function infoCard(code, opts = {}) {
+  const c = BY[code], st = ST.cs[code] || { n: 0 }, p = prestigeOf(st.n || 0), np = nextPrestige(st.n || 0);
+  const nb = (NEIGH[code] || []).map(x => BY[x].n);
   return `
-  <div class="stage">${mapSVG(makeProjection(code, 'zoom'), { marks: { [code]: 'target' }, pulse: true, label: 'Lage von ' + c.n })}</div>
+  ${opts.noMap ? '' : `<div class="stage">${mapSVG(makeProjection(code, 'zoom'), { marks: opts.marks || { [code]: 'target' }, pulse: !opts.marks, label: 'Lage von ' + c.n })}</div>`}
   <div class="row" style="gap:16px;align-items:flex-start">
-    <img src="${flag(code)}" alt="Flagge von ${esc(c.n)}" style="width:120px;aspect-ratio:4/3;border-radius:8px;object-fit:cover;box-shadow:0 2px 10px rgba(0,0,0,.2);flex:none">
+    <img src="${flag(code)}" alt="Flagge von ${esc(c.n)}" style="width:110px;aspect-ratio:4/3;border-radius:8px;object-fit:cover;box-shadow:0 2px 10px rgba(0,0,0,.2);flex:none">
     <div class="grow" style="display:grid;gap:6px"><div class="intro-name">${esc(c.n)}</div>
-      <div class="facts"><span class="tag">${esc(SUB_DE[c.s] || c.s)}</span><span class="tag">Stufe ${c.t}</span></div>
-      ${st.seen ? `<div class="row small"><i class="pdot" style="background:${p.color}"></i><span>${p.name} · ${st.n}× richtig${np ? ` · noch ${np.min - st.n} bis ${np.name}` : ''}</span></div>` : ''}
-    </div></div>${extra}`;
+      <div class="facts"><span class="tag">🏛️ ${esc(c.k)}</span><span class="tag">${esc(SUB_DE[c.s] || c.s)}</span></div>
+      ${st.seen ? `<div class="row small" style="gap:6px">${skillDots(code)}<i class="pdot" style="background:${p.color}"></i><span>${p.name} · ${st.n}×${np ? ` · noch ${np.min - st.n} bis ${np.name}` : ''}</span></div>` : ''}
+    </div></div>
+  ${nb.length && opts.neighbours !== false ? `<p class="small muted" style="margin:0">Nachbarn: ${esc(nb.join(', '))}</p>` : ''}
+  ${opts.fact && c.fact ? `<div class="fact"><b>Fun Fact</b><span>${esc(c.fact)}</span></div>` : ''}`;
 }
 function infoSheet(code) {
-  const st = ST.cs[code];
-  if (!st || !st.seen) return `<section class="card"><div class="row spread"><h3>Noch nicht entdeckt</h3><button class="link" data-act="close">Schließen</button></div><p class="muted" style="margin:0">Dieses Land taucht in einer späteren Runde auf. Stufe ${BY[code].t} von 4.</p></section>`;
-  return `<section class="card" id="sheet"><div class="row spread"><span class="eyebrow">Steckbrief</span><button class="link" data-act="close">Schließen</button></div>${infoCard(code)}</section>`;
+  if (!isSeen(code)) return `<section class="card"><div class="row spread"><h3>Noch nicht entdeckt</h3><button class="link" data-act="close">Schließen</button></div><p class="muted" style="margin:0">Dieses Land taucht in einer späteren Runde auf. Stufe ${BY[code].t} von 4.</p></section>`;
+  return `<section class="card" id="sheet"><div class="row spread"><span class="eyebrow">Steckbrief</span><button class="link" data-act="close">Schließen</button></div>${infoCard(code, { fact: true })}</section>`;
 }
 function renderRound() {
-  const R = S.round, item = R.seq[R.i];
-  const prog = `<div class="progress">${R.seq.map((x, i) => `<i class="${i < R.i ? (R.res[i] === false ? 'bad' : 'ok') : i === R.i ? 'cur' : ''}"></i>`).join('')}</div>`;
-  const top = `<div class="topbar"><button class="link" data-act="quit">✕ Beenden</button><span class="row" style="gap:12px">${R.combo >= 3 ? `<span class="combo">🔥 ${R.combo}er Serie</span>` : ''}<span class="xp">+${R.xp} XP</span></span></div>`;
-  const c = BY[item.code];
-  if (item.kind === 'intro') {
-    app.innerHTML = `${top}${prog}<span class="tag new" style="justify-self:start">Neues Land</span>${infoCard(item.code)}
-      <button class="btn primary big" data-act="next" id="next">Gemerkt · weiter</button>`;
-    return;
-  }
-  const label = typeof TYPES[item.type].label === 'function' ? TYPES[item.type].label(c.n) : TYPES[item.type].label;
+  const R = S.round, it = R.seq[R.i], c = BY[it.code], T = TYPES[it.type];
+  const prog = R.mode === 'blitz' ? `<div class="row spread"><span class="mono" id="clock">⏱ ${Math.max(0, Math.ceil((R.end - Date.now()) / 1000))} s</span><span class="mono">${R.okN} richtig</span></div>`
+    : R.mode === 'endless' ? `<div class="row spread"><span class="mono">♾️ ${R.okN} in Folge</span><span class="small muted">Bestwert ${ST.best.endless || 0}</span></div>`
+    : `<div class="progress">${R.seq.map((x, i) => `<i class="${i < R.i ? (R.res[i] === false ? 'bad' : 'ok') : i === R.i ? 'cur' : ''}"></i>`).join('')}</div>`;
+  const head = `<div class="topbar"><button class="link" data-act="quit">✕ Beenden</button><span class="row" style="gap:12px">${R.combo >= 3 ? `<span class="combo">🔥 ${R.combo}</span>` : ''}<span class="xp">+${R.xp} XP</span></span></div>`;
+  const tags = [it.challenge ? '<span class="tag challenge">Challenge · +25 XP</span>' : '', it.isNew && !isSeen(it.code) ? '<span class="tag new">Neu</span>' : '', it.retry ? '<span class="tag">Nochmal</span>' : '', `<span class="tag">${SKILL_DE[T.skill]}</span>`].join('');
   let stage = '';
-  if (item.type === 'mapToName') stage = `<div class="stage">${mapSVG(makeProjection(item.code, 'zoom'), { marks: R.answered ? answerMarks(item) : { [item.code]: 'target' }, pulse: !R.answered, label: 'Markiertes Land' })}</div>`;
-  else if (item.type === 'flagToName' || item.type === 'flagToMap') stage = R.answered && item.type === 'flagToMap' ? '' : `<div class="flagbig"><img src="${flag(item.code)}" alt="Flagge"></div>`;
-  if (item.type === 'nameToMap' || item.type === 'flagToMap') {
-    const smallFlag = item.type === 'flagToMap' && R.answered ? '' : '';
-    stage += `<div class="stage ${R.answered ? '' : 'clickable'}" id="clickmap">${mapSVG(R.proj, { marks: R.answered ? answerMarks(item) : {}, label: 'Karte zum Antippen' })}</div>${smallFlag}`;
-  }
-  let answers = '';
-  if (item.options) {
-    const flags = item.type === 'nameToFlag';
-    answers = `<div class="opts ${flags ? 'flags' : ''}">${item.options.map((o, i) => {
-      const cls = R.answered ? (o === item.code ? 'ok' : o === R.chosen ? 'bad' : '') : '';
-      return `<button class="opt ${flags ? 'flag' : ''} ${cls}" data-act="answer" data-v="${o}" ${R.answered ? 'disabled' : ''}>${flags ? `<img src="${flag(o)}" alt="Option ${i + 1}">` : `<span class="k">${i + 1}</span><span>${esc(BY[o].n)}</span>`}</button>`; }).join('')}</div>`;
+  if (it.type === 'flagName' || it.type === 'flagTap') stage = `<div class="flagbig"><img src="${flag(it.code)}" alt="Flagge"></div>`;
+  if (it.type === 'mapName') stage = `<div class="stage">${mapSVG(makeProjection(it.code, 'zoom'), { marks: { [it.code]: 'target' }, pulse: true, label: 'Markiertes Land' })}</div>`;
+  if (it.type === 'outlineName') stage = `<div class="stage" style="background:var(--surface-2)">${outlineSVG(it.code)}</div>`;
+  if (it.type === 'mapTap' || it.type === 'flagTap') stage += `<div class="stage ${R.answered ? '' : 'clickable'}" id="clickmap">${mapSVG(R.proj, { marks: R.answered ? answerMarks(it) : {}, label: 'Karte zum Antippen' })}</div>`;
+  if ((it.type === 'capOf' || it.type === 'capRev' || it.type === 'neighbor') && !R.answered) stage = `<div class="flagbig" style="padding:14px"><img src="${flag(it.code)}" alt="" style="width:min(160px,50%)"></div>`;
+  if (it.type === 'capRev' && !R.answered) stage = '';
+  let input = '';
+  if (!R.answered && T.input !== 'tap') {
+    input = `<div class="ac"><input id="guess" type="text" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" placeholder="${T.input === 'cap' ? 'Hauptstadt eintippen …' : 'Land eintippen …'}" aria-label="Antwort">
+      <div class="aclist" id="aclist" role="listbox"></div>
+      <div class="row spread"><span class="hint" id="achint">Erste Buchstaben tippen, Enter wählt den obersten Vorschlag.</span><button class="link" data-act="skip">Weiß ich nicht</button></div></div>`;
   }
   let fb = '';
   if (R.answered) {
-    const ok = R.chosen === item.code, st = cs(item.code), p = prestigeOf(st.n);
-    const wrongName = !ok && R.chosen ? (BY[R.chosen] ? BY[R.chosen].n : 'ein Gebiet ohne eigenen Eintrag') : '';
-    fb = `<div class="fb ${ok ? 'ok' : 'bad'}"><img src="${flag(item.code)}" alt=""><div class="grow" style="display:grid;gap:2px">
-      <b>${ok ? 'Richtig!' : 'Das war ' + esc(c.n)}</b>
-      <span class="small muted">${ok ? `${esc(c.n)} · ${esc(SUB_DE[c.s] || c.s)}` : (wrongName ? 'Du hattest ' + esc(wrongName) + '. ' : '') + 'Kommt gleich nochmal.'}</span>
-      <span class="small row" style="gap:6px"><i class="pdot" style="background:${p.color}"></i>${p.name} · ${st.n}×</span></div>
-      ${ok ? `<span class="xp">+${R.lastXP}</span>` : ''}</div>
+    const ok = R.ok, st = cs(it.code), p = prestigeOf(st.n);
+    const given = R.givenLabel ? `Deine Antwort: ${esc(R.givenLabel)}. ` : '';
+    const solution = it.type === 'capOf' ? `Hauptstadt von ${esc(c.n)}: <b>${esc(c.k)}</b>` : it.type === 'neighbor' ? `Nachbarn von ${esc(c.n)}: <b>${esc((NEIGH[it.code] || []).map(x => BY[x].n).join(', '))}</b>` : `Das war <b>${esc(c.n)}</b>`;
+    const showFact = !ok || R.firstMeet;
+    fb = `<div class="fb ${ok ? 'ok' : 'bad'}"><div class="grow" style="display:grid;gap:2px">
+        <b>${ok ? 'Richtig!' + (R.speedBonus ? ' ⚡ schnell' : '') : 'Leider nicht'}</b>
+        <span class="small">${ok ? (it.type === 'neighbor' && R.givenLabel ? esc(R.givenLabel) + ' grenzt an ' + esc(c.n) + '.' : solution) : given + solution}</span>
+        <span class="small row" style="gap:6px">${skillDots(it.code)}<i class="pdot" style="background:${p.color}"></i>${p.name} · ${st.n}×</span></div>
+        ${ok ? `<span class="xp">+${R.lastXP}</span>` : ''}</div>
+      ${!ok || R.firstMeet ? `<section class="card">${infoCard(it.code, { fact: showFact, marks: answerMarks(it) })}</section>` : `<button class="link" data-act="fact" style="justify-self:start">💡 Fun Fact zeigen</button><div id="factbox"></div>`}
       <button class="btn primary big" data-act="next" id="next">Weiter</button>`;
   }
-  app.innerHTML = `${top}${prog}
-    <div class="row" style="gap:6px;flex-wrap:wrap">${item.challenge ? '<span class="tag challenge">Challenge · +25 XP</span>' : ''}${item.retry ? '<span class="tag">Nochmal</span>' : ''}</div>
-    <div class="q">${esc(label)}</div>${stage}${answers}${fb}`;
+  app.innerHTML = `${head}${prog}<div class="row" style="gap:6px;flex-wrap:wrap">${tags}</div><div class="q">${esc(T.q(c))}</div>${R.answered && (it.type === 'mapName' || it.type === 'outlineName' || it.type === 'flagName') && !R.ok ? '' : stage}${input}${fb}`;
+  if (!R.answered && T.input !== 'tap') { const g = document.getElementById('guess'); g.focus(); R.qStart = R.qStart || Date.now(); }
+  else if (!R.answered) R.qStart = R.qStart || Date.now();
   if (R.answered) document.getElementById('next')?.focus();
 }
-function answerMarks(item) {
-  const m = { [item.code]: 'target' };
-  if (S.round.chosen && S.round.chosen !== item.code && BY[S.round.chosen]) m[S.round.chosen] = 'wrong';
+function answerMarks(it) {
+  const m = { [it.code]: 'target' };
+  const R = S.round; if (R.given && R.given !== it.code && BY[R.given] && TYPES[it.type].input !== 'cap') m[R.given] = 'wrong';
   return m;
 }
+function renderAc() {
+  const R = S.round, it = R.seq[R.i], T = TYPES[it.type], g = document.getElementById('guess'), list = document.getElementById('aclist'); if (!g || !list) return;
+  const res = search(T.input, g.value); R.acList = res; R.acSel = Math.min(R.acSel || 0, Math.max(0, res.length - 1));
+  const q = norm(g.value);
+  list.innerHTML = res.slice(0, 60).map((x, i) => `<button class="${i === R.acSel ? 'on' : ''}" data-act="pick" data-v="${x.code}" role="option"><span>${hl(x.label, q)}</span>${x.sub && T.input === 'cap' ? '' : ''}</button>`).join('');
+  document.getElementById('achint').textContent = g.value && !res.length ? 'Kein Treffer. Enter prüft trotzdem, kleine Tippfehler zählen.' : res.length > 60 ? res.length + ' Treffer, tippe weiter' : 'Erste Buchstaben tippen, Enter wählt den obersten Vorschlag.';
+}
+function hl(label, q) { if (!q) return esc(label); const i = norm(label).indexOf(q); return i === 0 ? `<mark>${esc(label.slice(0, q.length))}</mark>${esc(label.slice(q.length))}` : esc(label); }
 function renderDone() {
-  const R = S.round, okN = R.res.filter(x => x === true).length, qN = R.res.filter(x => x !== null).length;
-  const lv = levelOf(ST.xp);
-  app.innerHTML = `
-  <div class="topbar"><a class="link" href="./#games">← Spiele</a><span class="small muted mono">${streak()} ${streak() === 1 ? 'Tag' : 'Tage'} Serie</span></div>
-  <section class="card" style="text-align:center;justify-items:center">
-    <span class="eyebrow">Runde geschafft</span><div class="big-num">+${R.xp} XP</div>
-    <p class="muted" style="margin:0">${okN} von ${qN} richtig${R.perfect ? ' · fehlerfrei, +30 XP Bonus' : ''} · Level ${lv.l}</p>
-  </section>
+  const R = S.round, okN = R.res.filter(x => x === true).length, qN = R.res.filter(x => x !== undefined).length, lv = levelOf(ST.xp);
+  const title = R.mode === 'blitz' ? `⚡ ${R.okN} in 60 s` : R.mode === 'endless' ? `♾️ ${R.okN} in Folge` : `+${R.xp} XP`;
+  const sub = R.mode === 'blitz' || R.mode === 'endless' ? `${R.newBest ? 'Neuer Bestwert! · ' : ''}+${R.xp} XP · Level ${lv.l}` : `${okN} von ${qN} richtig${R.perfect ? ' · fehlerfrei, +30 XP' : ''} · Level ${lv.l}`;
+  const miss = [...new Map(R.mistakes.map(m => [m.code + m.skill, m])).values()];
+  app.innerHTML = `${topBar('echo')}
+  <section class="card" style="text-align:center;justify-items:center"><span class="eyebrow">Runde geschafft</span><div class="big-num">${title}</div><p class="muted" style="margin:0">${sub}</p></section>
+  ${R.badges.length ? `<section class="card"><h3>Neue Abzeichen</h3><div class="row" style="flex-wrap:wrap;gap:8px">${R.badges.map(b => `<span class="tag challenge">${esc(b)}</span>`).join('')}</div></section>` : ''}
+  ${miss.length ? `<section class="card"><h3>Das solltest du dir merken</h3><div style="display:grid;gap:10px">${miss.map(m => { const c = BY[m.code]; return `<div class="row"><img src="${flag(m.code)}" alt="" style="width:44px;aspect-ratio:4/3;border-radius:4px;object-fit:cover"><div class="grow" style="display:grid"><b>${esc(c.n)}</b><span class="small muted">${m.skill === 'cap' ? 'Hauptstadt: ' + esc(c.k) : m.skill === 'flag' ? 'Flagge' : 'Lage: ' + esc(SUB_DE[c.s] || c.s)}</span></div></div>`; }).join('')}</div></section>` : ''}
   ${R.newOnes.length ? `<section class="card"><h3>Neu entdeckt</h3><div class="row" style="flex-wrap:wrap;gap:8px">${R.newOnes.map(c => `<span class="tag new">${esc(BY[c].n)}</span>`).join('')}</div></section>` : ''}
   ${R.ups.length ? `<section class="card"><h3>Aufgestiegen</h3><div style="display:grid;gap:8px">${R.ups.map(([c, p]) => `<div class="row"><img src="${flag(c)}" alt="" style="width:40px;aspect-ratio:4/3;border-radius:4px;object-fit:cover"><span class="grow">${esc(BY[c].n)}</span><span class="row small" style="gap:6px"><i class="pdot" style="background:${p.color}"></i>${p.name}</span></div>`).join('')}</div></section>` : ''}
-  <button class="btn primary big" data-act="start" id="again">Nächste Runde</button>
+  <button class="btn primary big" data-act="${R.mode === 'learn' ? 'start' : R.mode}" id="again">Nochmal</button>
   <div class="row" style="gap:8px"><button class="btn grow" data-act="home">Übersicht</button><button class="btn grow" data-act="collection">Sammlung</button></div>`;
   document.getElementById('again').focus();
 }
 
-/* ---------- actions ---------- */
+/* ---------- round flow ---------- */
 function startRound(mode) {
-  const seq = buildRound(mode);
-  if (!seq.length) { toast('Nichts zu wiederholen'); return; }
-  S.round = { seq, i: 0, res: [], xp: 0, combo: 0, answered: false, chosen: null, newOnes: [], ups: [], retried: new Set(), perfect: false, lastXP: 0 };
+  let seq;
+  if (mode === 'blitz' || mode === 'endless') seq = [];
+  else seq = buildRound(mode, S.region);
+  if (mode !== 'blitz' && mode !== 'endless' && !seq.length) { toast('Nichts zu wiederholen'); return; }
+  S.round = { mode, seq, i: 0, res: [], xp: 0, combo: 0, okN: 0, answered: false, mistakes: [], newOnes: [], ups: [], badges: [], retried: new Set(), lastXP: 0 };
+  if (mode === 'blitz') { S.round.end = Date.now() + 60e3; S.round.timer = setInterval(() => { const el = document.getElementById('clock'); const left = Math.ceil((S.round.end - Date.now()) / 1000); if (left <= 0) { clearInterval(S.round.timer); finish(); } else if (el) el.textContent = '⏱ ' + left + ' s'; }, 250); }
+  if (mode === 'blitz' || mode === 'endless') pushQuick();
   prepItem(); S.view = 'round'; render(); scrollTo(0, 0);
 }
-function prepItem() {
-  const R = S.round, item = R.seq[R.i];
-  R.answered = false; R.chosen = null;
-  if (item && (item.type === 'nameToMap' || item.type === 'flagToMap')) R.proj = makeProjection(item.code, 'region');
+function pushQuick() {
+  const R = S.round, pool = R.mode === 'blitz' ? blitzPool() : COUNTRIES.filter(c => isSeen(c.c) || c.t <= 2).map(c => c.c);
+  const last = R.seq.slice(-6).map(t => t.code);
+  const code = pick(pool.filter(c => !last.includes(c)) .length ? pool.filter(c => !last.includes(c)) : pool);
+  const skill = R.mode === 'blitz' ? pick(['flag', 'map']) : pick(SKILLS);
+  R.seq.push(task(code, skill, { type: R.mode === 'blitz' ? (skill === 'flag' ? 'flagName' : 'mapName') : undefined }));
 }
-function answer(choice) {
-  const R = S.round, item = R.seq[R.i]; if (R.answered) return;
-  R.answered = true; R.chosen = choice;
-  const ok = choice === item.code, st = cs(item.code), now = Date.now(), d = dayRec();
-  d.q++;
+function prepItem() {
+  const R = S.round, it = R.seq[R.i];
+  Object.assign(R, { answered: false, given: null, givenLabel: '', ok: false, acSel: 0, acList: [], qStart: 0, speedBonus: false, firstMeet: false });
+  if (it && (it.type === 'mapTap' || it.type === 'flagTap')) R.proj = makeProjection(it.code, 'region');
+}
+function answer(givenCode, typed) {
+  const R = S.round, it = R.seq[R.i], T = TYPES[it.type]; if (R.answered) return;
+  let ok;
+  if (it.type === 'neighbor') ok = !!givenCode && (NEIGH[it.code] || []).includes(givenCode) || (!givenCode && typed && (NEIGH[it.code] || []).some(n => matchesTarget('country', n, typed)));
+  else ok = givenCode === it.code || (!givenCode && typed != null && matchesTarget(T.input === 'cap' ? 'cap' : 'country', it.code, typed));
+  R.answered = true; R.ok = ok; R.given = givenCode;
+  R.givenLabel = givenCode ? (T.input === 'cap' ? BY[givenCode].k : BY[givenCode].n) : (typed || '');
+  const st = cs(it.code), sk = st.sk[it.skill], now = Date.now(), d = dayRec();
+  R.firstMeet = !st.seen;
+  st.seen = st.seen || now; d.q++;
+  ST.hist.push(ok); if (ST.hist.length > 200) ST.hist = ST.hist.slice(-200);
   if (ok) {
     const before = prestigeOf(st.n);
-    st.n++; st.box = Math.min(INTERVALS.length - 1, st.box + 1); st.due = now + INTERVALS[st.box]; st.seen = st.seen || now;
-    R.combo++;
-    let xp = item.challenge ? 25 : TYPES[item.type].xp;
+    st.n++; sk.b = Math.min(INTERVALS.length - 1, sk.b + 1); sk.d = now + INTERVALS[sk.b];
+    R.combo++; R.okN++; ST.best.combo = Math.max(ST.best.combo || 0, R.combo);
+    let xp = it.challenge ? 25 : T.xp;
     if (R.combo >= 3) xp += Math.min(10, 2 * (R.combo - 2));
+    const secs = (now - (R.qStart || now)) / 1000;
+    if (T.input !== 'tap' && secs < 6) { xp += secs < 3.5 ? 5 : 3; R.speedBonus = true; }
+    if (R.firstMeet) xp += 10;
     R.xp += xp; R.lastXP = xp; ST.xp += xp; d.xp += xp; d.ok++;
     const after = prestigeOf(st.n);
-    if (after !== before) { R.ups = R.ups.filter(u => u[0] !== item.code); R.ups.push([item.code, after]); toast(`${BY[item.code].n}: ${after.name}!`); }
-    if (item.challenge && !R.newOnes.includes(item.code)) R.newOnes.push(item.code);
+    if (after !== before) { R.ups = R.ups.filter(u => u[0] !== it.code); R.ups.push([it.code, after]); toast(`${BY[it.code].n}: ${after.name}!`); }
   } else {
-    st.w++; st.box = st.seen ? 1 : 0; st.due = now; st.seen = st.seen || now; R.combo = 0;
-    if (!R.retried.has(item.code)) { R.retried.add(item.code); R.seq.splice(Math.min(R.seq.length, R.i + 3), 0, makeQ(item.code, { retry: true, type: pick(['mapToName', 'flagToName']) })); }
-    if (item.challenge && !R.newOnes.includes(item.code)) R.newOnes.push(item.code);
+    st.w++; sk.b = sk.b > 1 ? 1 : 0; sk.d = now; R.combo = 0;
+    R.mistakes.push({ code: it.code, skill: it.skill });
+    if (R.mode !== 'blitz' && R.mode !== 'endless' && !R.retried.has(it.code + it.skill)) { R.retried.add(it.code + it.skill); R.seq.splice(Math.min(R.seq.length, R.i + 4), 0, task(it.code, it.skill, { retry: true, type: it.type === 'mapTap' || it.type === 'flagTap' || it.type === 'neighbor' || it.type === 'outlineName' ? (it.skill === 'flag' ? 'flagName' : 'mapName') : it.type })); }
   }
-  R.res[R.i] = ok; save(); render();
+  if (R.firstMeet && !R.newOnes.includes(it.code)) R.newOnes.push(it.code);
+  R.res[R.i] = ok; beep(ok); save();
+  if (R.mode === 'blitz') { if (!ok) R.flash = true; nextQuick(); return; }
+  render();
 }
+function nextQuick() { const R = S.round; R.i++; pushQuick(); prepItem(); render(); }
 function next() {
-  const R = S.round, item = R.seq[R.i];
-  if (item.kind === 'intro') {
-    const st = cs(item.code); if (!st.seen) { st.seen = Date.now(); st.due = Date.now(); R.newOnes.push(item.code); R.xp += 5; ST.xp += 5; dayRec().xp += 5; save(); }
-    R.res[R.i] = null;
-  }
+  const R = S.round;
+  if (R.mode === 'endless') { if (!R.ok) return finish(); R.i++; pushQuick(); prepItem(); render(); scrollTo(0, 0); return; }
   R.i++;
   if (R.i >= R.seq.length) return finish();
   prepItem(); render(); scrollTo(0, 0);
 }
 function finish() {
-  const R = S.round, d = dayRec();
-  const qs = R.res.filter(x => x !== null);
-  if (qs.length >= 5 && qs.every(Boolean)) { R.perfect = true; R.xp += 30; ST.xp += 30; d.xp += 30; }
-  d.r++; ST.best = Math.max(ST.best || 0, streak()); save();
+  const R = S.round, d = dayRec(); if (R.done) return; R.done = true;
+  clearInterval(R.timer);
+  if (R.mode === 'blitz') { if (R.okN > (ST.best.blitz || 0)) { ST.best.blitz = R.okN; R.newBest = true; } }
+  if (R.mode === 'endless') { if (R.okN > (ST.best.endless || 0)) { ST.best.endless = R.okN; R.newBest = true; } }
+  const qs = R.res.filter(x => x !== undefined);
+  if (R.mode !== 'blitz' && R.mode !== 'endless' && qs.length >= 8 && qs.every(Boolean)) { R.perfect = true; ST.best.perfect = 1; R.xp += 30; ST.xp += 30; d.xp += 30; }
+  if (qs.length) d.r++;
+  R.badges = checkBadges(); save();
   S.view = 'done'; render(); scrollTo(0, 0);
 }
+function submitTyped() {
+  const R = S.round, g = document.getElementById('guess'); if (!g) return;
+  const sel = (R.acList || [])[R.acSel || 0];
+  if (!g.value.trim()) { g.classList.remove('shake'); void g.offsetWidth; g.classList.add('shake'); return; }
+  // Typed text that already matches the target (with small typos) wins over the list's first entry.
+  const it = R.seq[R.i], T = TYPES[it.type];
+  if (it.type !== 'neighbor' && matchesTarget(T.input === 'cap' ? 'cap' : 'country', it.code, g.value)) return answer(it.code);
+  if (sel) return answer(sel.code);
+  answer(null, g.value);
+}
+
+/* ---------- events ---------- */
+app.addEventListener('input', e => { if (e.target.id === 'guess') { S.round.acSel = 0; renderAc(); } });
+app.addEventListener('keydown', e => {
+  if (e.target.id !== 'guess') return;
+  const R = S.round;
+  if (e.key === 'ArrowDown') { e.preventDefault(); R.acSel = Math.min((R.acList || []).length - 1, (R.acSel || 0) + 1); renderAc(); document.querySelector('.aclist .on')?.scrollIntoView({ block: 'nearest' }); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); R.acSel = Math.max(0, (R.acSel || 0) - 1); renderAc(); document.querySelector('.aclist .on')?.scrollIntoView({ block: 'nearest' }); }
+  else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); submitTyped(); }
+});
 app.addEventListener('click', e => {
-  const land = e.target.closest('#clickmap .land');
   const mapEl = e.target.closest('#clickmap');
   if (mapEl && S.view === 'round' && !S.round.answered) {
-    const item = S.round.seq[S.round.i];
-    // Snap: tiny countries count when the tap lands within ~24px of them.
+    const it = S.round.seq[S.round.i], land = e.target.closest('.land');
     const svg = mapEl.querySelector('svg'), r = svg.getBoundingClientRect(), sx = W / r.width;
     const x = (e.clientX - r.left) * sx, y = (e.clientY - r.top) * sx;
-    const f = featOf(item.code), pt = S.round.proj(f ? d3.geoCentroid(f) : [BY[item.code].ll[1], BY[item.code].ll[0]]);
+    const f = featOf(it.code), pt = S.round.proj(centerOf(it.code));
     const near = pt && Math.hypot(pt[0] - x, pt[1] - y) < 24;
     const code = land ? land.dataset.c : '';
-    if (code === item.code || (near && (!code || (BY[code] && BY[code].a > 5 * (BY[item.code].a || 1))))) return answer(item.code);
-    if (land) return answer(code || '?');
-    return; // tap on the sea: ignore
+    if (code === it.code || (near && (!code || (BY[code] && BY[code].a > 5 * (BY[it.code].a || 1))))) return answer(it.code);
+    if (land) return answer(code || null, code ? undefined : '');
+    return;
   }
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act;
   if (a === 'start') startRound('learn');
-  else if (a === 'review') startRound('review');
+  else if (['review', 'hard', 'blitz', 'endless'].includes(a)) startRound(a);
+  else if (a === 'region') { S.region = b.dataset.v || null; render(); }
   else if (a === 'collection') { S.view = 'collection'; S.sheet = null; render(); scrollTo(0, 0); }
+  else if (a === 'badges') { S.view = 'badges'; render(); scrollTo(0, 0); }
   else if (a === 'home') { S.view = 'home'; render(); scrollTo(0, 0); }
-  else if (a === 'quit') { if (S.round.res.length) finish(); else { S.view = 'home'; render(); } }
-  else if (a === 'answer') answer(b.dataset.v);
+  else if (a === 'sound') { ST.sound = !ST.sound; save(); render(); }
+  else if (a === 'quit') { clearInterval(S.round.timer); if (S.round.res.length) finish(); else { S.view = 'home'; render(); } }
+  else if (a === 'pick') answer(b.dataset.v);
+  else if (a === 'skip') answer(null, '');
   else if (a === 'next') next();
+  else if (a === 'fact') { const c = BY[S.round.seq[S.round.i].code]; const box = document.getElementById('factbox'); if (box) box.innerHTML = `<div class="fact"><b>Fun Fact</b><span>${esc(c.fact)}</span></div>`; b.remove(); }
   else if (a === 'filter') { S.filter = b.dataset.v; S.sheet = null; render(); }
-  else if (a === 'info') { S.sheet = b.dataset.c; render(); document.getElementById('sheet')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (!document.getElementById('sheet')) window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
+  else if (a === 'info') { S.sheet = b.dataset.c; render(); document.getElementById('sheet')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   else if (a === 'close') { S.sheet = null; render(); }
 });
 document.addEventListener('keydown', e => {
-  if (S.view !== 'round') return;
-  const R = S.round, item = R.seq[R.i];
-  if ((e.key === 'Enter' || e.key === ' ') && (R.answered || item.kind === 'intro')) { e.preventDefault(); next(); return; }
-  const n = parseInt(e.key, 10);
-  if (!R.answered && item.options && n >= 1 && n <= item.options.length) answer(item.options[n - 1]);
+  if (S.view !== 'round' || e.target.id === 'guess') return;
+  if ((e.key === 'Enter' || e.key === ' ') && S.round.answered) { e.preventDefault(); next(); }
 });
 render();
 </script>
