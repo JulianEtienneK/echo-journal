@@ -434,7 +434,7 @@ const I18N = {
     wipeConfirm: 'Alle Memos, Dialoge, Ziele und Rückblicke auf diesem Gerät löschen? Das lässt sich nicht rückgängig machen.',
     imported: n => n + ' Einträge importiert', exported: 'Backup erstellt', importFail: 'Die Datei ist kein Echo-Backup.',
     privacy: 'Alles liegt lokal in diesem Browser. Mach ab und zu ein Backup: Browserdaten löschen heißt Memos löschen.',
-    q_bonus: 'Bonus · freiwillig', q_note: 'Gedanke des Tages', noteTitle: 'Gedanke des Tages', noteAsk: 'Kurz innehalten', noteRead: n => 'Gelesen & nachgedacht · +' + n + ' XP', noteDone: 'Heute schon gelesen', noteThanks: n => 'Gut gedacht · +' + n + ' XP', noteAnsLabel: 'Deine Gedanken (optional)', noteAnsPh: 'Ein, zwei Sätze reichen …', noteSave: 'Antwort speichern', noteSaved: 'Gespeichert', notePast: 'Frühere Antworten', q_es: 'Español mit deinem Sparringspartner', q_xw: 'Ein Kreuzworträtsel lösen', q_geo: 'Eine Atlas-Runde (Länder & Flaggen)',
+    q_bonus: 'Bonus · freiwillig', q_note: 'Gedanke des Tages', failEyebrow: 'Scheitern & lernen', failTitle: 'Fehler-Tagebuch', failAdd: 'Eintrag hinzufügen', failDue: n => n === 1 ? '1 Lektion ist zur Wiederholung fällig' : n + ' Lektionen sind zur Wiederholung fällig', failNone: n => n + ' Lektionen gesammelt · nichts fällig', failEmpty: 'Wenn etwas nicht klappt: kurz notieren, was du daraus lernst. Echo fragt dich in 1 Woche, 1, 2 und 6 Monaten wieder danach.', failAll: 'Alle Einträge', failIntro: 'Was hat nicht geklappt, und was nimmst du daraus mit? Ehrlich und kurz reicht.', failWhat: 'Was ist passiert?', failWhatPh: 'z. B. Absage nach dem Vorstellungsgespräch', failLearn: 'Was lerne ich daraus?', failLearnPh: 'z. B. Die Kritik zeigt, dass die Stelle vielleicht nicht zu mir passt …', failNext: 'Nächstes Mal mache ich … (optional)', failNextPh: 'eine konkrete Sache', failSave: n => 'Speichern · +' + n + ' XP', failNeed: 'Bitte beide Felder ausfüllen.', failSaved: n => 'Notiert · +' + n + ' XP', failReviewTitle: 'Wiederholung', failAgo: n => 'Vor ' + n + ' Tagen notiert', failRecall: 'Was hattest du damals daraus gelernt? Erst erinnern, dann aufdecken.', failRecallPh: 'Aus dem Gedächtnis …', failReveal: 'Aufdecken', failThen: 'Damals notiert', failYours: 'Deine Erinnerung', failStill: 'gilt noch', failNowLabel: 'Wie siehst du es heute? (optional)', failNowPh: 'Was hat sich seitdem gezeigt?', failStillBtn: 'Stimmt noch', failChangedBtn: 'Sehe ich jetzt anders', failReviewed: n => 'Wiederholt · +' + n + ' XP', failClosed: 'abgeschlossen', failNextRev: d => 'nächste Wiederholung ' + d, failDel: 'Löschen', noteTitle: 'Gedanke des Tages', noteAsk: 'Kurz innehalten', noteRead: n => 'Gelesen & nachgedacht · +' + n + ' XP', noteDone: 'Heute schon gelesen', noteThanks: n => 'Gut gedacht · +' + n + ' XP', noteAnsLabel: 'Deine Gedanken (optional)', noteAnsPh: 'Ein, zwei Sätze reichen …', noteSave: 'Antwort speichern', noteSaved: 'Gespeichert', notePast: 'Frühere Antworten', q_es: 'Español mit deinem Sparringspartner', q_xw: 'Ein Kreuzworträtsel lösen', q_geo: 'Eine Atlas-Runde (Länder & Flaggen)',
     xwErn: 'Ernährungsmedizin', xwAw: 'Allgemeinwissen', xwGeo: 'Länder & Hauptstädte', xwPsy: 'Psychiatrie & Pharmakologie', xwTax: 'Steuern', xwEs: 'Spanisch', xwRev: 'Wiederholung', xwRevTitle: 'Wiederholungs-Rätsel', xwRevSub: n => n + ' aufgedeckte Wörter warten · neues Rätsel daraus bauen', xwRevOpen: n => n + ' Wörter, die du aufgedeckt hattest', xwRec: 'Empfohlen für dich', xwSmall: 'Klein', xwLarge: 'Groß', xwKb: 'Bildschirmtastatur', xwBack: 'Zurück', xwLevel: n => 'Stufe ' + n, xwAcross: 'Waagerecht', xwDown: 'Senkrecht',
     xwHelp: 'Umlaute als AE, OE, UE, ß als SS. Feld antippen, nochmal tippen wechselt die Richtung.', xwCheck: 'Prüfen', xwReveal: 'Lösung zeigen', xwRevealIn: s => 'Lösung in ' + s, xwWord: 'Wort aufdecken', xwWordCost: n => 'Wort aufdecken · −' + n + ' XP', xwWordDone: n => 'Wort aufgedeckt · −' + n + ' XP', xwPickFirst: 'Tippe zuerst ein Feld des Wortes an.', xwSolvedXP: (n, w) => 'Gelöst · ' + (n >= 0 ? '+' : '') + n + ' XP' + (w ? ' (' + w + ' aufgedeckt)' : ''), xwTime: s => 'Zeit ' + s, xwBestT: s => 'Bestzeit ' + s,
     xwSolved: 'Gelöst · +15 XP', xwRevealed: 'Mit Lösung beendet · +5 XP', xwWrong: n => n + ' Buchstaben stimmen noch nicht', xwAllOk: 'Bisher alles richtig',
@@ -547,7 +547,7 @@ const I18N = {
     liveStt: 'Live transcript in the browser (free, less accurate; on Android it may not run alongside recording)',
     autoAI: 'Transcribe and summarize new memos automatically', dataSection: 'Data',
     exportBtn: 'Export backup', importBtn: 'Import backup', used: s => 'Used: ' + s, wipe: 'Delete everything',
-    q_bonus: 'Bonus · optional', q_note: 'Thought of the day', noteTitle: 'Thought of the day', noteAsk: 'Pause for a moment', noteRead: n => 'Read & reflected · +' + n + ' XP', noteDone: 'Already read today', noteThanks: n => 'Well thought · +' + n + ' XP', noteAnsLabel: 'Your thoughts (optional)', noteAnsPh: 'A sentence or two is enough …', noteSave: 'Save answer', noteSaved: 'Saved', notePast: 'Earlier answers', q_es: 'Español with your sparring partner', q_xw: 'Solve a crossword', q_geo: 'One Atlas round (countries & flags)',
+    q_bonus: 'Bonus · optional', q_note: 'Thought of the day', failEyebrow: 'Fail & learn', failTitle: 'Failure journal', failAdd: 'Add entry', failDue: n => n === 1 ? '1 lesson is due for review' : n + ' lessons are due for review', failNone: n => n + ' lessons collected · nothing due', failEmpty: 'When something does not work out, note what you learn from it. Echo asks you again after 1 week, 1, 2 and 6 months.', failAll: 'All entries', failIntro: 'What did not work, and what do you take from it? Honest and short is enough.', failWhat: 'What happened?', failWhatPh: 'e.g. rejection after the interview', failLearn: 'What do I learn from it?', failLearnPh: 'e.g. the criticism suggests the job may not fit me …', failNext: 'Next time I will … (optional)', failNextPh: 'one concrete thing', failSave: n => 'Save · +' + n + ' XP', failNeed: 'Please fill in both fields.', failSaved: n => 'Noted · +' + n + ' XP', failReviewTitle: 'Review', failAgo: n => 'Noted ' + n + ' days ago', failRecall: 'What did you learn from it back then? Recall first, then reveal.', failRecallPh: 'From memory …', failReveal: 'Reveal', failThen: 'Noted back then', failYours: 'What you recalled', failStill: 'still holds', failNowLabel: 'How do you see it today? (optional)', failNowPh: 'What has happened since?', failStillBtn: 'Still true', failChangedBtn: 'I see it differently now', failReviewed: n => 'Reviewed · +' + n + ' XP', failClosed: 'completed', failNextRev: d => 'next review ' + d, failDel: 'Delete', noteTitle: 'Thought of the day', noteAsk: 'Pause for a moment', noteRead: n => 'Read & reflected · +' + n + ' XP', noteDone: 'Already read today', noteThanks: n => 'Well thought · +' + n + ' XP', noteAnsLabel: 'Your thoughts (optional)', noteAnsPh: 'A sentence or two is enough …', noteSave: 'Save answer', noteSaved: 'Saved', notePast: 'Earlier answers', q_es: 'Español with your sparring partner', q_xw: 'Solve a crossword', q_geo: 'One Atlas round (countries & flags)',
     xwErn: 'Nutritional medicine', xwAw: 'General knowledge', xwGeo: 'Countries & capitals', xwPsy: 'Psychiatry & pharmacology', xwTax: 'Tax', xwEs: 'Spanish', xwRev: 'Review', xwRevTitle: 'Review puzzle', xwRevSub: n => n + ' revealed words waiting · build a puzzle from them', xwRevOpen: n => n + ' words you had revealed', xwRec: 'Recommended for you', xwSmall: 'Small', xwLarge: 'Large', xwKb: 'On-screen keyboard', xwBack: 'Back', xwLevel: n => 'Level ' + n, xwAcross: 'Across', xwDown: 'Down',
     xwHelp: 'Umlauts as AE, OE, UE, ß as SS. Tap a square, tap again to switch direction.', xwCheck: 'Check', xwReveal: 'Show solution', xwRevealIn: s => 'Solution in ' + s, xwWord: 'Reveal word', xwWordCost: n => 'Reveal word · −' + n + ' XP', xwWordDone: n => 'Word revealed · −' + n + ' XP', xwPickFirst: 'Tap a square of the word first.', xwSolvedXP: (n, w) => 'Solved · ' + (n >= 0 ? '+' : '') + n + ' XP' + (w ? ' (' + w + ' revealed)' : ''), xwTime: s => 'time ' + s, xwBestT: s => 'best ' + s,
     xwSolved: 'Solved · +15 XP', xwRevealed: 'Finished with solution · +5 XP', xwWrong: n => n + ' letters are not right yet', xwAllOk: 'All correct so far',
@@ -733,6 +733,7 @@ function computeStats() {
   xp += gameXP;
   const gDays = games.days || {}, gToday = gDays[td] || {};
   const nr = notesRead(); xp += Object.keys(nr).length * NOTE_XP;
+  for (const f of fails()) xp += FAIL_XP * (1 + (f.reviews || []).length);
   const pl = played(); let echoCount = 0;
   for (const ids of Object.values(pl)) { echoCount += ids.length; xp += 2 * JX * Math.min(5, ids.length); }
   const socDays = new Set(socDone.map(d => d.day)), recapSet = new Set(recapDays);
@@ -1338,6 +1339,7 @@ function viewToday() {
     <div class="stack">${commits.map(c => `<label class="check ${c.done ? 'done' : ''}"><input type="checkbox" data-act="commit" data-id="${c.id}" ${c.done ? 'checked' : ''}><span class="grow">${esc(c.text)}${c.day < td ? ` <span class="tag">${esc(c.day === ydays ? t('echoAgo', 1) : fmtDate(c.day, { day: 'numeric', month: 'short' }))}</span>` : ''}</span><span class="xp">+${5 * JX}</span></label>`).join('')}</div>
   </section>` : ''}
   ${todayGoalsCard(commits.length > 0)}
+  ${failCard()}
   ${echo ? `<section class="card">
     <div class="row"><button class="playbtn" data-act="echo" aria-label="play">${icon('play')}</button>
       <div class="grow"><span class="eyebrow">${esc(t('echoTitle'))} · ${esc(echo.label)}</span><div style="font-weight:700">${esc(memoTitle(echo.memo))}</div>
@@ -2040,6 +2042,48 @@ function openNote() {
     <div class="row wrap">${done ? `<span class="small muted">✓ ${esc(t('noteDone'))}</span><button class="btn sm" data-act="note-save">${esc(t('noteSave'))}</button>` : `<button class="btn primary" data-act="note-read">${esc(t('noteRead', NOTE_XP))}</button><button class="btn ghost" data-act="note-later">${esc(t('later'))}</button>`}</div>
     ${(() => { const a = noteAnswers(), past = Object.keys(a).filter(k => k !== today() && a[k]).sort().reverse().slice(0, 5); return past.length ? `<details><summary class="small muted" style="cursor:pointer">${esc(t('notePast'))}</summary><div class="stack" style="gap:10px;margin-top:8px">${past.map(k => { const pn = noteOfDay(k); return `<div class="stack" style="gap:2px"><span class="small muted">${esc(fmtDate(k, { day: 'numeric', month: 'short' }))} · ${esc(pn ? pn[2] : '')}</span><span>${esc(a[k])}</span></div>`; }).join('')}</div></details>` : ''; })()}`);
 }
+/* Failure journal (after Arthur Brooks): note what did not work and what it teaches.
+   The lesson comes back after 1 week, 1, 2 and 6 months: first recall it, then compare. */
+const FAIL_XP = 5 * JX, FAIL_STEPS = [7, 30, 60, 180];
+const fails = () => LS.get('echo-fails', []);
+const saveFails = list => LS.set('echo-fails', list);
+const failDue = f => f.step < FAIL_STEPS.length && Date.now() >= f.created + FAIL_STEPS[f.step] * 864e5;
+function failCard() {
+  const list = fails(), due = list.filter(failDue);
+  return `<section class="card"><div class="row spread"><div class="stack" style="gap:2px"><span class="eyebrow">${esc(t('failEyebrow'))}</span><h3>${esc(t('failTitle'))}</h3></div>
+    <button class="icon-btn" data-act="fail-new" aria-label="${esc(t('failAdd'))}">${icon('plus')}</button></div>
+    ${due.length ? `<button class="quest" data-act="fail-review" data-v="${due[0].id}"><span class="qdot">${icon('check')}</span><span class="grow qlabel">${esc(t('failDue', due.length))}</span><span class="xp">+${FAIL_XP}</span></button>` : `<p class="small muted" style="margin:0">${esc(list.length ? t('failNone', list.length) : t('failEmpty'))}</p>`}
+    ${list.length ? `<button class="btn ghost sm" data-act="fail-list" style="justify-self:start">${esc(t('failAll'))}</button>` : ''}</section>`;
+}
+function openFailNew() {
+  openSheet(`${sheetHead(t('failTitle'))}
+    <p class="small muted" style="margin:0">${esc(t('failIntro'))}</p>
+    <div class="field"><label for="fWhat">${esc(t('failWhat'))}</label><textarea class="input" id="fWhat" rows="2" placeholder="${esc(t('failWhatPh'))}"></textarea></div>
+    <div class="field"><label for="fLearn">${esc(t('failLearn'))}</label><textarea class="input" id="fLearn" rows="3" placeholder="${esc(t('failLearnPh'))}"></textarea></div>
+    <div class="field"><label for="fNext">${esc(t('failNext'))}</label><input class="input" id="fNext" placeholder="${esc(t('failNextPh'))}"></div>
+    <button class="btn primary" data-act="fail-save" style="justify-self:start">${esc(t('failSave', FAIL_XP))}</button>`);
+  setTimeout(() => $('#fWhat') && $('#fWhat').focus(), 50);
+}
+function openFailReview(id, reveal) {
+  const f = fails().find(x => x.id === id); if (!f) return;
+  const ago = Math.round((Date.now() - f.created) / 864e5);
+  openSheet(`${sheetHead(t('failReviewTitle'))}
+    <span class="eyebrow">${esc(t('failAgo', ago))}</span>
+    <div class="card flat"><b>${esc(f.what)}</b></div>
+    ${reveal ? `${S.failRecall ? `<div class="stack" style="gap:4px"><span class="eyebrow">${esc(t('failYours'))}</span><p class="small" style="margin:0">${esc(S.failRecall)}</p></div>` : ''}<div class="stack" style="gap:6px"><span class="eyebrow">${esc(t('failThen'))}</span><p style="margin:0">${esc(f.learn)}</p>${f.next ? `<p class="small muted" style="margin:0">→ ${esc(f.next)}</p>` : ''}
+        ${(f.reviews || []).map(r => `<p class="small muted" style="margin:0">${esc(fmtDate(dayKey(new Date(r.at)), { day: 'numeric', month: 'short' }))}: ${esc(r.note || t('failStill'))}</p>`).join('')}</div>
+      <div class="field"><label for="fNote">${esc(t('failNowLabel'))}</label><textarea class="input" id="fNote" rows="2" placeholder="${esc(t('failNowPh'))}"></textarea></div>
+      <div class="row wrap"><button class="btn primary" data-act="fail-done" data-v="${f.id}" data-k="still">${esc(t('failStillBtn'))}</button><button class="btn" data-act="fail-done" data-v="${f.id}" data-k="changed">${esc(t('failChangedBtn'))}</button></div>`
+    : `<div class="field"><label for="fRecall">${esc(t('failRecall'))}</label><textarea class="input" id="fRecall" rows="3" placeholder="${esc(t('failRecallPh'))}"></textarea></div>
+      <button class="btn primary" data-act="fail-reveal" data-v="${f.id}" style="justify-self:start">${esc(t('failReveal'))}</button>`}`);
+}
+function openFailList() {
+  const list = fails().slice().sort((a, b) => b.created - a.created);
+  openSheet(`${sheetHead(t('failAll'))}<div class="stack" style="gap:12px">${list.map(f => `<div class="card flat" style="gap:4px">
+    <span class="small muted">${esc(fmtDate(dayKey(new Date(f.created)), { day: 'numeric', month: 'short', year: 'numeric' }))} · ${esc(f.step >= FAIL_STEPS.length ? t('failClosed') : t('failNextRev', fmtDate(dayKey(new Date(f.created + FAIL_STEPS[f.step] * 864e5)), { day: 'numeric', month: 'short' })))}</span>
+    <b>${esc(f.what)}</b><span>${esc(f.learn)}</span>${(f.reviews || []).filter(r => r.note).map(r => `<span class="small muted">↻ ${esc(r.note)}</span>`).join('')}
+    <button class="link" data-act="fail-del" data-v="${f.id}" style="justify-self:start;background:none;border:0;color:var(--muted);font-size:12px;padding:0;cursor:pointer">${esc(t('failDel'))}</button></div>`).join('')}</div>`);
+}
 function openSheet(html) {
   const el = $('#sheet');
   el.innerHTML = `<div class="panel" role="dialog" aria-modal="true">${html}</div>`;
@@ -2118,7 +2162,7 @@ async function buildBackup() {
   const memos = [];
   for (const m of S.memos) memos.push(Object.assign({}, m, { blob: m.blob ? await blobToDataURL(m.blob) : null, status: '' }));
   const settings = Object.assign({}, S.set); delete settings.anthropicKey; delete settings.openaiKey; // keys never leave the browser
-  const data = { app: 'echo-journal', version: 1, exportedAt: new Date().toISOString(), memos, dialogs: S.dialogs, recaps: Object.values(S.recaps), goals: Object.values(S.goals), commitments: S.commitments, xw: Object.values(S.xw), played: played(), geo: LS.get('echo-geo', null), games: LS.get('echo-games', null), notes: notesRead(), noteAns: noteAnswers(), settings };
+  const data = { app: 'echo-journal', version: 1, exportedAt: new Date().toISOString(), memos, dialogs: S.dialogs, recaps: Object.values(S.recaps), goals: Object.values(S.goals), commitments: S.commitments, xw: Object.values(S.xw), played: played(), geo: LS.get('echo-geo', null), games: LS.get('echo-games', null), notes: notesRead(), noteAns: noteAnswers(), fails: fails(), settings };
   return new Blob([JSON.stringify(data)], { type: 'application/json' });
 }
 async function exportBackup() {
@@ -2142,6 +2186,7 @@ async function importBackup(file) {
     for (const [store, list] of [['dialogs', data.dialogs], ['recaps', data.recaps], ['goals', data.goals], ['commitments', data.commitments], ['xw', data.xw]]) for (const x of list || []) { await DB.put(store, x); n++; }
     if (data.geo && (data.geo.xp || 0) > ((LS.get('echo-geo', null) || {}).xp || 0)) LS.set('echo-geo', data.geo);
     if (data.notes) LS.set('echo-notes', Object.assign({}, notesRead(), data.notes));
+    if (data.fails) { const have = new Set(fails().map(f => f.id)); saveFails(fails().concat(data.fails.filter(f => !have.has(f.id)))); }
     if (data.noteAns) LS.set('echo-note-ans', Object.assign({}, data.noteAns, noteAnswers()));
     if (data.games && (data.games.xp || 0) > ((LS.get('echo-games', null) || {}).xp || 0)) LS.set('echo-games', data.games);
     if (data.played) { const pl = played(); for (const [d, ids] of Object.entries(data.played)) pl[d] = [...new Set([...(pl[d] || []), ...ids])]; LS.set('echo-played', pl); }
@@ -2337,6 +2382,23 @@ document.addEventListener('click', async e => {
     case 'tab-socratic': S.tab = 'socratic'; render(); scrollTo(0, 0); break;
     case 'geo-open': location.href = 'laender.html'; break;
     case 'note-open': openNote(); break;
+    case 'fail-new': openFailNew(); break;
+    case 'fail-save': {
+      const what = ($('#fWhat').value || '').trim(), learn = ($('#fLearn').value || '').trim(), nx = ($('#fNext').value || '').trim();
+      if (!what || !learn) { toast(t('failNeed'), 'err'); break; }
+      const list = fails(); list.push({ id: uid(), created: Date.now(), what, learn, next: nx, step: 0, reviews: [] }); saveFails(list);
+      closeSheet(); toast(t('failSaved', FAIL_XP), 'ok'); afterChange(); break;
+    }
+    case 'fail-review': openFailReview(v, false); break;
+    case 'fail-reveal': { const rc = ($('#fRecall') && $('#fRecall').value || '').trim(); S.failRecall = rc; openFailReview(v, true); break; }
+    case 'fail-done': {
+      const list = fails(), f = list.find(x => x.id === v); if (!f) break;
+      const note = ($('#fNote') && $('#fNote').value || '').trim();
+      f.reviews = f.reviews || []; f.reviews.push({ at: Date.now(), kind: b.dataset.k, note, recall: S.failRecall || '' }); f.step++; S.failRecall = '';
+      saveFails(list); closeSheet(); toast(t('failReviewed', FAIL_XP), 'ok'); afterChange(); break;
+    }
+    case 'fail-list': openFailList(); break;
+    case 'fail-del': { saveFails(fails().filter(x => x.id !== v)); openFailList(); render(); break; }
     case 'note-read': case 'note-save': {
       const txt = ($('#noteAns') && $('#noteAns').value || '').trim(), ans = noteAnswers();
       if (txt) ans[today()] = txt; else delete ans[today()]; LS.set('echo-note-ans', ans);
