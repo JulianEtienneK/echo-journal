@@ -177,10 +177,17 @@ h3 { font-size: 17px; font-weight: 700; }
 .expl { background: var(--surface-2); border-radius: 14px; padding: 12px 14px; font-size: 15px; }
 .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: end; height: 90px; }
 .week div { display: grid; gap: 4px; justify-items: center; font-size: 11px; color: var(--muted); }
+.pad { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.pk { border: 0; border-radius: 14px; height: 58px; background: var(--surface); box-shadow: var(--shadow); font: 700 24px/1 var(--f-mono); touch-action: manipulation; }
+.pk.fn { background: var(--surface-2); box-shadow: none; font-size: 20px; }
+.pk.wide { grid-column: span 2; }
+.pk.ok { background: var(--calm); color: #fff; box-shadow: none; }
+.pk:active { transform: scale(.97); }
 .week i { width: 100%; border-radius: 6px 6px 2px 2px; background: var(--calm); min-height: 3px; }
 </style>
 <div id="app"><p class="loading">Lädt …</p></div>
 <script src="geo/quiz.js"></script>
+<script src="rechnen.js"></script>
 <script>
 'use strict';
 const LS = {
@@ -251,36 +258,7 @@ function viewWordle() {
   ${W.done ? `<section class="card" style="text-align:center"><b>${W.won ? 'Geschafft in ' + W.guesses.length + '!' : 'Gesucht war: ' + W.target}</b><div class="row" style="gap:8px"><button class="btn primary grow" data-act="wordle-free">Übungsrunde</button><button class="btn grow" data-act="home">Übersicht</button></div></section>` : `<div class="kb">${kb}</div>`}`;
 }
 
-/* ================= Kopfrechnen ================= */
-const R = { on: false, end: 0, n: 0, wrong: 0, q: null, timer: 0, level: 1 };
-function mkTask(level) {
-  const r = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
-  const kinds = level < 4 ? ['+', '−'] : level < 8 ? ['+', '−', '×'] : level < 12 ? ['+', '−', '×', '÷'] : ['×', '÷', '%', '²', '+'];
-  const k = kinds[Math.floor(Math.random() * kinds.length)], big = Math.min(9, 1 + Math.floor(level / 3));
-  if (k === '+') { const a = r(10, 10 * big * 3), b = r(5, 10 * big * 3); return { t: `${a} + ${b}`, a: a + b }; }
-  if (k === '−') { const a = r(20, 10 * big * 4), b = r(5, a); return { t: `${a} − ${b}`, a: a - b }; }
-  if (k === '×') { const a = r(2, level < 10 ? 10 : 19), b = r(2, 12); return { t: `${a} × ${b}`, a: a * b }; }
-  if (k === '÷') { const b = r(2, 12), a = b * r(2, 12); return { t: `${a} ÷ ${b}`, a: a / b }; }
-  if (k === '%') { const p = [10, 20, 25, 50, 5, 15][r(0, 5)], b = r(2, 40) * 20; return { t: `${p} % von ${b}`, a: b * p / 100 }; }
-  const a = r(11, 25); return { t: `${a}²`, a: a * a };
-}
-function rechnenStart() { Object.assign(R, { on: true, end: Date.now() + 60e3, n: 0, wrong: 0, level: 1 }); R.q = mkTask(1); clearInterval(R.timer); R.timer = setInterval(() => { const el = document.getElementById('rclock'); const s = Math.ceil((R.end - Date.now()) / 1000); if (s <= 0) rechnenEnd(); else if (el) el.textContent = '⏱ ' + s + ' s'; }, 250); view = 'rechnen'; render(); }
-function rechnenEnd() {
-  clearInterval(R.timer); if (!R.on) return; R.on = false;
-  const xp = Math.max(2, R.n * 2); const best = R.n > (G.rechnen.best || 0); if (best) G.rechnen.best = R.n;
-  gain('rechnen', xp); R.result = { xp, best }; render();
-}
-function viewRechnen() {
-  if (!R.on) return `${back}<h2>Kopfrechnen</h2><section class="card" style="text-align:center;justify-items:center">${R.result ? `<span class="eyebrow">Ergebnis</span><div class="sum">${R.n} richtig</div><p class="muted" style="margin:0">${R.result.best ? 'Neuer Bestwert! · ' : ''}+${R.result.xp} XP · Bestwert ${G.rechnen.best}</p>` : `<p class="muted" style="margin:0">60 Sekunden, so viele Aufgaben wie möglich. Es wird mit jeder richtigen Antwort schwerer: erst Plus/Minus, dann Mal, Geteilt, Prozent und Quadratzahlen.</p>`}
-    <button class="btn primary big" data-act="rechnen-go" id="rgo">${R.result ? 'Nochmal' : 'Start'}</button></section>`;
-  return `${back}<div class="row spread"><span class="mono" id="rclock">⏱ ${Math.ceil((R.end - Date.now()) / 1000)} s</span><span class="mono">${R.n} richtig · Stufe ${R.level}</span></div>
-    <div class="sum" style="padding:30px 0">${esc(R.q.t)} = ?</div>
-    <input class="numin" id="rin" inputmode="decimal" autocomplete="off" aria-label="Ergebnis"><p class="hint" style="text-align:center">Richtige Antworten werden sofort erkannt. Enter überspringt.</p>`;
-}
-function rechnenInput(v) {
-  if (!R.on) return;
-  if (Number(String(v).replace(',', '.')) === R.q.a) { R.n++; R.level = 1 + Math.floor(R.n / 2); R.q = mkTask(R.level); beep(true); render(); }
-}
+/* ================= Kopfrechnen: rechnen.js ================= */
 
 /* ================= Quiz ================= */
 const Q = { bank: null, seq: [], i: 0, ans: null, ok: 0, xp: 0, wrong: [] };
@@ -321,7 +299,7 @@ function viewHome() {
   const qb = b => { const m = G.quiz[b] || {}, items = QUIZ[b].items; return Object.keys(m).length + '/' + items.length + ' gesehen · ' + items.filter(it => (m[it[0]] || {}).b >= 3).length + ' sicher'; };
   return `${back}<h2>Mehr Spiele</h2>
   ${card('wordle-day', '', '🔤', 'Wordle', 'Wort des Tages + Übung', `Serie ${G.wordle.streak} · gewonnen ${G.wordle.won}/${G.wordle.played}`, d.wordle)}
-  ${card('rechnen-open', '', '🧮', 'Kopfrechnen', '60-Sekunden-Sprint', `Bestwert ${G.rechnen.best || 0}`, d.rechnen)}
+  ${card('rechnen-open', '', '🧮', 'Kopfrechnen', 'Sprint, Überleben, Ketten, Schätzen, Tricks', rechnenMeta(), d.rechnen)}
   ${Object.entries(QUIZ).map(([k, b]) => card('quiz-go', k, b.icon, esc(b.title), b.items.length + ' Fragen mit Erklärung', qb(k), d['quiz_' + k])).join('')}`;
 }
 
@@ -335,13 +313,14 @@ function render() {
 }
 app.addEventListener('click', e => {
   const k = e.target.closest('[data-key]'); if (k) return wordleKey(k.dataset.key);
+  const pk = e.target.closest('[data-pad]'); if (pk) return rechnenPad(pk.dataset.pad);
   const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act;
   if (a === 'home') { view = 'home'; render(); }
   else if (a === 'sound') { G.sound = G.sound === false; save(); render(); }
   else if (a === 'wordle-day') wordleStart('daily');
   else if (a === 'wordle-free') wordleStart('free');
   else if (a === 'rechnen-open') { R.result = null; view = 'rechnen'; render(); }
-  else if (a === 'rechnen-go') rechnenStart();
+  else if (a.startsWith('r-')) rechnenAct(a, b.dataset.v);
   else if (a === 'quiz-go') quizStart(b.dataset.v);
   else if (a === 'quiz-ans') quizAnswer(+b.dataset.v);
   else if (a === 'quiz-next') quizNext();
@@ -349,12 +328,12 @@ app.addEventListener('click', e => {
 app.addEventListener('input', e => { if (e.target.id === 'rin') rechnenInput(e.target.value); });
 document.addEventListener('keydown', e => {
   if (view === 'wordle' && !e.metaKey && !e.ctrlKey) { const k = e.key === 'Enter' ? 'ENTER' : e.key === 'Backspace' ? '⌫' : e.key.toUpperCase(); if (k === 'ENTER' || k === '⌫' || /^[A-Z]$/.test(k)) { e.preventDefault(); wordleKey(k); } }
-  if (view === 'rechnen' && R.on && e.key === 'Enter') { R.q = mkTask(R.level); R.wrong++; render(); }
+  if (view === 'rechnen') rechnenKey(e);
   if (view === 'quiz') { const n = parseInt(e.key, 10); if (Q.ans == null && n >= 1 && n <= 4) quizAnswer(n - 1); else if (Q.ans != null && e.key === 'Enter') { e.preventDefault(); quizNext(); } }
 });
 function route() {
   view = (location.hash || '').replace('#', '') || 'home';
-  if (view.startsWith('quiz-') && QUIZ[view.slice(5)]) quizStart(view.slice(5)); else if (view === 'wordle') wordleStart('daily'); else { if (view !== 'rechnen') view = 'home'; R.result = null; render(); }
+  if (view.startsWith('quiz-') && QUIZ[view.slice(5)]) quizStart(view.slice(5)); else if (view === 'wordle') wordleStart('daily'); else { if (view !== 'rechnen') view = 'home'; if (!R.on) R.result = null; render(); }
 }
 window.addEventListener('hashchange', route);
 route();
