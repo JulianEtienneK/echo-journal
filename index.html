@@ -1532,7 +1532,7 @@ function xwOpen(id) {
 function xwEntryAt(pz, r, c, dir) {
   return pz.entries.find(e => e.d === dir && (dir === 'a' ? e.r === r && c >= e.c && c < e.c + e.a.length : e.c === c && r >= e.r && r < e.r + e.a.length));
 }
-function xwRevealLeft(x) { return Math.max(0, 120 - Math.floor((Date.now() - x.openedAt) / 1000)); }
+function xwRevealLeft() { return 0; } // the 2-minute wait before "show solution" was removed on request
 function viewXw() {
   const pz = xwFind(S.xwId);
   if (!pz) return viewXwHub();

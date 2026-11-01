@@ -183,10 +183,13 @@ h3 { font-size: 17px; font-weight: 700; }
 .pk.wide { grid-column: span 2; }
 .pk.ok { background: var(--calm); color: #fff; box-shadow: none; }
 .pk:active { transform: scale(.97); }
+.way { margin: 0; padding-left: 22px; display: grid; gap: 4px; font: 500 15px/1.4 var(--f-mono); }
+.way li::marker { color: var(--muted); }
 .week i { width: 100%; border-radius: 6px 6px 2px 2px; background: var(--calm); min-height: 3px; }
 </style>
 <div id="app"><p class="loading">Lädt …</p></div>
 <script src="geo/quiz.js"></script>
+<script src="rechnen-gen.js"></script>
 <script src="rechnen.js"></script>
 <script>
 'use strict';
