@@ -432,7 +432,7 @@ const I18N = {
     H_wdid: 'Was du diese Woche bewegt hast', H_goals: 'Deine Wochenziele', H_notice: 'Was auffällt', H_next: 'Für nächste Woche',
     settings: 'Einstellungen', language: 'Sprache', theme: 'Darstellung', themeSystem: 'System', light: 'Hell', dark: 'Dunkel', yourName: 'Dein Name',
     aiSection: 'KI (optional)', aiNote: 'Die Schlüssel bleiben auf diesem Gerät. Zur Transkription geht die Aufnahme an OpenAI, für Zusammenfassung, Dialog und Rückblick der Text an Anthropic. Ohne Schlüssel verlässt nichts das Gerät.',
-    anthropicKey: 'Anthropic-API-Key', model: 'Modell für Dialog & Rückblick', fastModel: 'Modell für Memo-Zusammenfassungen',
+    anthropicKey: 'Anthropic-API-Key', model: 'Modell für Dialog & Rückblick', fastModel: 'Modell für Memo-Zusammenfassungen', socModel: 'Modell für Sokratik (leer = wie Dialog)',
     openaiKey: 'OpenAI-API-Key (Transkription)', sttModel: 'Transkriptionsmodell',
     liveStt: 'Live mitschreiben im Browser (kostenlos, ungenauer; auf Android teils nicht parallel zur Aufnahme)',
     autoAI: 'Neue Memos automatisch transkribieren und zusammenfassen', dataSection: 'Daten',
@@ -548,7 +548,7 @@ const I18N = {
     H_wdid: 'What you moved this week', H_goals: 'Your weekly goals', H_notice: 'What stands out', H_next: 'For next week',
     settings: 'Settings', language: 'Language', theme: 'Appearance', themeSystem: 'System', light: 'Light', dark: 'Dark', yourName: 'Your name',
     aiSection: 'AI (optional)', aiNote: 'Keys stay on this device. For transcripts the recording goes to OpenAI; for summaries, dialogue and recaps the text goes to Anthropic. Without keys nothing leaves the device.',
-    anthropicKey: 'Anthropic API key', model: 'Model for dialogue & recaps', fastModel: 'Model for memo summaries',
+    anthropicKey: 'Anthropic API key', model: 'Model for dialogue & recaps', fastModel: 'Model for memo summaries', socModel: 'Model for Socratic rounds (empty = same as dialogue)',
     openaiKey: 'OpenAI API key (transcription)', sttModel: 'Transcription model',
     liveStt: 'Live transcript in the browser (free, less accurate; on Android it may not run alongside recording)',
     autoAI: 'Transcribe and summarize new memos automatically', dataSection: 'Data',
@@ -861,7 +861,10 @@ async function askClaude({ system, messages, maxTokens = 800, model, quick = fal
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error((j.error && j.error.message) || ('HTTP ' + r.status));
-  return (j.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+  let out = (j.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+  // Hit the length limit: end at the last complete sentence instead of mid-word.
+  if (j.stop_reason === 'max_tokens') { const cut = Math.max(out.lastIndexOf('. '), out.lastIndexOf('? '), out.lastIndexOf('! '), out.lastIndexOf('.\n'), out.lastIndexOf('?\n')); if (cut > out.length * 0.4) out = out.slice(0, cut + 1); out += ' …'; }
+  return out;
 }
 function parseJSON(text) {
   const a = text.indexOf('{'), b = text.lastIndexOf('}');
@@ -1804,7 +1807,8 @@ ${d.material ? 'Material from the speaker:\n' + d.material.slice(0, 6000) + '\n'
 - Ask exactly ONE question per turn, the way a sharp but fair audience member would: comprehension, methods and quality of evidence, limitations, alternative explanations, practical consequences, and now and then a devil's-advocate challenge.
 - After each answer give one short sentence of feedback on the answer (clarity, precision, whether it answered the question), then ask the next question, building on what was said.
 - If an answer dodges the question, say so politely and ask again more pointedly.
-- Never lecture and never answer your own questions. Keep each turn under 80 words.
+- Never lecture and never answer your own questions. Keep each turn under 80 words and always finish your last sentence.
+- When an answer is good, say so plainly; do not invent shortcomings.
 - Do not invent facts or numbers about the topic; challenge claims by asking, not by asserting.`;
   const past = S.dialogs.filter(x => x.completed && x.id !== d.id).sort((a, b) => b.createdAt - a.createdAt).slice(0, 10)
     .map(x => `- ${x.topic || '?'} (${x.rating || 'unrated'})`).join('\n') || '- none yet';
@@ -1813,7 +1817,14 @@ Method:
 - Ask exactly ONE question per turn and build on what the student just said.
 - If an answer is wrong or vague, do not correct it outright; ask a question that exposes the gap. Give a small hint only after two unsuccessful tries or when asked.
 - When an answer is right, confirm in one short sentence and go one level deeper (mechanism, consequence, clinical decision).
-- Keep each turn under 90 words. No lectures, no lists of facts.
+Judging answers:
+- Judge against what a well-prepared master's student in nutritional medicine is expected to know, not against a full textbook chapter.
+- If the core of the answer is correct, open with a clear confirmation ("Richtig." / "Genau." / "Right."), even if details are missing. You may add at most one missing detail as a brief complement ("Dazu kommt noch …"), never framed as a correction.
+- Only call an answer incomplete, "close" or "not quite" if a key element is actually wrong or missing. Then name which part is missing (e.g. "der Mechanismus fehlt noch") without giving it away.
+- Never ask the student to repeat or rephrase something they already answered correctly.
+Form:
+- Keep each turn under 90 words. No lectures, no lists of facts, never explain a whole mechanism yourself.
+- Always finish your last sentence and end with exactly one question.
 Content:
 - Alternate between mechanism questions (physiology, biochemistry, micronutrients, energy and protein metabolism, gut hormones, pharmaco-nutrient interactions) and short clinical vignettes (e.g. refeeding risk, malnutrition screening, enteral vs parenteral nutrition, nutrition in kidney/liver disease, diabetes, pregnancy, older adults).
 - Name guidelines (DGEM, ESPEN, DGE) only when you are confident. Never invent numbers or thresholds; if a figure matters and you are unsure, say so and ask the student how they would look it up.
@@ -1837,7 +1848,7 @@ async function socStart() {
 async function socAsk(d) {
   S.socBusy = true; render();
   try {
-    let reply = await askClaude({ system: socSystem(d), messages: d.messages.map(({ role, content }) => ({ role, content })), maxTokens: 600 });
+    let reply = await askClaude({ system: socSystem(d), messages: d.messages.map(({ role, content }) => ({ role, content })), maxTokens: 1200, model: S.set.socModel || S.set.model });
     const m = reply.match(/^\s*TOPIC:\s*(.+)/);
     if (m) { if (!d.topic) d.topic = m[1].trim(); reply = reply.replace(/^\s*TOPIC:.*(\n|$)/, '').trim(); }
     d.messages.push({ role: 'assistant', content: reply });
@@ -2114,6 +2125,7 @@ function openSettings() {
     <div class="field"><label for="set-ak">${esc(t('anthropicKey'))}</label><input class="input mono" id="set-ak" data-set="anthropicKey" type="password" value="${esc(s.anthropicKey)}" placeholder="sk-ant-…" autocomplete="off"></div>
     <div class="field"><label for="set-model">${esc(t('model'))}</label><input class="input mono" id="set-model" data-set="model" value="${esc(s.model)}"></div>
     <div class="field"><label for="set-fmodel">${esc(t('fastModel'))}</label><input class="input mono" id="set-fmodel" data-set="fastModel" value="${esc(s.fastModel)}"></div>
+    <div class="field"><label for="set-smodel">${esc(t('socModel'))}</label><input class="input mono" id="set-smodel" data-set="socModel" value="${esc(s.socModel || '')}" placeholder="${esc(s.model)}"></div>
     <div class="field"><label for="set-ok">${esc(t('openaiKey'))}</label><input class="input mono" id="set-ok" data-set="openaiKey" type="password" value="${esc(s.openaiKey)}" placeholder="sk-…" autocomplete="off"></div>
     <div class="field"><label for="set-stt">${esc(t('sttModel'))}</label><input class="input mono" id="set-stt" data-set="sttModel" value="${esc(s.sttModel)}"></div>
 `}
