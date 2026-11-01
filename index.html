@@ -316,6 +316,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
 <script src="puzzles.js"></script>
 <script src="puzzles2.js"></script>
 <script src="puzzles3.js"></script>
+<script src="puzzles4.js"></script>
 <script src="xwinfo.js"></script>
 <script src="xwgen.js"></script>
 <script src="notes.js"></script>
@@ -1452,7 +1453,7 @@ function md(text) {
 
 /* Crossword: one puzzle a day from puzzles.js, alternating Ernmed / Allgemeinwissen and German / English. */
 const XW = window.ECHO_XW || { start: today(), puzzles: [] };
-XW.puzzles = XW.puzzles.concat(window.ECHO_XW2 || [], window.ECHO_XW3 || [], LS.get('echo-xw-gen', []));
+XW.puzzles = XW.puzzles.concat(window.ECHO_XW2 || [], window.ECHO_XW3 || [], window.ECHO_XW4 || [], LS.get('echo-xw-gen', []));
 const XW_CATS = { ern: ['🥗', 'xwErn'], aw: ['🌍', 'xwAw'], geo: ['🗺️', 'xwGeo'], psy: ['🧠', 'xwPsy'], tax: ['🧾', 'xwTax'], es: ['🇪🇸', 'xwEs'], rev: ['🔁', 'xwRev'] };
 const XW_TOUCH = () => (window.matchMedia && matchMedia('(pointer: coarse)').matches) || (navigator.maxTouchPoints > 0 && innerWidth < 900);
 const XW_KB = () => XW_TOUCH() && LS.get('echo-xw-kb', true);
