@@ -205,7 +205,8 @@ function start(o) {
     { s: 0, streak: 0, n: 0, wrong: 0, done: 0, lives: 3, penalty: 0, miss: [], fb: null, start: Date.now() });
   R.total = R.kind === 'trick' ? 8 : R.kind === 'review' ? R.rq.length : R.mode === 'trial' ? 20 : R.mode === 'estimate' ? 12 : R.mode === 'chain' ? 5 : 0;
   R.end = R.mode === 'sprint' ? Date.now() + R.dur * 1000 : 0;
-  RNG = R.daily ? seeded('echo-rechnen-' + today()) : Math.random;
+  // Only the scored first attempt of the day uses the day's fixed tasks; practice runs afterwards get fresh ones.
+  RNG = R.daily && rc.daily.date !== today() ? seeded('echo-rechnen-' + today()) : Math.random;
   if (R.mode === 'chain' && R.kind === 'play') newChain(); else newTask();
   clearInterval(R.timer); R.timer = setInterval(tick, 100);
   view = 'rechnen'; render();
