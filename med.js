@@ -110,7 +110,7 @@ function mask(text, name) {
     const abbr = /^[A-ZÄÖÜ0-9]{2,6}$/.test(w);
     if (!abbr && (w.length < 4 || STOP.has(lw))) continue;
     const stem = !abbr && w.length > 7 ? w.slice(0, 6) : w;
-    out = out.replace(new RegExp((abbr ? '\\b' : '') + reEsc(stem) + (abbr ? '\\b' : '[\\p{L}-]*'), abbr ? 'g' : 'giu'), '▢▢▢');
+    out = out.replace(new RegExp((abbr ? '\\b' : '') + reEsc(stem) + (abbr ? '\\b' : '[\\p{L}-]*'), abbr ? 'g' : 'giu'), '[…]');
   }
   return out;
 }
