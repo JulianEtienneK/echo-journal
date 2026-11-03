@@ -317,6 +317,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
 <script src="puzzles2.js"></script>
 <script src="puzzles3.js"></script>
 <script src="puzzles4.js"></script>
+<script src="puzzles5.js"></script>
+<script src="skandale-data.js"></script>
 <script src="xwinfo.js"></script>
 <script src="xwgen.js"></script>
 <script src="notes.js"></script>
@@ -400,7 +402,7 @@ const I18N = {
     socModeEs: 'Español', esIntro: 'Sprich Spanisch mit einer sehr seltsamen Figur. Sie bleibt in ihrer Rolle, korrigiert kurz und spricht ihre Antworten laut.', esChar: 'Wer soll heute mit dir reden?', esLevel: 'Niveau', esVoice: 'Stimme', esVoiceBrowser: 'Browser (kostenlos)', esVoiceAI: 'OpenAI (lebendiger)',
     esAutoSay: 'Antworten automatisch vorlesen', esStart: '¡Vamos!', esTalk: 'Hablar', esListening: 'Escuchando … tippen zum Senden', esSay: 'Vorlesen', esStop: 'Stopp',
     esThinking: n => n + ' denkt nach …', esHint: '¡Ayuda! Gib mir bitte auf Deutsch zwei, drei Wörter oder einen Satzanfang, mit dem ich antworten kann.', esPlaceholder: 'Escribe … oder tippe auf Hablar', esNoVoice: 'Dieser Browser kann nicht vorlesen.', esNoMic: 'Spracheingabe geht hier nicht – schreib einfach.',
-    socModeNutri: 'Ernährungsmedizin', socModeTalk: 'Vortrag & Diskussion', socTalkTopic: 'Thema deines Vortrags', socTalkMaterial: 'Material (optional): Gliederung, Abstract, Kernaussagen',
+    socModeNutri: 'Ernährungsmedizin', socModeSci: 'Wissenschaftsskandale', socSciIntro: 'Ein Fall aus den Skandal-Akten als kurze Geschichte. Claude fragt: Was lief schief, welche Warnsignale gab es, wie hätte man es früher bemerkt, und was heißt das für deine eigene Forschung?', socSciCase: c => 'Fall: ' + c, xwSci: 'Wissenschaftsskandale', q_sk: 'Skandal-Akten: ein Fall', gamesSk: 'Skandal-Akten', gamesSkSub: 'Wissenschaftsskandale: lesen, Quiz, Detektiv, Zeitstrahl', socModeTalk: 'Vortrag & Diskussion', socTalkTopic: 'Thema deines Vortrags', socTalkMaterial: 'Material (optional): Gliederung, Abstract, Kernaussagen',
     socTalkIntro: 'Claude spielt das kritische Publikum: eine Frage nach der anderen, wie in der Diskussion nach dem Vortrag. Du antwortest, Claude gibt kurzes Feedback und hakt nach.', socTalkNeed: 'Gib zuerst das Thema ein.', socTalkStart: 'Diskussion starten',
     goalsCarry: 'Ziele der Vorwoche übernehmen', goalsDone: 'Alle Wochenziele erreicht',
     echoTitle: 'Echo', echoAgo: n => n === 1 ? 'Gestern' : 'Vor ' + n + ' Tagen', echoYear: 'Vor einem Jahr', echoRandom: 'Aus deinem Archiv',
@@ -516,7 +518,7 @@ const I18N = {
     socModeEs: 'Español', esIntro: 'Speak Spanish with a very strange character. It stays in role, corrects you briefly and speaks its replies out loud.', esChar: 'Who should talk to you today?', esLevel: 'Level', esVoice: 'Voice', esVoiceBrowser: 'Browser (free)', esVoiceAI: 'OpenAI (more lively)',
     esAutoSay: 'Read replies aloud automatically', esStart: '¡Vamos!', esTalk: 'Hablar', esListening: 'Escuchando … tap to send', esSay: 'Read aloud', esStop: 'Stop',
     esThinking: n => n + ' is thinking …', esHint: '¡Ayuda! Please give me two or three words in English or the start of a sentence I can answer with.', esPlaceholder: 'Escribe … or tap Hablar', esNoVoice: 'This browser cannot read aloud.', esNoMic: 'Voice input does not work here – just type.',
-    socModeNutri: 'Nutritional medicine', socModeTalk: 'Talk & discussion', socTalkTopic: 'Topic of your talk', socTalkMaterial: 'Material (optional): outline, abstract, key claims',
+    socModeNutri: 'Nutritional medicine', socModeSci: 'Science scandals', socSciIntro: 'A case from the scandal files as a short story. Claude asks: what went wrong, which red flags were there, how could it have been caught earlier, and what does it mean for your own research?', socSciCase: c => 'Case: ' + c, xwSci: 'Science scandals', q_sk: 'Scandal files: one case', gamesSk: 'Scandal files', gamesSkSub: 'Science scandals: read, quiz, detective, timeline', socModeTalk: 'Talk & discussion', socTalkTopic: 'Topic of your talk', socTalkMaterial: 'Material (optional): outline, abstract, key claims',
     socTalkIntro: 'Claude plays the critical audience: one question at a time, like the discussion after a talk. You answer, Claude gives brief feedback and follows up.', socTalkNeed: 'Enter the topic first.', socTalkStart: 'Start discussion',
     goalsCarry: "Copy last week's goals", goalsDone: 'All weekly goals reached',
     echoTitle: 'Echo', echoAgo: n => n === 1 ? 'Yesterday' : n + ' days ago', echoYear: 'A year ago', echoRandom: 'From your archive',
@@ -757,7 +759,7 @@ function computeStats() {
   xp = Math.max(0, xp); // revealed crossword words can subtract, never below zero overall
   const level = levelFrom(xp);
   const quests = { memo: dayMin.has(td), socratic: socDays.has(td), recap: recapSet.has(td), echo: (pl[td] || []).length > 0,
-    es: esDone.some(d => d.day === td), xw: xwDoneDays.has(td), geo: geoDays.includes(td), note: !!nr[td], plan: !!pls[td], wordle: !!gToday.wordle, rechnen: !!gToday.rechnen, quiz_ernmed: !!gToday.quiz_ernmed, quiz_steuer: !!gToday.quiz_steuer };
+    es: esDone.some(d => d.day === td), skandal: !!gToday.skandal, xw: xwDoneDays.has(td), geo: geoDays.includes(td), note: !!nr[td], plan: !!pls[td], wordle: !!gToday.wordle, rechnen: !!gToday.rechnen, quiz_ernmed: !!gToday.quiz_ernmed, quiz_steuer: !!gToday.quiz_steuer };
   // Extra counters for badges.
   const perDay = new Map(), imps = new Set(); let longest = 0, night = 0, early = 0, pi = 0, mirror = 0, holiday = 0;
   for (const m of S.memos) {
@@ -1348,6 +1350,7 @@ function viewToday() {
     <div class="stack" style="gap:2px">
       ${quest('note', '🏛️ ' + t('q_note'), NOTE_XP, 'note-open')}
       ${quest('es', '🗣️ ' + t('q_es'), 15 * JX, 'quest-es')}
+      ${quest('skandal', '🕵️ ' + t('q_sk'), 10, 'quest-sk')}
     </div>
   </section>
   ${phoneCard()}
@@ -1453,8 +1456,8 @@ function md(text) {
 
 /* Crossword: one puzzle a day from puzzles.js, alternating Ernmed / Allgemeinwissen and German / English. */
 const XW = window.ECHO_XW || { start: today(), puzzles: [] };
-XW.puzzles = XW.puzzles.concat(window.ECHO_XW2 || [], window.ECHO_XW3 || [], window.ECHO_XW4 || [], LS.get('echo-xw-gen', []));
-const XW_CATS = { ern: ['🥗', 'xwErn'], aw: ['🌍', 'xwAw'], geo: ['🗺️', 'xwGeo'], psy: ['🧠', 'xwPsy'], tax: ['🧾', 'xwTax'], es: ['🇪🇸', 'xwEs'], rev: ['🔁', 'xwRev'] };
+XW.puzzles = XW.puzzles.concat(window.ECHO_XW2 || [], window.ECHO_XW3 || [], window.ECHO_XW4 || [], window.ECHO_XW5 || [], LS.get('echo-xw-gen', []));
+const XW_CATS = { ern: ['🥗', 'xwErn'], aw: ['🌍', 'xwAw'], geo: ['🗺️', 'xwGeo'], psy: ['🧠', 'xwPsy'], tax: ['🧾', 'xwTax'], sci: ['🔬', 'xwSci'], es: ['🇪🇸', 'xwEs'], rev: ['🔁', 'xwRev'] };
 const XW_TOUCH = () => (window.matchMedia && matchMedia('(pointer: coarse)').matches) || (navigator.maxTouchPoints > 0 && innerWidth < 900);
 const XW_KB = () => XW_TOUCH() && LS.get('echo-xw-kb', true);
 function xwKbKey(k) {
@@ -1654,6 +1657,7 @@ function viewGames() {
     <div class="row" style="align-items:flex-end;gap:6px;height:70px">${wk.map(w => `<div class="stack grow" style="gap:3px;align-items:center"><i style="display:block;width:100%;height:${Math.max(3, Math.round(w.xp / wmax * 54))}px;border-radius:6px 6px 2px 2px;background:${w.k === today() ? 'var(--gold)' : 'var(--calm)'}"></i><span class="small muted" style="font-size:11px">${esc(new Date(w.k + 'T12:00').toLocaleDateString(locale(), { weekday: 'narrow' }))}</span></div>`).join('')}</div></section>
   ${game('🌍', t('gamesAtlas'), t('gamesAtlasSub'), 'Level ' + lv + ' · ' + t('gamesSeen', seen, 197), q.geo, 'geo-open', `<div class="bar"><i style="width:${Math.round(seen / 197 * 100)}%"></i></div>`)}
   ${XW.puzzles.length ? game('🧩', t('gamesXw'), t('gamesXwSub'), t('gamesXwCount', xwOpen, xwDone), q.xw, 'xw-hub') : ''}
+  ${(() => { const sk = (gm.sk || {}), n = (window.SCANDALS || []).length, rd = Object.keys(sk.read || {}).length, sf = Object.values(sk.c || {}).filter(x => x.b >= 3).length; return link('spiele.html#skandale', '🕵️', t('gamesSk'), t('gamesSkSub'), rd + '/' + n + ' · ✓ ' + sf, q.skandal); })()}
   ${link('spiele.html#wordle', '🔤', 'Wordle', t('gamesWordleSub'), '🔥 ' + ((gm.wordle || {}).streak || 0) + ' · ' + ((gm.wordle || {}).won || 0) + '/' + ((gm.wordle || {}).played || 0), q.wordle)}
   ${link('spiele.html#rechnen', '🧮', t('gamesCalc'), t('gamesCalcSub'), t('gamesBest', (gm.rechnen || {}).best || 0), q.rechnen)}
   ${link('spiele.html#quiz-ernmed', '🥗', t('gamesErnmed'), t('gamesQuizSub'), t('gamesSeenQ', Object.keys((gm.quiz || {}).ernmed || {}).length, (window.QUIZ_N || {}).ernmed || 40), q.quiz_ernmed)}
@@ -1877,8 +1881,32 @@ function esTalk() {
 }
 
 /* Socratic */
+/* Science scandals as Socratic cases (data: skandale-data.js). Picks the case asked for, else the one discussed longest ago. */
+function sciPick() {
+  const all = window.SCANDALS || []; if (!all.length) return null;
+  if (S.sciCase) { const c = all.find(x => x.id === S.sciCase); if (c) return c; }
+  const seen = LS.get('echo-sk-soc', {}), day = today(); let h = 0; for (const ch of day) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return [...all].sort((a, b) => (seen[a.id] || 0) - (seen[b.id] || 0) || ((a.id.length + h) % 7) - ((b.id.length + h) % 7))[0];
+}
+function sciSystem(d) {
+  const c = (window.SCANDALS || []).find(x => x.id === d.caseId) || {};
+  return `You are a Socratic tutor on research integrity and scientific method for a master's student in nutritional medicine who works in psychiatric research. Speak ${langName()}.
+The case (use ONLY these facts; if asked for more detail you do not have, say you are not sure):
+- Title: ${c.t} (${c.y}, ${c.f}, ${c.c})
+- Who: ${c.who}
+- What happened: ${c.what}
+- How it came out: ${c.found}
+- Consequences: ${c.out}
+- Lesson: ${c.lesson}
+Method:
+- Ask exactly ONE question per turn and build on the student's answer. Work through: what exactly went wrong; which red flags (statistical, methodological, ethical, financial) could have revealed it earlier; who carried responsibility (author, co-authors, reviewers, journal, institution); the consequences; which safeguards today (preregistration, data sharing, ethics committees, conflict-of-interest disclosure, replication, image forensics) would or would not have caught it; and finally one transfer question to the student's own field (nutrition science, psychiatry, psychedelic trials).
+- Do not reveal the lesson outright; let the student work it out, give a small hint after two unsuccessful tries.
+- If the core of an answer is correct, confirm it clearly ("Richtig." / "Genau."), then go deeper. Only call an answer incomplete if a key element is actually missing, and name which part.
+- Keep each turn under 90 words, always finish your last sentence and end with exactly one question.`;
+}
 function socSystem(d) {
   if (d.mode === 'es') return esSystem(d);
+  if (d.mode === 'sci') return sciSystem(d);
   if (d.mode === 'talk') return `You are the audience in the discussion after a student's talk. Speak ${langName()}.
 Talk topic: ${d.topic}
 ${d.material ? 'Material from the speaker:\n' + d.material.slice(0, 6000) + '\n' : ''}How to run it:
@@ -1915,6 +1943,11 @@ async function socStart() {
     const d = { id: uid(), day: today(), createdAt: Date.now(), mode: 'es', char: LS.get('echo-es-char', 'pulpo'), level: esLevel(), topic: '', messages: [{ role: 'user', content: 'Start the round. First line: "TOPIC: <the absurd scene in 2-5 Spanish words>", then a blank line, then open the scene in character: greet me, set the scene in one or two vivid sentences and ask me your first question.', hidden: true }], completed: false };
     S.dialogs.push(d); S.activeDialog = d.id; await DB.put('dialogs', d);
     await socAsk(d); return;
+  }
+  if (S.socMode === 'sci') {
+    const c = sciPick(); if (!c) return;
+    const d = { id: uid(), day: today(), createdAt: Date.now(), mode: 'sci', caseId: c.id, topic: c.t, messages: [{ role: 'user', content: 'Start the round. Present the case as a short, vivid vignette in 2-4 sentences (what happened, without the lesson), then ask your first question.', hidden: true }], completed: false };
+    S.sciCase = null; S.dialogs.push(d); S.activeDialog = d.id; await DB.put('dialogs', d); await socAsk(d); return;
   }
   const talk = S.socMode === 'talk', topic = LS.get('echo-soc-topic', '').trim();
   if (talk && !topic) { toast(t('socTalkNeed'), 'err'); return; }
@@ -1963,6 +1996,7 @@ async function socFinish() {
   if (!d.topic) d.topic = d.mode === 'es' ? esChar(d).name : t(d.mode === 'talk' ? 'socModeTalk' : 'socSub');
   if (d.mode === 'es') esStop();
   d.completed = true; d.completedAt = Date.now();
+  if (d.mode === 'sci' && d.caseId) { const seen = LS.get('echo-sk-soc', {}); seen[d.caseId] = Date.now(); LS.set('echo-sk-soc', seen); }
   await DB.put('dialogs', d); toast(t('socDone'), 'ok'); burst();
   S.socBusy = false; afterChange();
 }
@@ -1973,7 +2007,7 @@ function socSummary(d) {
     ${d.summary.next ? `<h4>${esc(t('nextTopic'))}</h4><p>${esc(d.summary.next)}</p>` : ''}</div>`;
 }
 function viewSocratic() {
-  const head = `<header class="top"><div class="stack" style="gap:4px"><span class="eyebrow">${esc(t(S.socMode === 'talk' ? 'socModeTalk' : S.socMode === 'es' ? 'socModeEs' : 'socSub'))}</span><h1>${esc(S.socMode === 'es' ? '¡Hablemos!' : t('socTitle'))}</h1></div>
+  const head = `<header class="top"><div class="stack" style="gap:4px"><span class="eyebrow">${esc(t(S.socMode === 'talk' ? 'socModeTalk' : S.socMode === 'es' ? 'socModeEs' : S.socMode === 'sci' ? 'socModeSci' : 'socSub'))}</span><h1>${esc(S.socMode === 'es' ? '¡Hablemos!' : t('socTitle'))}</h1></div>
     <button class="icon-btn" data-act="settings" aria-label="${esc(t('settings'))}">${icon('settings')}</button></header>`;
   const past = S.dialogs.filter(d => d.completed && d.id !== S.activeDialog && (S.socMode === 'es') === (d.mode === 'es')).sort((a, b) => b.createdAt - a.createdAt);
   const pastHTML = past.length ? `<h3 style="margin-top:6px">${esc(t('socPast'))}</h3>${past.slice(0, 30).map(d => `<details class="card flat"><summary class="row spread" style="cursor:pointer"><b>${d.mode === 'es' ? esChar(d).em + ' ' : ''}${esc(d.topic || '?')}</b><span class="small muted mono">${esc(fmtDate(d.day, { day: 'numeric', month: 'short' }))}${d.rating ? ' · ' + esc(t(d.rating)) : ''}</span></summary>${socSummary(d)}</details>`).join('')}` : '';
@@ -1982,7 +2016,7 @@ function viewSocratic() {
   if (!d) {
     const doneToday = S.dialogs.some(x => x.completed && x.day === today());
     const talk = S.socMode === 'talk';
-    const modes = `<div class="seg" style="justify-self:start">${[['nutri', 'socModeNutri'], ['talk', 'socModeTalk'], ['es', 'socModeEs']].map(([k, l]) => `<button data-act="soc-mode" data-v="${k}" aria-pressed="${S.socMode === k}">${esc(t(l))}</button>`).join('')}</div>`;
+    const modes = `<div class="seg" style="justify-self:start">${[['nutri', 'socModeNutri'], ['sci', 'socModeSci'], ['talk', 'socModeTalk'], ['es', 'socModeEs']].map(([k, l]) => `<button data-act="soc-mode" data-v="${k}" aria-pressed="${S.socMode === k}">${esc(t(l))}</button>`).join('')}</div>`;
     if (S.socMode === 'es') {
       const ck = LS.get('echo-es-char', 'pulpo'), lv = esLevel(), vm = esVoiceMode();
       return head + `<section class="card">${modes}
@@ -1996,8 +2030,8 @@ function viewSocratic() {
         ${S.socBusy ? `<div class="status"><span class="spin"></span>${esc(t('esThinking', ES_CHARS[ck].name))}</div>` : ''}</section>` + pastHTML;
     }
     return head + `<section class="card">
-      <div class="seg" style="justify-self:start">${[['nutri', 'socModeNutri'], ['talk', 'socModeTalk'], ['es', 'socModeEs']].map(([k, l]) => `<button data-act="soc-mode" data-v="${k}" aria-pressed="${S.socMode === k}">${esc(t(l))}</button>`).join('')}</div>
-      <p>${esc(t(talk ? 'socTalkIntro' : 'socIntro'))}</p>
+      <div class="seg" style="justify-self:start">${[['nutri', 'socModeNutri'], ['sci', 'socModeSci'], ['talk', 'socModeTalk'], ['es', 'socModeEs']].map(([k, l]) => `<button data-act="soc-mode" data-v="${k}" aria-pressed="${S.socMode === k}">${esc(t(l))}</button>`).join('')}</div>
+      <p>${esc(t(talk ? 'socTalkIntro' : S.socMode === 'sci' ? 'socSciIntro' : 'socIntro'))}</p>${S.socMode === 'sci' && sciPick() ? `<span class="chip" aria-pressed="true" style="justify-self:start;white-space:normal">📁 ${esc(t('socSciCase', sciPick().t))}</span>` : ''}
       ${talk ? `<div class="field"><label for="socTopic">${esc(t('socTalkTopic'))}</label><input class="input" id="socTopic" value="${esc(LS.get('echo-soc-topic', ''))}"></div>
         <div class="field"><label for="socMaterial">${esc(t('socTalkMaterial'))}</label><textarea class="input" id="socMaterial" rows="4">${esc(LS.get('echo-soc-material', ''))}</textarea></div>` : ''}
       <button class="btn primary" data-act="soc-start" style="justify-self:start" ${S.socBusy ? 'disabled' : ''}>${icon('socrates')} ${esc(talk ? t('socTalkStart') : doneToday ? t('socAnother') : t('socStart'))}</button>
@@ -2015,7 +2049,7 @@ function viewSocratic() {
       <button class="saybtn" data-act="es-say" data-v="${i}">${esSpeakingId === key ? '⏹ ' + esc(t('esStop')) : '🔊 ' + esc(t('esSay'))}</button></div></div>`;
   };
   // Mode switch also during a round; the open round stays and can be resumed.
-  const modeSeg = d.completed ? '' : `<div class="seg" style="justify-self:start">${[['nutri', 'socModeNutri'], ['talk', 'socModeTalk'], ['es', 'socModeEs']].map(([k, l]) => `<button data-act="soc-mode" data-v="${k}" aria-pressed="${(d.mode || 'nutri') === k}">${esc(t(l))}</button>`).join('')}</div>`;
+  const modeSeg = d.completed ? '' : `<div class="seg" style="justify-self:start">${[['nutri', 'socModeNutri'], ['sci', 'socModeSci'], ['talk', 'socModeTalk'], ['es', 'socModeEs']].map(([k, l]) => `<button data-act="soc-mode" data-v="${k}" aria-pressed="${(d.mode || 'nutri') === k}">${esc(t(l))}</button>`).join('')}</div>`;
   return head + modeSeg + `${d.topic || es ? `<div class="row spread"><span class="chip" aria-pressed="true" style="white-space:normal">${es ? ec.em + ' ' + esc(ec.name) + (d.topic ? ' · ' : '') : ''}${esc(d.topic || '')}</span><span class="small muted mono">${Math.max(1, Math.round((Date.now() - d.createdAt) / 60000))} min</span></div>` : ''}
   <div class="chat">${visible.map(bubble).join('')}
     ${S.socBusy ? `<div class="status"><span class="spin"></span>${esc(es ? t('esThinking', ec.name) : t('thinking'))}</div>` : ''}</div>
@@ -2577,6 +2611,7 @@ document.addEventListener('click', async e => {
       closeSheet(); afterChange(); break;
     }
     case 'note-later': LS.set('echo-note-later', today()); closeSheet(); break;
+    case 'quest-sk': location.href = 'spiele.html#skandale'; break;
     case 'quest-es': S.tab = 'socratic'; S.socMode = 'es'; LS.set('echo-soc-mode', 'es'); render(); scrollTo(0, 0); break;
     case 'xw-open': xwOpen(v); break;
     case 'xw-back': if (S.tab === 'xw' && S.xwId) { S.xwId = null; } else S.tab = 'games'; render(); scrollTo(0, 0); break;
@@ -2841,6 +2876,7 @@ if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListen
   if (open) S.activeDialog = open.id;
   { const tv = LS.get('echo-tabs', []); if (!tv.includes('today')) LS.set('echo-tabs', [...tv, 'today']); }
   if (location.hash === '#games') { S.tab = 'games'; try { history.replaceState(null, '', location.pathname); } catch { /* ignore */ } }
+  { const qp = new URLSearchParams(location.search); if (qp.get('soc') === 'sci') { S.tab = 'socratic'; S.socMode = 'sci'; LS.set('echo-soc-mode', 'sci'); S.sciCase = qp.get('case') || null; try { history.replaceState(null, '', location.pathname); } catch { /* ignore */ } } }
   await abInit();
   { const g = LS.get('echo-geo', null), gm = LS.get('echo-games', null); if ((g && g.updated > (AB.last || 0)) || (gm && gm.updated > (AB.last || 0))) abSchedule(); }
   if (!journalEmpty()) LS.set('echo-restore-hide', false);

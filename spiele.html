@@ -191,6 +191,8 @@ h3 { font-size: 17px; font-weight: 700; }
 <script src="geo/quiz.js"></script>
 <script src="rechnen-gen.js"></script>
 <script src="rechnen.js"></script>
+<script src="skandale-data.js"></script>
+<script src="skandale.js"></script>
 <script>
 'use strict';
 const LS = {
@@ -302,6 +304,7 @@ function viewHome() {
   const qb = b => { const m = G.quiz[b] || {}, items = QUIZ[b].items; return Object.keys(m).length + '/' + items.length + ' gesehen · ' + items.filter(it => (m[it[0]] || {}).b >= 3).length + ' sicher'; };
   return `${back}<h2>Mehr Spiele</h2>
   ${card('wordle-day', '', '🔤', 'Wordle', 'Wort des Tages + Übung', `Serie ${G.wordle.streak} · gewonnen ${G.wordle.won}/${G.wordle.played}`, d.wordle)}
+  ${card('sk-home', '', '🕵️', 'Skandal-Akten', 'Wissenschaftsskandale: lesen, Quiz, Detektiv, Zeitstrahl', skMeta(), d.skandal)}
   ${card('rechnen-open', '', '🧮', 'Kopfrechnen', 'Sprint, Überleben, Ketten, Schätzen, Tricks', rechnenMeta(), d.rechnen)}
   ${Object.entries(QUIZ).map(([k, b]) => card('quiz-go', k, b.icon, esc(b.title), b.items.length + ' Fragen mit Erklärung', qb(k), d['quiz_' + k])).join('')}`;
 }
@@ -312,6 +315,7 @@ function render() {
   if (view === 'wordle') app.innerHTML = viewWordle();
   else if (view === 'rechnen') { app.innerHTML = viewRechnen(); document.getElementById('rin')?.focus(); document.getElementById('rgo')?.focus(); }
   else if (view === 'quiz') app.innerHTML = viewQuiz();
+  else if (view === 'skandale') app.innerHTML = viewSk();
   else app.innerHTML = viewHome();
 }
 app.addEventListener('click', e => {
@@ -324,6 +328,7 @@ app.addEventListener('click', e => {
   else if (a === 'wordle-free') wordleStart('free');
   else if (a === 'rechnen-open') { R.result = null; view = 'rechnen'; render(); }
   else if (a.startsWith('r-')) rechnenAct(a, b.dataset.v);
+  else if (a.startsWith('sk-')) { if (a === 'sk-home') view = 'skandale'; skAct(a, b.dataset.v); }
   else if (a === 'quiz-go') quizStart(b.dataset.v);
   else if (a === 'quiz-ans') quizAnswer(+b.dataset.v);
   else if (a === 'quiz-next') quizNext();
@@ -332,11 +337,12 @@ app.addEventListener('input', e => { if (e.target.id === 'rin') rechnenInput(e.t
 document.addEventListener('keydown', e => {
   if (view === 'wordle' && !e.metaKey && !e.ctrlKey) { const k = e.key === 'Enter' ? 'ENTER' : e.key === 'Backspace' ? '⌫' : e.key.toUpperCase(); if (k === 'ENTER' || k === '⌫' || /^[A-Z]$/.test(k)) { e.preventDefault(); wordleKey(k); } }
   if (view === 'rechnen') rechnenKey(e);
+  if (view === 'skandale' && SK.mode === 'quiz' && SK.i < SK.seq.length) { const n = parseInt(e.key, 10); if (SK.ans == null && n >= 1 && n <= 4) skAnswer(n - 1); else if (SK.ans != null && e.key === 'Enter') { e.preventDefault(); skNext(); } }
   if (view === 'quiz') { const n = parseInt(e.key, 10); if (Q.ans == null && n >= 1 && n <= 4) quizAnswer(n - 1); else if (Q.ans != null && e.key === 'Enter') { e.preventDefault(); quizNext(); } }
 });
 function route() {
   view = (location.hash || '').replace('#', '') || 'home';
-  if (view.startsWith('quiz-') && QUIZ[view.slice(5)]) quizStart(view.slice(5)); else if (view === 'wordle') wordleStart('daily'); else { if (view !== 'rechnen') view = 'home'; if (!R.on) R.result = null; render(); }
+  if (view.startsWith('quiz-') && QUIZ[view.slice(5)]) quizStart(view.slice(5)); else if (view === 'wordle') wordleStart('daily'); else { if (view === 'skandale') SK.mode = null; else if (view !== 'rechnen') view = 'home'; if (!R.on) R.result = null; render(); }
 }
 window.addEventListener('hashchange', route);
 route();

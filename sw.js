@@ -1,6 +1,6 @@
 // Network first, cache as fallback: updates arrive immediately, the app still opens offline.
-const CACHE = 'echo-v31';
-const CORE = ['./', 'index.html', 'manifest.json', 'icon.svg', 'icon-192.png', 'icon-512.png', 'puzzles.js', 'laender.html', 'geo/facts.js', 'geo/capfacts.js', 'geo/caps.js', 'spiele.html', 'rechnen.js', 'rechnen-gen.js', 'geo/quiz.js', 'puzzles2.js', 'puzzles3.js', 'puzzles4.js', 'xwinfo.js', 'xwgen.js', 'notes.js', 'geo/d3.min.js', 'geo/topojson-client.min.js', 'geo/data.js', 'geo/flags.js'];
+const CACHE = 'echo-v32';
+const CORE = ['./', 'index.html', 'manifest.json', 'icon.svg', 'icon-192.png', 'icon-512.png', 'puzzles.js', 'laender.html', 'geo/facts.js', 'geo/capfacts.js', 'geo/caps.js', 'spiele.html', 'rechnen.js', 'rechnen-gen.js', 'geo/quiz.js', 'puzzles2.js', 'puzzles3.js', 'puzzles4.js', 'puzzles5.js', 'skandale-data.js', 'skandale.js', 'xwinfo.js', 'xwgen.js', 'notes.js', 'geo/d3.min.js', 'geo/topojson-client.min.js', 'geo/data.js', 'geo/flags.js'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
