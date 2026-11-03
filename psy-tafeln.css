@@ -1,1 +1,24 @@
-/* psyche image maps */
+/* Gehirn & Psyche auf Bildtafeln (Servier Medical Art, psy-tafeln.js): die Zustände aus psy.js auf den unsichtbaren Tippflächen sichtbar machen */
+
+.map .anc { fill: none; stroke: none; pointer-events: none; }
+
+/* in der Tiefe liegende Regionen (Gruppe .proj): zarter gestrichelter Umriss, damit man sie überhaupt findet */
+.map.imgmap .part.proj .hot { fill: rgba(255, 255, 255, .12); stroke: rgba(70, 54, 48, .7); stroke-width: 1.4; stroke-dasharray: 5 4; }
+
+/* Hervorhebung (Story, Netzwerke, Bahnen, Störungen): Bild zurücknehmen, Regionen in ihrer Farbe (--hlc aus psy.css) füllen */
+.map.imgmap image { transition: opacity .25s, filter .25s; }
+.map.imgmap.fade image { opacity: .5; filter: saturate(.5); }
+.map.imgmap .part.hl .hot { fill: color-mix(in srgb, var(--hlc, #E8A04B) 45%, transparent); stroke: var(--hlc, #E8A04B); stroke-width: 2.6; }
+.map.imgmap .part.hl .hotl { stroke: color-mix(in srgb, var(--hlc, #E8A04B) 65%, transparent); }
+.map.imgmap .part.proj.hl .hot { stroke-dasharray: 6 3; }
+/* psy.css blendet nicht hervorgehobene Teile auf .38 ab; auf dem Bild betrifft das nur die gestrichelten Umrisse */
+.map.imgmap.fade .part.proj:not(.hl) { opacity: .45; }
+
+/* Bahnen zwischen den Regionen: dunkle Kontur, damit sie auf der Zeichnung lesbar bleiben */
+.map.imgmap .ov-path { filter: drop-shadow(0 0 1.2px rgba(0, 0, 0, .7)) drop-shadow(0 0 4px currentColor); }
+
+/* Dark Mode: die Zeichnung bleibt hell, die Umrisse daher dunkel; nur beim Abblenden etwas stärker zurücknehmen */
+:root[data-theme="dark"] .map.imgmap.fade image { opacity: .55; filter: saturate(.45) brightness(.85); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .map.imgmap.fade image { opacity: .55; filter: saturate(.45) brightness(.85); }
+}
