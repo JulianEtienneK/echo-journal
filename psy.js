@@ -8,7 +8,8 @@
   const NT_COL = { Serotonin: '#5E9BD6', Dopamin: '#E8B63E', Noradrenalin: '#4FA3A0', Acetylcholin: '#7FB8C9', Glutamat: '#9DBF6E', GABA: '#8C6BB0', Orexin: '#E07A6C', Hypocretin: '#E07A6C', Histamin: '#C47F25' };
   const ntCol = n => { for (const k in NT_COL) if (String(n).includes(k)) return NT_COL[k]; return '#E8A04B'; };
   const HOW = { hyper: 'überaktiv', hypo: 'unteraktiv', atrophy: 'Volumen ↓', loss: 'Zellverlust', dysconnect: 'Konnektivität gestört', lesion: 'Läsion', focus: 'im Fokus' };
-  const TRACK = { model: 'Modelle der Depression', mech: 'Psilocybin: Mechanismen', study: 'Studien', safety: 'Sicherheit', reg: 'Zulassung & Regulierung', prak: 'Mein Praktikum' };
+  const TRACK = { model: 'Modelle der Depression', mech: 'Psilocybin: Mechanismen', study: 'Psilocybin: Wirksamkeit', safety: 'Sicherheit', method: 'Methodik', reg: 'Zulassung & Regulierung', prak: 'Mein Praktikum' };
+  const sid = r => typeof r === 'string' ? r : r.r, shw = (r, d) => typeof r === 'string' ? d : r.how;
   const VIEWS = [['psy_lat', 'Seite'], ['psy_med', 'Mitte'], ['psy_cor', 'Frontal'], ['psy_syn', 'Synapse']];
   for (const [id, r] of Object.entries(REG)) X.names[id] = { name: r.name };
 
@@ -117,9 +118,10 @@
     const st = STORY[PV.step] || {};
     return `${topbar('psy-open')}<div class="progress">${STORY.map((_, i) => `<i class="${i < PV.step ? 'ok' : i === PV.step ? 'cur' : ''}"></i>`).join('')}</div>
       <span class="eyebrow">Depression & Psilocybin · ${PV.step + 1}/${STORY.length}</span><h2>${esc(st.title || '')}</h2>
-      <div class="mapbox zoomin" id="storyMap">${MEDSVG.detail(viewOf(st.regions || []))}</div>
-      <div class="dcard"><span>${esc(st.text || '')}</span>${(st.regions || []).length ? regionChips((st.regions || []).map(r => ({ r, how: st.how || 'focus' }))) : ''}</div>
-      <div class="row" style="gap:8px">${PV.step ? '<button class="btn grow" data-act="psy-step" data-v="-1">Zurück</button>' : ''}${PV.step < STORY.length - 1 ? '<button class="btn primary grow" data-act="psy-step" data-v="1" id="qnext">Weiter</button>' : '<button class="btn primary grow" data-act="psy-round" id="qnext">Jetzt abfragen</button>'}</div>`;
+      ${(st.regions || []).length ? `<div class="mapbox zoomin" id="storyMap">${MEDSVG.detail(viewOf((st.regions || []).map(sid)))}</div>` : ''}
+      <div class="dcard"><span>${esc(st.text || '')}</span>${(st.regions || []).length ? regionChips((st.regions || []).map(r => ({ r: sid(r), how: shw(r, st.how || 'focus') }))) : ''}</div>
+      <div class="row" style="gap:8px">${PV.step ? '<button class="btn grow" data-act="psy-step" data-v="-1">Zurück</button>' : ''}${PV.step < STORY.length - 1 ? '<button class="btn primary grow" data-act="psy-step" data-v="1" id="qnext">Weiter</button>' : '<button class="btn primary grow" data-act="psy-round" id="qnext">Jetzt abfragen</button>'}</div>
+      ${PV.step === STORY.length - 1 ? '<button class="chip" data-act="psy-soc" data-v="story|all" style="justify-self:start">🦉 Sokratisch durchdenken</button>' : ''}`;
   };
   const libView = (tracks, title, sub) => {
     const cs = CARDS.filter(c => tracks.includes(c.track));
@@ -127,7 +129,7 @@
       ${tracks.map(t => { const xs = cs.filter(c => c.track === t); return xs.length ? `<div class="tierhead"><b>${TRACK[t]}</b><span class="small muted">${xs.length}</span></div>${xs.map(c => `<details class="dis"><summary><span>${esc(c.title)}</span>${solid('pc.' + c.id) ? '<span class="ok">✓</span>' : ''}</summary>${card('card', c)}</details>`).join('')}` : ''; }).join('')}
       <button class="btn primary big" data-act="${tracks.includes('prak') ? 'psy-round-prak' : 'psy-round-lib'}">Abfragen</button>`;
   };
-  X.views['psy-lib'] = () => libView(['model', 'mech', 'study', 'safety', 'reg'], 'Forschung', 'Modelle der Depression, wie Psilocybin wirkt, die wichtigsten Studien, Sicherheit und Zulassung. Mit Quellen.');
+  X.views['psy-lib'] = () => libView(['model', 'mech', 'study', 'safety', 'method', 'reg'], 'Forschung', 'Modelle der Depression, wie Psilocybin wirkt, was die Studien an Effekten zeigen, Methodik und Zulassung. Mit Quellen.');
   X.views['psy-prak'] = () => libView(['prak'], 'Mein Praktikum', 'Die Themen deiner Zeit in der AG Gründer am ZI Mannheim, jeweils mit Sokrates-Einstieg.');
 
   /* overlays on the brain maps */
@@ -153,8 +155,8 @@
     }
     if (V.view === 'psy-story' && sm) {
       const svg = sm.querySelector('svg'), st = STORY[PV.step] || {}; svg.classList.add('fade', 'explore');
-      for (const id of st.regions || []) svg.querySelectorAll(`[data-s="${id}"]`).forEach(e => e.classList.add('hl', 'hl-' + (st.how || 'focus')));
-      labelMap(svg, st.regions || []);
+      for (const r of st.regions || []) svg.querySelectorAll(`[data-s="${sid(r)}"]`).forEach(e => e.classList.add('hl', 'hl-' + shw(r, st.how || 'focus')));
+      labelMap(svg, (st.regions || []).map(sid));
     }
   });
 
@@ -165,6 +167,7 @@
     if (kind === 'drug') { const d = DRUGS.find(x => x.id === id); if (d) m = { title: d.name, organ: 'Pharmakologie', text: ['Klasse: ' + d.cls, 'Angriffspunkt: ' + d.target, 'Mechanismus: ' + d.mech, 'Einsatz: ' + d.use, 'Nebenwirkungen: ' + d.se, d.nut ? 'Ernährung: ' + d.nut : ''].filter(Boolean).join('\n') }; }
     if (kind === 'card') { const c = CARDS.find(x => x.id === id); if (c) m = { title: c.title, organ: TRACK[c.track], text: [c.text, ...(c.facts || []), c.src ? 'Quelle: ' + c.src : ''].filter(Boolean).join('\n') }; }
     if (kind === 'story') m = { title: 'Depression und Psilocybin im Gehirn', organ: 'Gehirn & Psyche', text: STORY.map(s => s.title + ': ' + s.text).join('\n') };
+    if (kind === 'story' && !m) return;
     if (!m) return;
     LS.set('echo-med-soc', Object.assign(m, { kind: 'psy', id, at: Date.now() })); location.href = './?soc=med';
   }

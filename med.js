@@ -695,7 +695,8 @@ function boot() {
   const h = (location.hash || '').slice(1);
   if (h.startsWith('organ-') && ORG[h.slice(6)]) { V.organ = h.slice(6); V.tab = MEDSVG.MAPS[V.organ] ? 'map' : 'info'; V.view = 'organ'; }
   else if (h.startsWith('path-') && PATH_ID[h.slice(5)]) { V.path = h.slice(5); V.view = 'path'; }
-  else if (['atlas', 'paths', 'index', 'soc-pick'].includes(h) || EXT.views[h.split('-')[0]]) V.view = h.split('-')[0];
+  else if (['atlas', 'paths', 'index', 'soc-pick'].includes(h) || EXT.views[h]) V.view = h;
+  else if (EXT.views[h.split('-')[0]]) V.view = h.split('-')[0];
   else if (h === 'round') { R = buildRound({}); if (R) { R.seq[0].q = makeQ(R.seq[0].it); V.view = 'round'; } }
   else if (h === 'det') { detStart(); return; }
   else V.view = 'home';
