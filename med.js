@@ -554,6 +554,7 @@ function decorateMaps() {
   const sm = document.querySelector('.mapbox.mini svg');
   if (sm && V.organ) sm.querySelectorAll(`[data-o="${V.organ}"]`).forEach(e => e.classList.add('on'));
 }
+const LBLS = svg => parseFloat(svg.style.getPropertyValue('--ls')) || 1; // label scale of image maps (viewBox width / 400)
 function labelMap(svg, only) {
   if (!only && EXT.labelOnly) only = EXT.labelOnly(svg);
   const strs = Object.assign({}, EXT.names, Object.fromEntries((STR[V.organ || (R && R.seq[R.i] ? R.seq[R.i].it.organ : '')] || []).map(s => [s.id, s])));
@@ -573,10 +574,13 @@ function labelMap(svg, only) {
     const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     t.setAttribute('x', x.toFixed(1)); t.setAttribute('y', (y + 4).toFixed(1));
     t.setAttribute('class', 'lbl'); t.setAttribute('text-anchor', 'middle'); t.textContent = short(strs[id].name).replace(/^(Rechter|Linker|Rechte|Linke) /, (m) => m[0] + '. ');
-    svg.appendChild(t); labs.push({ t, x, y: y + 4 });
+    svg.appendChild(t);
+    // keep the label inside the picture horizontally (names near the edge would be cut off)
+    try { const b = t.getBBox(), [vx, , vw] = (svg.dataset.vb0 || svg.getAttribute('viewBox')).split(' ').map(Number), m = 2 * LBLS(svg); const dx = b.x < vx + m ? vx + m - b.x : b.x + b.width > vx + vw - m ? vx + vw - m - b.x - b.width : 0; if (dx) t.setAttribute('x', (x + dx).toFixed(1)); } catch { }
+    labs.push({ t, x, y: y + 4 });
   });
   // push overlapping labels apart, then draw a short leader line to the ones that moved
-  const vb = svg.viewBox.baseVal, H = vb.y + vb.height;
+  const vb = svg.viewBox.baseVal, H = vb.y + vb.height, ls = LBLS(svg);
   const ov = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
   for (let pass = 0; pass < 8; pass++) {
     let moved = false; const bx = labs.map(l => l.t.getBBox());
@@ -588,7 +592,7 @@ function labelMap(svg, only) {
     }
     if (!moved) break;
   }
-  for (const l of labs) { const ny = +l.t.getAttribute('y'); if (Math.abs(ny - l.y) > 7) { const ln = document.createElementNS('http://www.w3.org/2000/svg', 'path'); ln.setAttribute('d', `M${l.x.toFixed(1)} ${(l.y - 4).toFixed(1)}L${l.x.toFixed(1)} ${(ny + (ny > l.y ? -10 : 2)).toFixed(1)}`); ln.setAttribute('class', 'lead'); svg.insertBefore(ln, l.t); svg.appendChild(l.t); } }
+  for (const l of labs) { const ny = +l.t.getAttribute('y'); if (Math.abs(ny - l.y) > 7 * ls) { const ln = document.createElementNS('http://www.w3.org/2000/svg', 'path'); ln.setAttribute('d', `M${l.x.toFixed(1)} ${(l.y - 4).toFixed(1)}L${l.x.toFixed(1)} ${(ny + (ny > l.y ? -10 * ls : 2 * ls)).toFixed(1)}`); ln.setAttribute('class', 'lead'); svg.insertBefore(ln, l.t); svg.appendChild(l.t); } }
 }
 const ZM = { k: 1, x: 0, y: 0 };
 function applyZoom(svg) {
