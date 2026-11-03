@@ -17,6 +17,7 @@
 .map .hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; }
 .map text { font-family: var(--f-body); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
 .map .lbl { font-size: 10px; font-weight: 700; fill: var(--ink); }
+.map .lbl.gl { font-size: calc(10px / var(--zk, 1)); stroke-width: calc(3px / var(--zk, 1)); } .map .lead.gl { stroke-width: calc(1px / var(--zk, 1)); }
 .map .lbl-s { font-size: 11px; font-weight: 700; fill: var(--muted); }
 .map .lbl-z { font-size: 9px; font-weight: 700; fill: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
 .map .pinl { fill: var(--pin); font-size: 12px; font-weight: 800; }
@@ -276,8 +277,9 @@
 .map .part.hl .hot { fill: color-mix(in srgb, var(--hlc, #E8A04B) 30%, transparent); stroke: var(--hlc, #E8A04B); stroke-width: 2.5; }
 .map .part.hl .hotl { stroke: color-mix(in srgb, var(--hlc, #E8A04B) 50%, transparent); }
 .map.imgmap .lbl { font-size: calc(10px * var(--ls, 1)); stroke-width: calc(3px * var(--ls, 1)); }
+.map.imgmap .lbl.gl { font-size: calc(10px * var(--ls, 1) / var(--zk, 1)); stroke-width: calc(3px * var(--ls, 1) / var(--zk, 1)); }
 .map.imgmap .lbl-z { font-size: calc(9px * var(--ls, 1)); stroke-width: calc(3px * var(--ls, 1)); }
-.map.imgmap .lead { stroke-width: calc(1px * var(--ls, 1)); }
+.map.imgmap .lead { stroke-width: calc(1px * var(--ls, 1)); } .map.imgmap .lead.gl { stroke-width: calc(1px * var(--ls, 1) / var(--zk, 1)); }
 .map.imgmap .ov-path { stroke-width: calc(3.5px * var(--ls, 1)); }
 .map .credit { font-size: calc(7px * var(--ls, 1)); fill: var(--muted); opacity: .75; stroke: none; pointer-events: none; }
 .map a .credit { pointer-events: auto; cursor: pointer; }

@@ -129,6 +129,13 @@ function disDistractors(d, n) {
 }
 const mcOpts = (right, wrong) => shuffle([{ label: right, ok: true }, ...wrong.map(w => ({ label: w, ok: false }))]);
 
+// a structure that sits on several picture plates (e.g. right atrium in section and from the front) is asked on a random one of them;
+// plates (image maps) win over the older schematic drawings, and a plate above the structure's level is not used
+function pickMap(organ, s) {
+  const has = k => MEDSVG.detail(k).includes(`data-s="${s.id}"`), all = (MEDSVG.MAPS[organ] || []).filter(([k, , l]) => l <= Math.max(s.l, 3) && has(k)).map(([k]) => k);
+  const img = all.filter(k => MEDSVG.detail(k).includes('imgmap')), pool = img.length ? img : all;
+  return pool.length ? pool[Math.floor(Math.random() * pool.length)] : MEDSVG.mapFor(organ, s.id);
+}
 function makeQ(it) {
   const b = (M.c[it.id] || {}).b || 0;
   if (EXT.q[it.kind]) return EXT.q[it.kind](it, b);
@@ -148,10 +155,10 @@ function makeQ(it) {
     return { it, type: 'mc', eyebrow: it.ref.label, prompt: 'Zu welchem Organ passt das?', sub: mask(it.ref.text, o.name), opts: mcOpts(short(o.name), w) };
   }
   if (it.kind === 'str') {
-    const s = it.ref, mk = MEDSVG.mapFor(it.organ, s.id), sibs = (STR[it.organ] || []).filter(x => x.id !== s.id);
+    const s = it.ref, mk = pickMap(it.organ, s), sibs = (STR[it.organ] || []).filter(x => x.id !== s.id);
     if (mk && b % 3 === 0) return { it, type: 'tap', eyebrow: short(ORG[it.organ].name) + ' · Stufe ' + s.l, prompt: 'Tippe: ' + short(s.name), map: { kind: 'detail', key: mk, target: s.id } };
     if (mk && b % 3 === 1) {
-      const onMap = sibs.filter(x => MEDSVG.mapFor(it.organ, x.id) === mk);
+      const onMap = sibs.filter(x => MEDSVG.detail(mk).includes(`data-s="${x.id}"`));
       return { it, type: 'mc', eyebrow: short(ORG[it.organ].name) + ' · Stufe ' + s.l, prompt: 'Was ist markiert?', map: { kind: 'detail', key: mk, mark: s.id }, opts: mcOpts(short(s.name), others(onMap.length >= 3 ? onMap : sibs, s, 3, x => x.id).map(x => short(x.name))) };
     }
     if (b % 2 === 0 || !s.q) return { it, type: 'mc', eyebrow: short(ORG[it.organ].name) + ' · Stufe ' + s.l, prompt: 'Was trifft auf „' + short(s.name) + '“ zu?', opts: mcOpts(s.fact, others(sibs, s, 3, x => x.id).map(x => x.fact)), long: true };
@@ -532,6 +539,7 @@ function decorateMaps() {
   if (dm) {
     const svg = dm.querySelector('svg'); svg.classList.add('explore');
     if (V.sel) svg.querySelectorAll(`[data-s="${V.sel}"]`).forEach(e => e.classList.add('on'));
+    svg.style.setProperty('--zk', ZM.k);
     if (V.labels) { svg.classList.add('labeled'); labelMap(svg); }
     applyZoom(svg);
   }
@@ -554,7 +562,7 @@ function decorateMaps() {
   const sm = document.querySelector('.mapbox.mini svg');
   if (sm && V.organ) sm.querySelectorAll(`[data-o="${V.organ}"]`).forEach(e => e.classList.add('on'));
 }
-const LBLS = svg => parseFloat(svg.style.getPropertyValue('--ls')) || 1; // label scale of image maps (viewBox width / 400)
+const LBLS = svg => (parseFloat(svg.style.getPropertyValue('--ls')) || 1) / (parseFloat(svg.style.getPropertyValue('--zk')) || 1); // label scale: image maps (viewBox width / 400), shrunk while zoomed so labels keep their screen size
 function labelMap(svg, only) {
   if (!only && EXT.labelOnly) only = EXT.labelOnly(svg);
   const strs = Object.assign({}, EXT.names, Object.fromEntries((STR[V.organ || (R && R.seq[R.i] ? R.seq[R.i].it.organ : '')] || []).map(s => [s.id, s])));
@@ -573,7 +581,7 @@ function labelMap(svg, only) {
     } catch { /* keep the centre */ }
     const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     t.setAttribute('x', x.toFixed(1)); t.setAttribute('y', (y + 4).toFixed(1));
-    t.setAttribute('class', 'lbl'); t.setAttribute('text-anchor', 'middle'); t.textContent = short(strs[id].name).replace(/^(Rechter|Linker|Rechte|Linke) /, (m) => m[0] + '. ');
+    t.setAttribute('class', 'lbl gl'); t.setAttribute('text-anchor', 'middle'); t.textContent = short(strs[id].name).replace(/^(Rechter|Linker|Rechte|Linke) /, (m) => m[0] + '. ');
     svg.appendChild(t);
     // keep the label inside the picture horizontally (names near the edge would be cut off)
     try { const b = t.getBBox(), [vx, , vw] = (svg.dataset.vb0 || svg.getAttribute('viewBox')).split(' ').map(Number), m = 2 * LBLS(svg); const dx = b.x < vx + m ? vx + m - b.x : b.x + b.width > vx + vw - m ? vx + vw - m - b.x - b.width : 0; if (dx) t.setAttribute('x', (x + dx).toFixed(1)); } catch { }
@@ -592,7 +600,7 @@ function labelMap(svg, only) {
     }
     if (!moved) break;
   }
-  for (const l of labs) { const ny = +l.t.getAttribute('y'); if (Math.abs(ny - l.y) > 7 * ls) { const ln = document.createElementNS('http://www.w3.org/2000/svg', 'path'); ln.setAttribute('d', `M${l.x.toFixed(1)} ${(l.y - 4).toFixed(1)}L${l.x.toFixed(1)} ${(ny + (ny > l.y ? -10 * ls : 2 * ls)).toFixed(1)}`); ln.setAttribute('class', 'lead'); svg.insertBefore(ln, l.t); svg.appendChild(l.t); } }
+  for (const l of labs) { const ny = +l.t.getAttribute('y'); if (Math.abs(ny - l.y) > 7 * ls) { const ln = document.createElementNS('http://www.w3.org/2000/svg', 'path'); ln.setAttribute('d', `M${l.x.toFixed(1)} ${(l.y - 4).toFixed(1)}L${l.x.toFixed(1)} ${(ny + (ny > l.y ? -10 * ls : 2 * ls)).toFixed(1)}`); ln.setAttribute('class', 'lead gl'); svg.insertBefore(ln, l.t); svg.appendChild(l.t); } }
 }
 const ZM = { k: 1, x: 0, y: 0 };
 function applyZoom(svg) {
@@ -607,6 +615,9 @@ function zoomBy(dir) {
   const cx = ZM.k === 1 ? x + w / 2 : ZM.x + w / ZM.k / 2, cy = ZM.k === 1 ? y + h / 2 : ZM.y + h / ZM.k / 2;
   ZM.k = dir === 0 ? 1 : Math.max(1, Math.min(4, ZM.k * (dir > 0 ? 1.6 : 1 / 1.6)));
   ZM.x = cx - w / ZM.k / 2; ZM.y = cy - h / ZM.k / 2; applyZoom(svg);
+  // labels keep their size on screen, so zooming in spreads crowded names apart: place them anew
+  svg.style.setProperty('--zk', ZM.k);
+  if (svg.classList.contains('labeled')) { svg.querySelectorAll('.gl').forEach(e => e.remove()); labelMap(svg); }
 }
 let drag = null;
 app.addEventListener('pointerdown', e => { const svg = e.target.closest('#detailMap svg'); if (!svg || ZM.k === 1) return; drag = { x: e.clientX, y: e.clientY, zx: ZM.x, zy: ZM.y, svg, moved: false }; });
