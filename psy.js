@@ -78,7 +78,7 @@
     if (kind === 'dis') {
       const md = x.dis && DIS_ID[x.dis];
       return `<div class="dcard"><h3>${esc(x.name)}</h3>${frow('Beteiligte Regionen', regionChips(x.regions || []))}${(x.regions || []).map(r => r.note ? `<span class="small">• <b>${esc(short(rname(r.r)))}</b>: ${esc(r.note)}</span>` : '').join('')}
-        ${frow('Botenstoffe', esc((x.nt || []).join(', ')))}${(x.models || []).length ? frow('Modelle', x.models.map(m => '• ' + esc(m)).join('<br>')) : ''}${frow('🥗 Ernährung & Stoffwechsel', esc(x.nut), 'nut')}
+        ${frow('Botenstoffe', esc((x.nt || []).join(', ')))}${(x.models || []).length ? frow('Modelle', x.models.map(m => '• ' + esc(m)).join('<br>')) : ''}${frow('🥗 Ernährung & Stoffwechsel', esc(x.nut), 'nut')}${x.src ? `<span class="small muted">Quellen: ${esc(x.src)}</span>` : ''}
         <div class="row" style="gap:8px;flex-wrap:wrap">${md ? `<button class="chip" data-act="dis" data-v="${md.id}">📋 Krankheitskarte</button>` : ''}<button class="chip" data-act="psy-soc" data-v="dis|${x.id}">🦉 Sokratisch vertiefen</button></div></div>`;
     }
     if (kind === 'drug') return `<div class="dcard"><div class="row spread" style="align-items:flex-start"><h3>${esc(x.name)}</h3><span class="tier t3" style="width:auto;padding:0 8px;border-radius:99px">${esc(x.cls || '')}</span></div>${frow('Angriffspunkt', esc(x.target))}${frow('Wirkort', regionChips(x.regions || []))}${frow('Mechanismus', esc(x.mech))}${frow('Einsatz', esc(x.use))}${frow('Nebenwirkungen & Risiken', esc(x.se))}${frow('🥗 Ernährung & Wechselwirkungen', esc(x.nut), 'nut')}
