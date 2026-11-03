@@ -114,7 +114,7 @@
       <li>Beiräte und Fristverlängerungen der FDA.</li>
       <li>Preise, ICER-Berichte, G-BA-Beschlüsse.</li>
       <li>Psychiatrie gesondert, Depot-Bezug getrennt markieren.</li></ol>
-      <p class="small muted">Läuft automatisch am ersten Werktag jedes Monats und aktualisiert diese Seite und das Dashboard.</p></div>
+      <p class="small muted">Läuft automatisch am 1. jedes Monats und aktualisiert diese Seite und das Dashboard.</p></div>
     <div class="card"><h3>Änderungsprotokoll</h3><table class="t"><tbody>${[...DATA.aenderungen].sort((a, b) => b.datum.localeCompare(a.datum) || b.nr - a.nr).map((a) => `<tr><td class="mono tiny" style="white-space:nowrap">${datum(a.datum)}</td><td><b>${esc(a.kandidat)}</b> · <span class="muted">${esc(a.art)}</span><br>${esc(a.notiz)}</td></tr>`).join('')}</tbody></table></div>`;
 
   const VIEWS = [['zeitplan', 'Zeitplan', viewZeitplan, true], ['rangliste', 'Rangliste', viewRangliste, true], ['psy', 'Psychiatrie', viewPsy, false], ['depot', 'Depot', viewDepot, false], ['methodik', 'Methodik', viewMethodik, false]];
