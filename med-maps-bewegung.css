@@ -1,0 +1,167 @@
+/* Medizin-Atlas maps: Bewegungsapparat (knochen, gelenke, muskeln, nerven, rueckenmark) */
+.map .bw-deco { pointer-events: none; }
+/* Knochen */
+.bw-comp { fill: #E6D8B8; stroke: #A8977A; stroke-width: 1.4; }
+.bw-spong { fill: #E2B6A0; stroke: none; }
+.bw-trab { fill: none; stroke: #F4EBD8; stroke-width: 2.2; stroke-linecap: round; }
+.bw-mark { fill: #EED79A; stroke: #C9AE62; stroke-width: 1; }
+.bw-endost { fill: none; stroke: #C9AE62; stroke-width: 1; stroke-dasharray: 3 3; }
+.bw-meta { fill: #E8C2AA; stroke: none; }
+.bw-epi { fill: #DDAE98; stroke: none; }
+.bw-fuge { fill: none; stroke: #8FB8CC; stroke-width: 5; stroke-linecap: round; }
+.bw-cart { fill: none; stroke: #BFD9E2; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+.bw-periost { fill: none; stroke: #C9787A; stroke-width: 3; stroke-linecap: round; }
+.bw-periost-e { fill: none; stroke: #C9787A; stroke-width: 2; }
+.bw-brace { fill: none; stroke: #8C7B5E; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.bw-foramen { fill: none; stroke: #5E4E36; stroke-width: 4; stroke-linecap: round; }
+.bw-foramen-o { fill: #5E4E36; }
+.bw-ost-bg { fill: #EDE3CC; }
+.bw-lam { fill: none; stroke: #C8B48E; stroke-width: 1.2; }
+.bw-cement { fill: none; stroke: #9C8762; stroke-width: 2.2; }
+.bw-hav { fill: #F6E4DA; stroke: #9C8762; stroke-width: 1.4; }
+.bw-art { fill: #D35A4A; } .bw-ven { fill: #5C7FB8; }
+.bw-volk { stroke: #F6E4DA; stroke-width: 7; stroke-linecap: round; } .bw-volk-v { stroke: #D35A4A; stroke-width: 1.6; }
+.bw-ocyte { fill: #8C6E4E; stroke: #5E4A33; stroke-width: .6; }
+.bw-canal { stroke: #8C6E4E; stroke-width: .8; }
+.bw-mbg { fill: #F6E6D6; }
+.bw-matrix { fill: #E2D2AE; stroke: #A8977A; stroke-width: 1; }
+.bw-osteoid { fill: #F4E9D2; stroke: #C9B48A; stroke-width: .6; }
+.bw-coll { fill: none; stroke: #C79A5E; stroke-width: 1.1; }
+.bw-oblast { fill: #9FB7D6; stroke: #6A86AE; stroke-width: 1; } .bw-oblast-n { fill: #4B5F86; }
+.bw-ocl { fill: #D9A3B6; stroke: #A86A80; stroke-width: 1.2; } .bw-ocl-n { fill: #6E3A50; }
+.bw-ruffle { fill: none; stroke: #A86A80; stroke-width: 2; stroke-dasharray: 2 2; }
+:root[data-theme="dark"] .bw-mbg { fill: #3A322B; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bw-mbg { fill: #3A322B; } }
+/* Gelenke */
+.bw-bone { fill: #E9E0CB; stroke: #B3A587; stroke-width: 1.2; }
+.bw-cav { fill: #CFE5EE; stroke: none; }
+.bw-cart-o { fill: none; stroke: #8FB3C2; stroke-linecap: round; }
+.bw-capf { fill: none; stroke: #B59C78; stroke-width: 5; stroke-linecap: round; }
+.bw-syn { fill: none; stroke: #D98A9A; stroke-width: 2.2; stroke-linecap: round; }
+.bw-menis { fill: #D8D0BC; stroke: #968B70; stroke-width: 1.2; }
+.bw-lig { fill: none; stroke: #EDE3C9; stroke-linecap: round; } .bw-lig-o { fill: none; stroke: #A3906A; stroke-linecap: round; }
+.bw-arch { fill: none; stroke: #CDBF9E; stroke-width: 6; stroke-linecap: round; }
+.bw-jl-s { fill: none; stroke: #6FA8BE; stroke-width: 2.5; stroke-linecap: round; }
+.bw-jline { fill: none; stroke: #5E9DB5; stroke-width: 4; stroke-linecap: round; }
+.bw-foram { fill: #A8977A; }
+.bw-disc { fill: #C9D7DB; stroke: #889EA6; stroke-width: 1.2; }
+.bw-anul { stroke: #9FB2B8; stroke-width: 1; }
+.bw-nucl { fill: #EDF3F4; stroke: #889EA6; stroke-width: 1; stroke-dasharray: 3 2; }
+.bw-fcap { fill: #D7E8EE; stroke: #7FA6B5; stroke-width: 1; }
+.bw-nerve-x { fill: #E5BE3D; opacity: .75; }
+.bw-hyal { fill: #DCE9EE; stroke: #9FB8C4; stroke-width: 1; }
+.bw-fibro { fill: #E2DCCB; stroke: #968B70; stroke-width: 1.2; }
+.bw-fib-l { fill: none; stroke: #A39678; stroke-width: 1.1; stroke-linecap: round; }
+.bw-c2f { fill: none; stroke: #8FAFBF; stroke-width: 1.3; }
+.bw-calc { fill: #CFC8B4; }
+.bw-tide { fill: none; stroke: #8C7B5E; stroke-width: 1.6; stroke-dasharray: 4 2; }
+.bw-lac { fill: #F2F7F8; stroke: #9FB8C4; stroke-width: .8; }
+.bw-chon { fill: #A9789E; }
+.bw-hya { fill: none; stroke: #7FA9BA; stroke-width: 1.1; }
+.bw-subint { fill: #F3DCD2; }
+.bw-fibr { fill: #E6D4B4; }
+.bw-sya { fill: #C7B28F; stroke: #8C7651; stroke-width: 1; }
+.bw-syb { fill: #E6B49E; stroke: #B0785F; stroke-width: 1; }
+.bw-synuc { fill: #5E4A33; }
+.bw-liq { fill: #D7EAF2; stroke: #A9C6D2; stroke-width: 1; }
+.bw-llig { fill: none; stroke: #CDB98A; stroke-width: 6; stroke-linecap: round; }
+.bw-llig-p { fill: none; stroke: #CDB98A; stroke-width: 4; stroke-linecap: round; }
+.bw-flava { fill: #E8C547; stroke: #B8951F; stroke-width: 1; }
+:root[data-theme="dark"] .bw-bone, :root[data-theme="dark"] .bw-comp { fill: #D9CFB8; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bw-bone, :root:not([data-theme="light"]) .bw-comp { fill: #D9CFB8; } }
+/* Muskeln */
+.bw-bonet { fill: none; stroke: #E9E0CB; stroke-linecap: round; } .bw-bonet-o { fill: none; stroke: #B3A587; stroke-linecap: round; }
+.bw-musc { fill: #C2594F; stroke: #8E3A33; stroke-width: 1.2; }
+.bw-musc2 { fill: #AE4C43; stroke: #8E3A33; stroke-width: 1.2; }
+.bw-fascia { fill: none; stroke: #8FB0C2; stroke-width: 2; stroke-dasharray: 6 3; stroke-linejoin: round; }
+.bw-ten { fill: none; stroke: #EFE7D3; stroke-linecap: round; stroke-linejoin: round; } .bw-ten-o { fill: none; stroke: #A3906A; stroke-linecap: round; stroke-linejoin: round; }
+.bw-rib { fill: none; stroke: #CDBF9E; stroke-width: 5; stroke-linecap: round; }
+.bw-dia { fill: #B8544A; stroke: #8A3A32; stroke-width: 1.4; }
+.bw-cten { fill: #EDE4CF; stroke: #B3A587; stroke-width: 1; }
+.bw-diaf { fill: none; stroke: #8A3A32; stroke-width: 1; stroke-linecap: round; }
+.bw-ivc { fill: #5C7FB8; stroke: #3A5888; stroke-width: 1; } .bw-oes { fill: #E6A783; stroke: #B57A55; stroke-width: 1; } .bw-aor { fill: #D35A4A; stroke: #9E3B30; stroke-width: 1; }
+.bw-skf { fill: #D06A5E; stroke: #9E3B30; stroke-width: .8; }
+.bw-stri { stroke: #9E3B30; stroke-width: 15; stroke-dasharray: 1.4 2.6; stroke-opacity: .5; }
+.bw-skn { fill: #5A2A22; }
+.bw-smc { fill: #DDA494; stroke: #A86A5C; stroke-width: .9; } .bw-smn { fill: #6E3A30; }
+/* Muskeln 4 */
+.bw-fbg { fill: #F3D9D2; stroke: #C77D74; stroke-width: 1.2; }
+.bw-iband { fill: #F0BDB4; } .bw-aband { fill: #B8473C; }
+.bw-zl { stroke: #5C3A52; stroke-width: 1.4; }
+.bw-tt { fill: none; stroke: #2F6E7A; stroke-width: 2.4; } .bw-tt-m { fill: #2F6E7A; }
+.bw-sr { fill: #A9CCE0; stroke: #6A97AE; stroke-width: 1; }
+.bw-sbg { fill: #F8ECE8; }
+.bw-brk { fill: none; stroke: #8C6A5E; stroke-width: 2; stroke-linejoin: round; }
+.bw-z { fill: none; stroke: #5C3A52; stroke-width: 3.4; stroke-linejoin: round; }
+.bw-mline { fill: none; stroke: #8C6A5E; stroke-width: 1.5; stroke-dasharray: 3 3; }
+.bw-act { fill: none; stroke: #5E9A6A; stroke-width: 2.6; stroke-linecap: round; }
+.bw-myo { fill: none; stroke: #B8473C; stroke-width: 6; stroke-linecap: round; }
+.bw-myoh { stroke: #B8473C; stroke-width: 2.2; stroke-linecap: round; }
+.bw-tpm { stroke: #3F6E4A; stroke-width: 1; }
+.bw-tro { fill: #E5B23A; stroke: #A9801E; stroke-width: .8; }
+.bw-extra { fill: #E7A59B; opacity: .55; }
+.bw-spin { fill: #F3DFD6; stroke: #B98A7A; stroke-width: 1.4; }
+.bw-intra { fill: none; stroke: #C9675C; stroke-width: 3; stroke-linecap: round; }
+.bw-inuc { fill: #6E3A30; }
+.bw-ia { fill: none; stroke: #D9A91E; stroke-width: 2.2; stroke-linejoin: round; }
+.bw-ia-ax { fill: none; stroke: #D9A91E; stroke-width: 3; stroke-linecap: round; }
+.bw-gam { fill: none; stroke: #C77D74; stroke-width: 1.8; stroke-linecap: round; stroke-dasharray: 4 2; }
+.bw-t1 { fill: #A8423A; stroke: #6E2A24; stroke-width: 1; } .bw-mito { fill: #E9A99B; }
+.bw-t2 { fill: #EDC9BC; stroke: #B9897A; stroke-width: 1; }
+:root[data-theme="dark"] .bw-sbg { fill: #3A2E2C; } :root[data-theme="dark"] .bw-fbg { fill: #4A3330; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bw-sbg { fill: #3A2E2C; } :root:not([data-theme="light"]) .bw-fbg { fill: #4A3330; } }
+/* Nerven */
+.bw-n { fill: none; stroke: #D9AC1E; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.bw-n-d { stroke-dasharray: 5 3; }
+.bw-n-s { fill: none; stroke: #D9AC1E; stroke-width: 1.6; stroke-linecap: round; }
+.bw-n-thick { fill: none; stroke: #D9AC1E; stroke-width: 4.4; stroke-linecap: round; stroke-dasharray: 7 3; }
+.bw-vag { fill: none; stroke: #7FA34A; stroke-width: 2.6; stroke-linecap: round; } .bw-vag-s { fill: none; stroke: #7FA34A; stroke-width: 1.5; stroke-linecap: round; }
+.bw-gs { fill: none; stroke: #D98A3A; stroke-width: 1.6; } .bw-gs-g { fill: #E9A14E; stroke: #A86A1E; stroke-width: .8; }
+.bw-epin { fill: #F1DFAE; stroke: #C2A050; stroke-width: 1.5; }
+.bw-perin { fill: #FAF0D6; stroke: #B07F32; stroke-width: 3; }
+.bw-axm { fill: #D8B4D3; stroke: #4E3E2E; stroke-width: 1.1; } .bw-axu { fill: #A47AA0; }
+.bw-endo-z { fill: #FAF0D6; }
+.bw-schw { fill: #F2D9B6; stroke: #B79A6E; stroke-width: 1.2; } .bw-schw-n { fill: #8E6A4A; }
+.bw-myel { fill: #F6EBC8; stroke: #6B5A3A; stroke-width: 1.2; }
+.bw-myel-l { fill: none; stroke: #8C7A52; stroke-width: .9; }
+.bw-axz { fill: #D8A9D4; stroke: #A47AA0; stroke-width: 1; } .bw-nf { fill: #A47AA0; }
+.bw-mf { fill: #E8ACA2; stroke: #B5574B; stroke-width: 1.2; }
+.bw-axon { fill: none; stroke: #C79BC4; stroke-width: 5; stroke-linecap: round; }
+.bw-bout { fill: #D8A9D4; stroke: #A47AA0; stroke-width: 1.4; }
+.bw-fold { fill: none; stroke: #B5574B; stroke-width: 2; stroke-linejoin: round; }
+.bw-telo { fill: none; stroke: #C9A97A; stroke-width: 3; stroke-linecap: round; }
+.bw-achm { fill: #C2A85A; }
+.bw-derm1 { fill: #E9C46A; } .bw-derm2 { fill: #9CC9C0; }
+.bw-derm-o { fill: none; stroke: #8C7B5E; stroke-width: 10; }
+/* Rückenmark */
+.bw-dura { fill: none; stroke: #8E9BB0; stroke-width: 3; }
+.bw-liq-f { fill: #D7EAF2; }
+.bw-arach { fill: none; stroke: #A9B8CC; stroke-width: 1; stroke-dasharray: 3 2; }
+.bw-sn { fill: none; stroke: #D9AC1E; stroke-width: 1.4; stroke-linecap: round; opacity: .7; }
+.bw-filum { fill: none; stroke: #C9AE62; stroke-width: 1.2; }
+.bw-cord { fill: #F0E2BC; stroke: #C9AE62; stroke-width: 1.2; }
+.bw-cord-e { fill: #E8CC7E; stroke: #B8952F; stroke-width: 1.2; }
+.bw-conus { fill: #DDB65A; stroke: #A8851F; stroke-width: 1.2; }
+.bw-cauda { fill: none; stroke: #C99A1E; stroke-width: 1.5; stroke-linecap: round; }
+.bw-bonearc { fill: none; stroke: #E9E0CB; stroke-width: 12; stroke-linecap: round; }
+.bw-epid { fill: #F1DC98; stroke: #C9AE62; stroke-width: .8; }
+.bw-root { fill: none; stroke: #E0B53A; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.bw-gangl { fill: #E0B53A; stroke: #A8851F; stroke-width: 1.2; }
+.bw-wm { fill: #F4ECDA; stroke: #C2AE86; stroke-width: 1.4; }
+.bw-fiss { fill: none; stroke: #A99470; stroke-width: 2; stroke-linecap: round; }
+.bw-sept { fill: none; stroke: #C2AE86; stroke-width: 1; }
+.bw-gm { fill: #C9A9B9; stroke: #9C7A8C; stroke-width: 1; }
+.bw-gm-d { fill: #CFB2C1; } .bw-gm-v { fill: #C29CB0; } .bw-gm-l { fill: #B48AA0; }
+.bw-cc { fill: #8FB8CC; }
+.bw-tr-hs { fill: #8FA6D8; stroke: #5B74A8; stroke-width: 1; }
+.bw-tr-py { fill: #E08A7A; stroke: #B35A4A; stroke-width: 1; }
+.bw-tr-st { fill: #7FBF9E; stroke: #4E8C6E; stroke-width: 1; }
+.bw-aff { fill: none; stroke: #3F7FC2; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.bw-eff { fill: none; stroke: #D9542F; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.bw-gcell { fill: #3F7FC2; stroke: #fff4e0; stroke-width: 1; }
+.bw-mn { fill: #9C4A6E; stroke: #6E2A4A; stroke-width: 1; } .bw-mn-n { fill: #F3D9E4; }
+.bw-mn-d { fill: none; stroke: #9C4A6E; stroke-width: 2; stroke-linecap: round; }
+.bw-aorta { fill: #D35A4A; }
+.bw-asa { fill: #D35A4A; stroke: #9E3B30; stroke-width: 1.2; }
+:root[data-theme="dark"] .bw-wm { fill: #DED5C2; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bw-wm { fill: #DED5C2; } }

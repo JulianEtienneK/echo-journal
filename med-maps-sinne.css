@@ -1,0 +1,210 @@
+/* Medizin-Atlas maps: auge, ohr, haut, schilddruese, nebenniere, hypophyse (prefix sn-) */
+:root {
+  --sn-vit: #E3EEF0; --sn-aq: #EDF5F7; --sn-retbg: #F5E1D8; --sn-bone: #E9E1D1; --sn-bone-l: #C2B59C;
+  --sn-der: #F5DDCD; --sn-sub: #F3E5C4; --sn-int: #F4E3DA; --sn-peri: #D8E9EF; --sn-endo: #CDEBDD;
+  --sn-air: #E2EBEE; --sn-bg1: #F7EDD6; --sn-bg2: #F3E3C8; --sn-bg3: #EED7C2; --sn-bg4: #ECDDE6;
+  --sn-hyth-bg: #F7E0DE; --sn-hvl-bg: #F6DCD6; --sn-hhl-bg: #F2E8CC; --sn-fatbg: #F6EBC8;
+}
+:root[data-theme="dark"] {
+  --sn-vit: #2A3638; --sn-aq: #2E3A3C; --sn-retbg: #3B2F2C; --sn-bone: #3A362E; --sn-bone-l: #5A5242;
+  --sn-der: #3D302B; --sn-sub: #3A3428; --sn-int: #392E2B; --sn-peri: #2B3A40; --sn-endo: #2C4036;
+  --sn-air: #2B3538; --sn-bg1: #3A3426; --sn-bg2: #3A3124; --sn-bg3: #3A2E26; --sn-bg4: #352C34;
+  --sn-hyth-bg: #3B2C2C; --sn-hvl-bg: #3C2D2B; --sn-hhl-bg: #393325; --sn-fatbg: #393426;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --sn-vit: #2A3638; --sn-aq: #2E3A3C; --sn-retbg: #3B2F2C; --sn-bone: #3A362E; --sn-bone-l: #5A5242;
+  --sn-der: #3D302B; --sn-sub: #3A3428; --sn-int: #392E2B; --sn-peri: #2B3A40; --sn-endo: #2C4036;
+  --sn-air: #2B3538; --sn-bg1: #3A3426; --sn-bg2: #3A3124; --sn-bg3: #3A2E26; --sn-bg4: #352C34;
+  --sn-hyth-bg: #3B2C2C; --sn-hvl-bg: #3C2D2B; --sn-hhl-bg: #393325; --sn-fatbg: #393426;
+} }
+.map .sn-ctx { pointer-events: none; }
+.map .sn-fr { fill: none; stroke: var(--line); stroke-width: 1; pointer-events: none; }
+.map .sn-nss * { vector-effect: non-scaling-stroke; }
+.sn-dash { stroke-dasharray: 5 3.5; }
+.sn-n { fill: none; stroke: #E5BE3D; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.sn-n-d { fill: #E5BE3D; stroke: #A8861E; stroke-width: .6; }
+
+/* Auge */
+.sn-mus { fill: none; stroke: #C2594F; stroke-linecap: round; } .sn-mus-o { fill: none; stroke: #8E3A33; stroke-linecap: round; }
+.sn-scl { fill: #EEE7DA; stroke: #B5A994; stroke-width: 1; }
+.sn-chor { fill: #8C4A5A; }
+.sn-vit { fill: var(--sn-vit); }
+.sn-aq { fill: var(--sn-aq); }
+.sn-ret { fill: #E9A383; stroke: #C77B5B; stroke-width: .8; }
+.sn-rv { fill: none; stroke: #C2453A; stroke-width: 1.4; stroke-linecap: round; }
+.sn-dura { fill: none; stroke: #CFC3AC; stroke-linecap: butt; }
+.sn-on { fill: none; stroke: #F2E4BE; stroke-linecap: butt; }
+.sn-onf { fill: #F2E4BE; }
+.sn-pap { fill: #F5D9A6; stroke: #C99A55; stroke-width: 1; }
+.sn-mac { fill: #E6BF4E; stroke: #B38E22; stroke-width: 1; }
+.sn-cil { fill: #A65E58; stroke: #7C3E39; stroke-width: 1; }
+.sn-zon { fill: none; stroke: #BFAE73; stroke-width: .9; }
+.sn-lens { fill: #F3EAC6; stroke: #C4B074; stroke-width: 1.2; }
+.sn-lens-l { fill: none; stroke: #D9CA97; stroke-width: 1; pointer-events: none; }
+.sn-iris { fill: #4F8A8E; stroke: #2F6266; stroke-width: 1; }
+.sn-cor { fill: #CFE3EA; fill-opacity: .9; stroke: #87AEBE; stroke-width: 1.2; }
+.sn-gax { fill: none; stroke: #9C78B8; stroke-width: 1.6; stroke-linecap: round; }
+.sn-gd { fill: none; stroke: #9C78B8; stroke-width: 1.4; stroke-linecap: round; }
+.sn-gc { fill: #B99AD6; stroke: #7E5E9E; stroke-width: 1; } .sn-gc-n { fill: #5E4378; }
+.sn-bip { fill: #E7D5DF; stroke: #B79AAB; stroke-width: .8; } .sn-bip-l { fill: none; stroke: #CDB2C2; stroke-width: 1.2; }
+.sn-rod { fill: #CF8196; stroke: #9E5468; stroke-width: .7; } .sn-rod-o { fill: #B9607A; stroke: #8E4258; stroke-width: .7; }
+.sn-rod-l { fill: none; stroke: #CF8196; stroke-width: 1.4; } .sn-rod-n { fill: #8E4258; }
+.sn-disc { fill: none; stroke: #F3D0DA; stroke-width: 4; stroke-dasharray: 1 2.2; }
+.sn-cone { fill: #E3B34E; stroke: #A9821E; stroke-width: .8; } .sn-cone-o { fill: #D29A2E; stroke: #A9821E; stroke-width: .8; }
+.sn-cone-l { fill: none; stroke: #E3B34E; stroke-width: 1.6; } .sn-cone-n { fill: #8C6512; }
+.sn-rpe { fill: #8A5E44; stroke: #5E3C28; stroke-width: .8; } .sn-rpe-n { fill: #D9B89A; }
+.sn-mel { fill: #2E1E16; }
+.sn-mv { fill: none; stroke: #8A5E44; stroke-width: 1.2; }
+.sn-bruch { fill: none; stroke: #6E4A5A; stroke-width: 1.6; }
+.sn-art { fill: #D35A4A; stroke: #9E3B30; stroke-width: .8; } .sn-ven { fill: #5C7FB8; stroke: #3A5888; stroke-width: .8; }
+.sn-melc { fill: #3B2620; }
+.sn-retbg { fill: var(--sn-retbg); }
+.sn-trab { fill: none; stroke: #B5A994; stroke-width: 1.2; }
+.sn-flow { fill: none; stroke: #5C9DB0; stroke-width: 1.4; stroke-dasharray: 3 3; }
+.sn-schlemm { fill: #6A8FC4; stroke: #3A5888; stroke-width: 1.2; }
+.sn-schlemm-l { fill: none; stroke: #6A8FC4; stroke-width: 2; stroke-linecap: round; }
+.sn-lam { fill: none; stroke: #C9B98E; stroke-width: 1; stroke-dasharray: 4 3; }
+
+/* Ohr */
+.sn-soft { fill: #EFCAB0; stroke: #C9946C; stroke-width: 1.2; }
+.sn-bone { fill: var(--sn-bone); stroke: var(--sn-bone-l); stroke-width: 1.2; }
+.sn-pinna { fill: #EDBE9F; stroke: #B98463; stroke-width: 1.4; }
+.sn-pinna-l { fill: none; stroke: #C99474; stroke-width: 2.4; stroke-linecap: round; }
+.sn-canal { fill: none; stroke: #F6E3D6; stroke-linecap: round; stroke-linejoin: round; } .sn-canal-o { fill: none; stroke: #B98463; stroke-linecap: round; stroke-linejoin: round; }
+.sn-air { fill: var(--sn-air); stroke: #8FA8B2; stroke-width: 1; }
+.sn-tub { fill: none; stroke: var(--sn-air); stroke-linecap: round; stroke-linejoin: round; } .sn-tub-o { fill: none; stroke: #8FA8B2; stroke-linecap: round; stroke-linejoin: round; }
+.sn-tm { fill: none; stroke: #B07A84; stroke-width: 3.5; stroke-linecap: round; }
+.sn-oss { fill: #F4ECD9; stroke: #9C8B6C; stroke-width: 1.2; }
+.sn-oss-l { fill: none; stroke: #E6DABF; stroke-linecap: round; filter: drop-shadow(0 0 .6px #8C7B5C); }
+.sn-lab { fill: #CDE1E8; stroke: #6F98A8; stroke-width: 1.2; }
+.sn-labt { fill: none; stroke: #CDE1E8; stroke-linecap: round; stroke-linejoin: round; } .sn-labt-o { fill: none; stroke: #6F98A8; stroke-linecap: round; stroke-linejoin: round; }
+.sn-coch-l { fill: none; stroke: #6F98A8; stroke-width: 1.6; stroke-linecap: round; }
+.sn-memb { fill: #8FCBB5; stroke: #4E9A80; stroke-width: 1; }
+.sn-peri { fill: var(--sn-peri); }
+.sn-endo { fill: var(--sn-endo); stroke: #7FB89C; stroke-width: 1; }
+.sn-limb { fill: #EBC3B8; stroke: #C08E80; stroke-width: 1; }
+.sn-lig { fill: #E8CDBF; stroke: #C2A090; stroke-width: 1; }
+.sn-stria { fill: #D9837A; stroke: #A9554C; stroke-width: 1; } .sn-capd { fill: #8E2E26; }
+.sn-bm { fill: none; stroke: #9C7A6C; stroke-width: 2.5; stroke-linecap: round; }
+.sn-reiss { fill: none; stroke: #7FA3B0; stroke-width: 1.4; }
+.sn-corti { fill: #F1D0C4; stroke: #C59A8A; stroke-width: 1; }
+.sn-pil { fill: none; stroke: #C59A8A; stroke-width: 2; }
+.sn-tect { fill: #E6DAB0; fill-opacity: .92; stroke: #B8A66A; stroke-width: 1; }
+.sn-hc { fill: #9E8BD0; stroke: #6A5A9E; stroke-width: 1; } .sn-hc-n { fill: #4A3C7A; }
+.sn-stc { fill: none; stroke: #6A5A9E; stroke-width: 1.4; stroke-linecap: round; }
+.sn-kino { fill: none; stroke: #4A3C7A; stroke-width: 2.2; stroke-linecap: round; }
+.sn-nf { fill: none; stroke: #E5BE3D; stroke-width: 1.4; stroke-linecap: round; }
+.sn-sg { fill: #EBCB62; stroke: #B3922E; stroke-width: .8; }
+.sn-gel { fill: #E9E2C4; }
+.sn-oto { fill: #F6F1E4; stroke: #A8A08A; stroke-width: .8; }
+.sn-sup { fill: #EFD9CF; stroke: #C9A899; stroke-width: .8; }
+
+/* Haut */
+.sn-epi { fill: #E5AD8E; stroke: #B97A5C; stroke-width: 1; } .sn-epi-l { fill: none; stroke: #F2D6BE; stroke-width: 2; pointer-events: none; }
+.sn-der { fill: var(--sn-der); stroke: #D8B6A2; stroke-width: .8; }
+.sn-coll { fill: none; stroke: #DDB8A4; stroke-width: 1.4; stroke-opacity: .7; pointer-events: none; }
+.sn-sub { fill: var(--sn-sub); stroke: #D3BE8A; stroke-width: .8; }
+.sn-fat { fill: #F6E3A2; stroke: #D2B35C; stroke-width: 1; }
+.sn-fol { fill: none; stroke: #E0A080; stroke-linecap: round; } .sn-fol-o { fill: none; stroke: #A8694A; stroke-linecap: round; }
+.sn-folb { fill: #D99272; stroke: #A8694A; stroke-width: 1; }
+.sn-papd { fill: #F2C9B2; stroke: #C08A70; stroke-width: .8; }
+.sn-hair { fill: none; stroke: #5A3D2B; stroke-linecap: round; }
+.sn-arr { fill: none; stroke: #B8473C; stroke-linecap: round; }
+.sn-seb { fill: #F1D27A; stroke: #C09A38; stroke-width: 1; } .sn-seb-l { fill: none; stroke: #F1D27A; stroke-linecap: round; }
+.sn-apo { fill: none; stroke: #A585C4; stroke-linecap: round; stroke-linejoin: round; }
+.sn-ecc { fill: none; stroke: #6FA8C4; stroke-linecap: round; stroke-linejoin: round; }
+.sn-pac { fill: #EFE2CB; stroke: #A98D66; stroke-width: 1.2; } .sn-pac-l { fill: none; stroke: #C2A884; stroke-width: 1.1; }
+.sn-finger { fill: #F2D2BC; stroke: #C9946C; stroke-width: 2; }
+.sn-phal { fill: #EFE8D8; stroke: #BDB297; stroke-width: 1.2; }
+.sn-nbed { fill: none; stroke: #E39A96; stroke-linecap: round; }
+.sn-fold { fill: none; stroke: #C9946C; stroke-width: 2; stroke-linecap: round; }
+.sn-nail { fill: #E6D3B5; stroke: #7A6448; stroke-width: 1.6; }
+.sn-matrix { fill: #D97C84; stroke: #A9545C; stroke-width: 1; }
+.sn-corn-bg { fill: #F5E6D8; } .sn-corn { fill: #F0DCC8; stroke: #C9A98D; stroke-width: .8; }
+.sn-gran-bg { fill: #ECCBB8; } .sn-gran { fill: #E5BFA8; stroke: #B98E78; stroke-width: .8; } .sn-gran-d { fill: #5E3A5A; }
+.sn-spin-bg { fill: #E6B2A2; } .sn-spin { fill: #EEC0B0; stroke: #B57C6C; stroke-width: 1.1; stroke-dasharray: 2 1.4; }
+.sn-nuc { fill: #8A4F5E; }
+.sn-bas-bg { fill: #D68A80; } .sn-bas { fill: #D9918A; stroke: #A35A52; stroke-width: .9; } .sn-nuc-b { fill: #6A2E3E; }
+.sn-bmem { fill: none; stroke: #8C5A4A; stroke-width: 1.6; }
+.sn-mel-c { fill: #5C3D2E; stroke: #36231A; stroke-width: 1; } .sn-mel-d { fill: none; stroke: #5C3D2E; stroke-linecap: round; }
+.sn-lang { fill: #CFDDEB; stroke: #5F7FA8; stroke-width: 1.2; } .sn-lang-d { fill: none; stroke: #8FA9CC; stroke-linecap: round; } .sn-lang-n { fill: none; stroke: #3F5F88; stroke-width: 1.6; }
+.sn-kz { fill: #F3CFA2; stroke: #A8703F; stroke-width: 1.6; }
+.sn-arrow { fill: none; stroke: #A8703F; stroke-width: 1.8; stroke-dasharray: 4 3; stroke-linecap: round; stroke-linejoin: round; }
+.sn-meis { fill: #EADBC2; stroke: #A98B63; stroke-width: 1.2; } .sn-meis-l { fill: none; stroke: #B79A70; stroke-width: 1; }
+
+/* Schilddrüse */
+.sn-hyoid { fill: #EFE8D8; stroke: #BDB297; stroke-width: 1; } .sn-hyoid-l { fill: none; stroke: #E3D8BF; stroke-width: 5; stroke-linecap: round; }
+.sn-lar { fill: #D8E3E5; stroke: #93AAB0; stroke-width: 1.2; } .sn-lar-l { fill: none; stroke: #93AAB0; stroke-width: 1; }
+.sn-ring { fill: #C7D6DA; stroke: #93AAB0; stroke-width: .8; }
+.sn-thy { fill: #CF7C64; stroke: #A3523B; stroke-width: 1.3; }
+.sn-thy-i { fill: #C46F58; stroke: #A3523B; stroke-width: 1.3; }
+.sn-thy-p { fill: #D88E76; stroke: #A3523B; stroke-width: 1.2; }
+.sn-nsd { fill: #D8B04A; fill-opacity: .88; stroke: #7E5E12; stroke-width: 1.4; stroke-dasharray: 3 2; }
+.sn-int { fill: var(--sn-int); }
+.sn-tz { fill: #D98B78; stroke: #A9573F; stroke-width: .8; } .sn-tz-n { fill: #7A3426; }
+.sn-col { fill: #F1C2B0; stroke: #D79A86; stroke-width: 1; }
+.sn-vac { fill: #FBEDE6; stroke: #D79A86; stroke-width: .6; }
+.sn-bmf { fill: none; stroke: #9E5A48; stroke-width: 2.2; }
+.sn-cz { fill: #ECE5C6; stroke: #9C9060; stroke-width: 1.2; } .sn-cz-n { fill: #6E6438; }
+.sn-mvt { fill: none; stroke: #A9573F; stroke-width: 1.2; }
+.sn-ves { fill: #F1C2B0; stroke: #A9573F; stroke-width: .8; }
+.sn-capb { fill: #F1C7C0; } .sn-bml { fill: none; stroke: #9E5A48; stroke-width: 1.4; }
+.sn-rec { fill: none; stroke: #2F8A70; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.sn-hz { fill: #C6A7CC; stroke: #8A6A92; stroke-width: 1; } .sn-hz-n { fill: #563A60; }
+.sn-oxy { fill: #F0A8A0; stroke: #B86A62; stroke-width: 1; }
+.sn-fatc { fill: #F6EBC8; stroke: #CDB77A; stroke-width: 1; }
+
+/* Nebenniere */
+.sn-adr { fill: #E6B04E; stroke: #A87A1E; stroke-width: 1.2; }
+.sn-fat-bg { fill: var(--sn-fatbg); }
+.sn-cortex { fill: #F0C85E; stroke: #B88E26; stroke-width: 2; }
+.sn-medulla { fill: #A3584E; stroke: #7A3A33; stroke-width: 1; }
+.sn-cv { fill: #5C7FB8; stroke: #3A5888; stroke-width: 1; }
+.sn-caps { fill: #E8DCCB; }
+:root[data-theme="dark"] .sn-caps { fill: #4A4236; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sn-caps { fill: #4A4236; } }
+.sn-glo-bg { fill: var(--sn-bg1); } .sn-glo { fill: #E7B256; stroke: #B0802A; stroke-width: .8; } .sn-glo-n { fill: #7A5212; }
+.sn-fas-bg { fill: var(--sn-bg2); } .sn-fas { fill: #F6E1A6; stroke: #C9A85A; stroke-width: .7; } .sn-fas-n { fill: #8C6E22; } .sn-vacs { fill: #FFF8E4; }
+.sn-sin { fill: none; stroke: #D35A4A; stroke-width: 1.4; stroke-dasharray: 4 3; }
+.sn-ret-bg { fill: var(--sn-bg3); } .sn-ret-c { fill: none; stroke: #DDA46C; stroke-linecap: round; stroke-linejoin: round; } .sn-ret-o { fill: none; stroke: #A8733F; stroke-linecap: round; stroke-linejoin: round; } .sn-ret-n { fill: #6E3E14; }
+.sn-med-bg { fill: var(--sn-bg4); }
+.sn-chr { fill: #A98BB4; stroke: #6E5078; stroke-width: .8; } .sn-chr-n { fill: #4A3256; }
+.sn-bout { fill: #E5BE3D; stroke: #A8861E; stroke-width: .8; }
+
+/* Hypophyse */
+.sn-thal { fill: #E9CDB4; stroke: #C2A285; stroke-width: 1; opacity: .5; }
+.sn-pons { fill: #D8C7A8; stroke: #A99470; stroke-width: 1; opacity: .6; }
+.sn-airc { fill: var(--surface); stroke: var(--sn-bone-l); stroke-width: 1.2; }
+.sn-sella { fill: none; stroke: #A8957A; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.sn-dsel { fill: none; stroke: #8E83A6; stroke-width: 2; stroke-linecap: round; }
+.sn-hvl { fill: #D9837A; stroke: #A9554C; stroke-width: 1.2; }
+.sn-hhl { fill: #EAD7A6; stroke: #B79F62; stroke-width: 1.2; }
+.sn-pi { fill: none; stroke: #C9A0A0; stroke-width: 2.5; }
+.sn-stalk { fill: none; stroke: #E4C08C; stroke-linecap: round; } .sn-stalk-o { fill: none; stroke: #B79F62; stroke-linecap: round; }
+.sn-hyth { fill: #EDB4B2; stroke: #C47F7D; stroke-width: 1.2; }
+.sn-mam { fill: #E39A98; stroke: #C47F7D; stroke-width: 1; }
+.sn-opt { fill: none; stroke: #EFE7CF; stroke-linecap: round; filter: drop-shadow(0 0 .6px #A9976A); }
+.sn-chi { fill: #F2EAD2; stroke: #A9976A; stroke-width: 1.2; }
+.sn-tl { fill: #EDB8B6; stroke: #C98583; stroke-width: 1; opacity: .7; }
+.sn-sinus { fill: #7E93C2; stroke: #3F5A8E; stroke-width: 1.2; }
+.sn-ica { fill: #D35A4A; stroke: #9E3B30; stroke-width: 1; }
+.sn-hyth-bg { fill: var(--sn-hyth-bg); }
+.sn-hvl-bg { fill: var(--sn-hvl-bg); stroke: #C98A82; stroke-width: 1.2; }
+.sn-hhl-bg { fill: var(--sn-hhl-bg); stroke: #B79F62; stroke-width: 1.2; }
+.sn-stalk-bg { fill: var(--sn-hhl-bg); stroke: #B79F62; stroke-width: 1; }
+.sn-cap { fill: none; stroke: #D35A4A; stroke-width: 1.4; }
+.sn-pit { fill: #C9B27A; }
+.sn-plex { fill: none; stroke: #7C6FB0; stroke-width: 1.8; stroke-linecap: round; }
+.sn-sinp { fill: none; stroke: #9C90C8; stroke-width: 2.2; stroke-linecap: round; }
+.sn-mag { fill: #DCC0E4; stroke: #9A72A6; stroke-width: 1.2; } .sn-mag-c { fill: #9A62A8; }
+.sn-axm { fill: none; stroke: #9A62A8; stroke-width: 1.8; stroke-linecap: round; }
+.sn-arc { fill: #B8DCCB; stroke: #4E8C76; stroke-width: 1.2; } .sn-arc-c { fill: #2F7A62; }
+.sn-axa { fill: none; stroke: #2F7A62; stroke-width: 1.6; stroke-linecap: round; }
+.sn-somatotrop { fill: #F0A25A; stroke: #B86E26; stroke-width: .8; }
+.sn-laktotrop { fill: #E26E78; stroke: #A8404A; stroke-width: .8; }
+.sn-kortikotrop { fill: #8A80CC; stroke: #5A5098; stroke-width: .8; }
+.sn-gonadotrop { fill: #5A9ED2; stroke: #2F6E9E; stroke-width: .8; }
+.sn-other { fill: #CFC8BA; stroke: #9C9484; stroke-width: .8; }
+.sn-cn { fill: #FFF6EA; fill-opacity: .7; }
+.map .sn-faint { opacity: .55; }
+.sn-mel-n { fill: #2E1E16; }

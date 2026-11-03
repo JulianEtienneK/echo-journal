@@ -20,6 +20,10 @@ function beep(ok) {
   try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); const o = AC.createOscillator(), g = AC.createGain(); o.frequency.value = ok ? 780 : 200; g.gain.setValueAtTime(.0001, AC.currentTime); g.gain.exponentialRampToValueAtTime(.1, AC.currentTime + .02); g.gain.exponentialRampToValueAtTime(.0001, AC.currentTime + .18); o.connect(g).connect(AC.destination); o.start(); o.stop(AC.currentTime + .2); } catch { /* no audio */ }
 }
 
+/* ---------- extension hooks (psy.js adds the Gehirn & Psyche layer) ---------- */
+const EXT = { views: {}, acts: {}, q: {}, info: {}, title: {}, names: {}, decorate: [] };
+window.MEDEXT = EXT;
+
 /* ---------- state ---------- */
 const MK = 'echo-med';
 const M = Object.assign({ c: {}, all: false, sex: 'w', rounds: 0, det: { n: 0, best: 0 } }, LS.get(MK, {}) || {});
@@ -127,6 +131,7 @@ const mcOpts = (right, wrong) => shuffle([{ label: right, ok: true }, ...wrong.m
 
 function makeQ(it) {
   const b = (M.c[it.id] || {}).b || 0;
+  if (EXT.q[it.kind]) return EXT.q[it.kind](it, b);
   if (it.kind === 'sys') {
     const s = SYS[it.ref], w = others(Object.keys(SYS), it.ref, 3).map(k => SYS[k].name);
     return { it, type: 'mc', eyebrow: 'Organsysteme', prompt: 'Welches Organsystem ist das?', sub: s.fn, opts: mcOpts(s.name, w) };
@@ -189,6 +194,7 @@ function pathBlank(p, it) {
 let R = null; // current round
 function buildRound(scope = {}) {
   const inScope = it => {
+    if (scope.kind && it.kind !== scope.kind) return false;
     if (scope.organ) return it.organ === scope.organ;
     if (scope.path) return scope.path === true ? it.organ === '_path' : it.organ === '_path' && it.ref.id === scope.path;
     if (scope.sys) return sysOf(it.organ) === scope.sys;
@@ -223,8 +229,10 @@ function answerMC(i) {
   R.ans = i; grade(cur.q.opts[i].ok); render();
 }
 function answerTap(id) {
-  const cur = R.seq[R.i]; if (R.ans != null) return;
-  R.ans = id; grade(id === cur.q.map.target); render();
+  const cur = R.seq[R.i], m = cur.q.map; if (R.ans != null) return;
+  const ok = m.targets ? m.targets.includes(id) : id === m.target;
+  if (ok && m.targets) m.target = id;
+  R.ans = id; grade(ok); render();
 }
 function nextCard() {
   R.i++; R.ans = null;
@@ -313,6 +321,7 @@ function disCard(d, opts = {}) {
     ${opts.actions === false ? '' : `<div class="row" style="gap:8px;flex-wrap:wrap"><button class="chip" data-act="soc" data-v="dis|${d.id}">🦉 Sokratisch vertiefen</button>${opts.organLink ? `<button class="chip" data-act="organ" data-v="${d.organ}">→ ${esc(short(ORG[d.organ].name))}</button>` : ''}</div>`}</div>`;
 }
 function itemInfo(it) {
+  if (EXT.info[it.kind]) return EXT.info[it.kind](it);
   if (it.kind === 'dis') return disCard(it.ref, { actions: false });
   if (it.kind === 'str') return `<div class="dcard"><h3>${esc(it.ref.name)}</h3><span>${esc(it.ref.fact)}</span></div>`;
   if (it.kind === 'org') { const o = ORG[it.ref]; return `<div class="dcard"><h3>${esc(o.name)}</h3><div class="frow"><span class="flab">Lage</span><span>${esc(o.lage)}</span></div><div class="frow"><span class="flab">Funktion</span><span>${esc(o.fn)}</span></div></div>`; }
@@ -376,6 +385,7 @@ function viewHome() {
   </section>
   <div class="modes">
     <button class="mode" data-act="atlas"><span>🗺️</span><b>Atlas</b><small>Körper antippen, reinzoomen</small></button>
+    ${EXT.views.psy ? '<button class="mode" data-act="psy-open"><span>🧠</span><b>Gehirn & Psyche</b><small>Regionen, Botenstoffe, Störungen, Psilocybin</small></button>' : ''}
     <button class="mode" data-act="det"><span>🔍</span><b>Fall-Detektiv</b><small>Hinweise → Diagnose</small></button>
     <button class="mode" data-act="paths"><span>🧪</span><b>Stoffwechselwege</b><small>${PATH.length} Wege als Diagramm</small></button>
     <button class="mode" data-act="index"><span>📋</span><b>Krankheiten</b><small>${DIS.length} nach Organ & Stufe</small></button>
@@ -386,13 +396,13 @@ function viewHome() {
   <section class="card"><div class="row spread"><div style="display:grid"><b>Alle Stufen freischalten</b><span class="small muted">Sonst öffnet sich die nächste Stufe eines Organs, wenn du 70 % der aktuellen kannst.</span></div><button class="chip" aria-pressed="${M.all}" data-act="all">${M.all ? 'An' : 'Aus'}</button></div></section>`;
 }
 function viewAtlas() {
-  const chips = [['all', 'Alle'], ...Object.entries(SYS).map(([k, s]) => [k, short(s.name)])].map(([k, l]) => `<button class="chip" aria-pressed="${V.sys === k}" data-act="atlas-sys" data-v="${k}">${esc(l)}</button>`).join('');
-  const hint = V.sys === 'all' ? 'Tippe ein Organ an, um hineinzuzoomen. Oben filterst du nach System.' : esc(SYS[V.sys].fn);
+  const chips = [['all', 'Alle'], ...(EXT.views.psy ? [['psyche', '🧠 Gehirn & Psyche']] : []), ...Object.entries(SYS).map(([k, s]) => [k, short(s.name)])].map(([k, l]) => `<button class="chip" aria-pressed="${V.sys === k}" data-act="atlas-sys" data-v="${k}">${esc(l)}</button>`).join('');
+  const hint = V.sys === 'all' ? 'Tippe ein Organ an, um hineinzuzoomen. Oben filterst du nach System.' : V.sys === 'psyche' ? 'Tippe das leuchtende Gehirn an: Regionen, Botenstoffe, Netzwerke, Störungen und Medikamente.' : esc(SYS[V.sys].fn);
   return `${topbar('home')}<h2>Atlas</h2><div class="chips scrollx">${chips}</div>
   <p class="small muted" style="margin:0">${hint}</p>
   ${['fortpflanzung', 'all'].includes(V.sys) ? `<div class="chips"><button class="chip" aria-pressed="${M.sex === 'w'}" data-act="sex" data-v="w">♀ weiblich</button><button class="chip" aria-pressed="${M.sex === 'm'}" data-act="sex" data-v="m">♂ männlich</button></div>` : ''}
   <div class="mapbox body-box" id="atlasMap">${MEDSVG.body(V.sys, M.sex)}</div>
-  ${V.sys !== 'all' ? `<div class="olist">${ORG_ORDER.filter(o => ORG[o].sys === V.sys).map(o => `<button class="orow" data-act="organ" data-v="${o}"><span>${esc(ORG[o].name)}</span>${dots(stageOpen(o))}</button>`).join('')}</div>` : ''}`;
+  ${V.sys !== 'all' && SYS[V.sys] ? `<div class="olist">${ORG_ORDER.filter(o => ORG[o].sys === V.sys).map(o => `<button class="orow" data-act="organ" data-v="${o}"><span>${esc(ORG[o].name)}</span>${dots(stageOpen(o))}</button>`).join('')}</div>` : ''}`;
 }
 function viewOrgan() {
   const k = V.organ, o = ORG[k], S = organStats(k), maps = MEDSVG.MAPS[k] || [];
@@ -437,7 +447,7 @@ function viewRound() {
   if (R.done) {
     const wrong = R.seq.filter(x => x.ok === false && !x.again);
     return `${topbar('home')}<section class="card" style="text-align:center;justify-items:center"><span class="eyebrow">Lernrunde geschafft</span><div class="sum">${R.ok}/${R.seq.length}</div><p class="muted" style="margin:0">+${R.xp} XP</p></section>
-      ${wrong.length ? `<section class="card"><h3>Das kommt bald wieder</h3>${wrong.map(x => `<span class="small">• ${esc(x.it.kind === 'dis' ? x.it.ref.name : x.it.kind === 'str' ? x.it.ref.name : x.it.kind === 'org' ? ORG[x.it.ref].name : x.it.kind === 'sys' ? SYS[x.it.ref].name : x.it.kind === 'fact' ? ORG[x.it.organ].name + ': ' + x.it.ref.text : x.it.ref.name)}</span>`).join('')}</section>` : ''}
+      ${wrong.length ? `<section class="card"><h3>Das kommt bald wieder</h3>${wrong.map(x => `<span class="small">• ${esc(EXT.title[x.it.kind] ? EXT.title[x.it.kind](x.it) : x.it.kind === 'dis' ? x.it.ref.name : x.it.kind === 'str' ? x.it.ref.name : x.it.kind === 'org' ? ORG[x.it.ref].name : x.it.kind === 'sys' ? SYS[x.it.ref].name : x.it.kind === 'fact' ? ORG[x.it.organ].name + ': ' + x.it.ref.text : x.it.ref.name)}</span>`).join('')}</section>` : ''}
       <button class="btn primary big" data-act="${R.scope.organ ? 'round-organ' : 'round'}" data-v="${R.scope.organ || ''}">Nächste Runde</button><button class="btn" data-act="home">Übersicht</button>`;
   }
   const cur = R.seq[R.i], q = cur.q, answered = R.ans != null;
@@ -535,16 +545,18 @@ function decorateMaps() {
     if (q.map.mark) { svg.querySelectorAll(`[data-s="${q.map.mark}"]`).forEach(e => e.classList.add(R.ans == null ? 'pulse' : 'on')); svg.querySelectorAll('.part').forEach(e => { if (e.dataset.s !== q.map.mark) e.classList.add('dim'); }); }
     if (q.type === 'tap' && R.ans != null) {
       const attr = q.map.kind === 'body' ? 'o' : 's';
-      svg.querySelectorAll(`[data-${attr}="${q.map.target}"]`).forEach(e => e.classList.add('ok'));
+      for (const t of q.map.targets || [q.map.target]) svg.querySelectorAll(`[data-${attr}="${t}"]`).forEach(e => e.classList.add('ok'));
       if (R.ans !== q.map.target) svg.querySelectorAll(`[data-${attr}="${R.ans}"]`).forEach(e => e.classList.add('bad'));
       if (q.map.kind === 'detail' && R.seq[R.i].ok === false) labelMap(svg, [q.map.target, R.ans]);
     }
   }
+  for (const fn of EXT.decorate) fn();
   const sm = document.querySelector('.mapbox.mini svg');
   if (sm && V.organ) sm.querySelectorAll(`[data-o="${V.organ}"]`).forEach(e => e.classList.add('on'));
 }
 function labelMap(svg, only) {
-  const strs = Object.fromEntries((STR[V.organ || (R && R.seq[R.i] ? R.seq[R.i].it.organ : '')] || []).map(s => [s.id, s]));
+  if (!only && EXT.labelOnly) only = EXT.labelOnly(svg);
+  const strs = Object.assign({}, EXT.names, Object.fromEntries((STR[V.organ || (R && R.seq[R.i] ? R.seq[R.i].it.organ : '')] || []).map(s => [s.id, s])));
   const done = new Set(), labs = [];
   svg.querySelectorAll('[data-s]').forEach(g => {
     const id = g.dataset.s; if (done.has(id) || (only && !only.includes(id)) || !strs[id]) return; done.add(id);
@@ -602,14 +614,14 @@ app.addEventListener('pointermove', e => {
 app.addEventListener('pointerup', () => { if (drag && drag.moved) { drag.svg.dataset.dragged = '1'; setTimeout(() => { if (drag) drag.svg.dataset.dragged = ''; drag = null; }, 0); } else drag = null; });
 
 // zoom from the body map into an organ: animate the viewBox to the organ's box, then open it
-function zoomInto(organ, svg) {
-  const parts = [...svg.querySelectorAll(`[data-o="${organ}"]`)]; if (!parts.length) { openOrgan(organ); return; }
+function zoomInto(organ, svg, done) {
+  const parts = [...svg.querySelectorAll(`[data-o="${organ}"]`)]; if (!parts.length) { (done || (() => openOrgan(organ)))(); return; }
   let bb = null; for (const p of parts) { const b = p.getBBox(); bb = bb ? { x: Math.min(bb.x, b.x), y: Math.min(bb.y, b.y), r: Math.max(bb.r, b.x + b.width), b: Math.max(bb.b, b.y + b.height) } : { x: b.x, y: b.y, r: b.x + b.width, b: b.y + b.height }; }
   const pad = 14, tx = bb.x - pad, ty = bb.y - pad, tw = Math.max(40, bb.r - bb.x + pad * 2), th = Math.max(40, bb.b - bb.y + pad * 2);
   const ratio = 400 / 800, W = Math.max(tw, th * ratio), H = W / ratio, X = tx + tw / 2 - W / 2, Y = ty + th / 2 - H / 2;
   const [x0, y0, w0, h0] = svg.getAttribute('viewBox').split(' ').map(Number), t0 = performance.now(), dur = 520;
   parts.forEach(p => p.classList.add('on'));
-  const step = now => { const t = Math.min(1, (now - t0) / dur), e = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; svg.setAttribute('viewBox', `${x0 + (X - x0) * e} ${y0 + (Y - y0) * e} ${w0 + (W - w0) * e} ${h0 + (H - h0) * e}`); if (t < 1) requestAnimationFrame(step); else openOrgan(organ); };
+  const step = now => { const t = Math.min(1, (now - t0) / dur), e = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; svg.setAttribute('viewBox', `${x0 + (X - x0) * e} ${y0 + (Y - y0) * e} ${w0 + (W - w0) * e} ${h0 + (H - h0) * e}`); if (t < 1) requestAnimationFrame(step); else (done || (() => openOrgan(organ)))(); };
   requestAnimationFrame(step);
 }
 function openOrgan(o, tab) { V.organ = o; V.tab = tab || (MEDSVG.MAPS[o] ? 'map' : 'info'); V.map = 0; V.sel = null; ZM.k = 1; go('organ'); }
@@ -618,7 +630,7 @@ function openOrgan(o, tab) { V.organ = o; V.tab = tab || (MEDSVG.MAPS[o] ? 'map'
 function go(v) { V.view = v; try { history.replaceState(null, '', '#' + v + (v === 'organ' ? '-' + V.organ : v === 'path' ? '-' + V.path : '')); } catch { /* ignore */ } render(); scrollTo(0, 0); }
 function render() {
   const v = V.view;
-  app.innerHTML = v === 'atlas' ? viewAtlas() : v === 'organ' && ORG[V.organ] ? viewOrgan() : v === 'round' && R ? viewRound() : v === 'det' && DT ? viewDet() : v === 'paths' ? viewPaths() : v === 'path' && PATH_ID[V.path] ? viewPath() : v === 'drill' && PD ? viewDrill() : v === 'index' ? viewIndex() : v === 'dis' ? viewDis() : v === 'soc-pick' ? viewSocPick() : viewHome();
+  app.innerHTML = EXT.views[v] ? EXT.views[v]() : v === 'atlas' ? viewAtlas() : v === 'organ' && ORG[V.organ] ? viewOrgan() : v === 'round' && R ? viewRound() : v === 'det' && DT ? viewDet() : v === 'paths' ? viewPaths() : v === 'path' && PATH_ID[V.path] ? viewPath() : v === 'drill' && PD ? viewDrill() : v === 'index' ? viewIndex() : v === 'dis' ? viewDis() : v === 'soc-pick' ? viewSocPick() : viewHome();
   decorateMaps();
   document.getElementById('qnext')?.focus({ preventScroll: true });
 }
@@ -628,7 +640,9 @@ app.addEventListener('click', e => {
     const svg = mapPart.closest('svg');
     if (svg.dataset.dragged) return;
     if (V.view === 'round' && R && R.ans == null && R.seq[R.i].q.type === 'tap' && mapPart.closest('#qMap')) return answerTap(mapPart.dataset.o || mapPart.dataset.s);
+    if (mapPart.closest('#atlasMap') && V.sys === 'psyche' && EXT.views.psy) { V.view = 'psy'; return zoomInto('gehirn', svg, () => go('psy')); }
     if (mapPart.closest('#atlasMap, #heroMap') && mapPart.dataset.o) return zoomInto(mapPart.dataset.o, svg);
+    if (EXT.tap && EXT.tap(mapPart, svg)) return;
     if (mapPart.closest('#detailMap') && mapPart.dataset.s) { V.sel = mapPart.dataset.s; const z = { ...ZM }; render(); Object.assign(ZM, z); return; }
   }
   const b = e.target.closest('[data-act]'); if (!b) return;
@@ -667,6 +681,7 @@ app.addEventListener('click', e => {
   else if (a === 'soc-pick') go('soc-pick');
   else if (a === 'soc') { const [k, id] = v.split('|'); socratic(k, id); }
   else if (a === 'all') { M.all = !M.all; saveM(); render(); }
+  else if (EXT.acts[a]) EXT.acts[a](v, b, e);
 });
 app.addEventListener('input', e => { if (e.target.id === 'disq') { V.q = e.target.value; const pos = e.target.selectionStart; render(); const inp = document.getElementById('disq'); inp.focus(); try { inp.setSelectionRange(pos, pos); } catch { /* ignore */ } } });
 document.addEventListener('keydown', e => {
@@ -680,13 +695,13 @@ function boot() {
   const h = (location.hash || '').slice(1);
   if (h.startsWith('organ-') && ORG[h.slice(6)]) { V.organ = h.slice(6); V.tab = MEDSVG.MAPS[V.organ] ? 'map' : 'info'; V.view = 'organ'; }
   else if (h.startsWith('path-') && PATH_ID[h.slice(5)]) { V.path = h.slice(5); V.view = 'path'; }
-  else if (['atlas', 'paths', 'index', 'soc-pick'].includes(h)) V.view = h;
+  else if (['atlas', 'paths', 'index', 'soc-pick'].includes(h) || EXT.views[h.split('-')[0]]) V.view = h.split('-')[0];
   else if (h === 'round') { R = buildRound({}); if (R) { R.seq[0].q = makeQ(R.seq[0].it); V.view = 'round'; } }
   else if (h === 'det') { detStart(); return; }
   else V.view = 'home';
   render();
 }
 window.addEventListener('hashchange', boot);
-boot();
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 // for Echo's Today tab and games card
 window.medMeta = () => ({ due: dueList().length, known: ALL.filter(i => known(i.id)).length, n: ALL.length });

@@ -1,0 +1,168 @@
+/* Medizin-Atlas maps: gefaesse, luftwege, speiseroehre, gallenblase, harnwege, milz (prefix gg-) */
+/* shared */
+.gg-lum { fill: #F8E4DF; }
+.gg-ctx { fill: #E4D6C8; stroke: #BFAE9A; stroke-width: 1; }
+.gg-bone { fill: #EFE8D8; stroke: #BDB297; stroke-width: 1.2; }
+.gg-flow { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 3 3; stroke-linecap: round; pointer-events: none; }
+.gg-arrow { fill: var(--muted); pointer-events: none; }
+.gg-lig { fill: none; stroke: #C2A77E; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 6 3; pointer-events: none; }
+.gg-nv { fill: none; stroke: #E5BE3D; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.gg-nv-d { fill: none; stroke: #E5BE3D; stroke-width: 2.6; stroke-linecap: round; stroke-dasharray: 5 3; }
+.gg-nv-t { fill: none; stroke: #E5BE3D; stroke-width: 1.6; stroke-linecap: round; }
+.gg-node { fill: #7FB069; stroke: #4F7F3B; stroke-width: 1.2; }
+.gg-art { fill: none; stroke: #D35A4A; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.gg-ven { fill: none; stroke: #5C7FB8; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+
+/* gefaesse4: wall layers */
+.gg-adv { fill: #EFD9C3; stroke: #C9A98D; stroke-width: 1; }
+.gg-fib { fill: none; stroke: #C9A98D; stroke-width: 1; stroke-linecap: round; }
+.gg-med { fill: #D98B7F; stroke: #B5574B; stroke-width: 1; }
+.gg-med-e { fill: #E7B2A4; stroke: #B5574B; stroke-width: 1; }
+.gg-smc { fill: #B9584E; }
+.gg-smc-n { fill: #7A2A22; }
+.gg-int { fill: #F3D9CF; stroke: #C77D74; stroke-width: .8; }
+.gg-int-n { fill: #A86A5E; }
+.gg-iel { fill: none; stroke: #D9A441; stroke-width: 2.2; stroke-linejoin: round; }
+.gg-eel { fill: none; stroke: #D9A441; stroke-width: 1.4; stroke-linejoin: round; }
+.gg-el { fill: none; stroke: #D9A441; stroke-width: 1.6; }
+.gg-endo { fill: #E9A99B; stroke: #B5574B; stroke-width: 1; }
+.gg-endo-l { fill: none; stroke: #B5574B; stroke-width: 2.5; }
+.gg-endo-n { fill: #8E4A43; }
+.gg-vv-a { fill: #D35A4A; stroke: #9E3B30; stroke-width: 1; }
+.gg-vv-v { fill: #5C7FB8; stroke: #3A5888; stroke-width: 1; }
+.gg-nerve { fill: #F2C14E; stroke: #B98A16; stroke-width: 1; }
+.gg-peri { fill: #C9A2C4; stroke: #94708F; stroke-width: 1; }
+.gg-peri-n { fill: #6E4A6A; }
+.gg-bl { fill: none; stroke: #B79A88; stroke-width: 1.2; stroke-dasharray: 2 2; }
+.gg-vw { fill: none; stroke: #6F86B5; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.gg-vlum { fill: #E3EAF5; }
+.gg-cusp { fill: #C9D6EC; stroke: #4A6FA5; stroke-width: 1.5; stroke-linejoin: round; }
+.gg-ing { fill: none; stroke: #C9B48A; stroke-width: 3; stroke-linecap: round; pointer-events: none; }
+
+:root[data-theme="dark"] .gg-lum { fill: #3B2C2C; }
+:root[data-theme="dark"] .gg-vlum { fill: #2A3240; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .gg-lum { fill: #3B2C2C; }
+  :root:not([data-theme="light"]) .gg-vlum { fill: #2A3240; }
+}
+
+/* luftwege */
+.gg-air { fill: #F6E1DA; stroke: #C7A196; stroke-width: 1.5; }
+.gg-phar { fill: #F0CFC5; stroke: #B98478; stroke-width: 2; }
+.gg-concha { fill: #E5AFA3; stroke: #B5847A; stroke-width: 1.2; }
+.gg-sinus { fill: #F7EBDD; stroke: #B8AA8C; stroke-width: 1.6; }
+.gg-palate { fill: none; stroke: #DCCFB2; stroke-width: 6; stroke-linecap: round; }
+.gg-soft { fill: #D98A80; stroke: #B06A60; stroke-width: 1; }
+.gg-tongue { fill: #CF7A6E; stroke: #A9564C; stroke-width: 1.2; }
+.gg-oes { fill: #E2A381; stroke: #B57A55; stroke-width: 1.2; }
+.gg-oes-l { fill: none; stroke: #B57A55; stroke-width: 1.2; }
+.gg-cart { fill: #D6E3E5; stroke: #7F9AA2; stroke-width: 1.3; }
+.gg-cart-l { fill: #E6EEEF; stroke: #A3B6BB; stroke-width: 1; }
+.gg-epi { fill: #EAD48A; stroke: #B3963C; stroke-width: 1.2; }
+.gg-vf { fill: #E8CDBD; stroke: #8E5E52; stroke-width: 1.6; }
+.gg-ff { fill: none; stroke: #E0A196; stroke-width: 4; stroke-linecap: round; }
+.gg-trm { fill: none; stroke: #C2594F; stroke-width: 3; stroke-linecap: round; }
+.gg-hyoid { fill: none; stroke: #DCCFB2; stroke-width: 5; stroke-linecap: round; }
+.gg-mucus { fill: #E8E3B2; fill-opacity: .85; stroke: #C2BA7A; stroke-width: .8; }
+.gg-cil { fill: none; stroke: #B5574B; stroke-width: 1.2; stroke-linecap: round; }
+.gg-ccell { fill: #F2C9C0; stroke: #C08A80; stroke-width: 1; }
+.gg-bcell { fill: #E4B1A8; stroke: #B5847A; stroke-width: 1; }
+.gg-nuc { fill: #8A5468; }
+.gg-gob { fill: #F1F0F8; stroke: #7D93C6; stroke-width: 1.4; }
+.gg-mucd { fill: #C3CFEA; }
+.gg-bm { fill: none; stroke: #A98A78; stroke-width: 2; }
+.gg-lp { fill: #F6EAE0; }
+.gg-gland { fill: #D9C2E0; stroke: #9C82A8; stroke-width: 1; }
+.gg-nvc { fill: none; stroke: #D8C88E; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+.gg-lym { fill: none; stroke: #7FB069; stroke-width: 1.4; stroke-linecap: round; }
+:root[data-theme="dark"] .gg-lp { fill: #33302C; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .gg-lp { fill: #33302C; } }
+
+/* speiseroehre */
+.gg-oe { stroke: #B57A55; stroke-width: 1; stroke-dasharray: 4 3; }
+.gg-oe.cerv { fill: #EDB896; } .gg-oe.thor { fill: #E6A783; } .gg-oe.abd { fill: #DC9670; }
+.gg-sph { fill: #B9654E; stroke: #87412F; stroke-width: 1.2; }
+.gg-imp { fill: #D35A4A; fill-opacity: .55; stroke: #9E3B30; stroke-width: 1.2; }
+.gg-crus { fill: none; stroke: #9E4A40; stroke-width: 6; stroke-linecap: round; }
+.gg-sq { fill: #F3DCD3; }
+.gg-sq-f { fill: #F8E8E1; stroke: #C99A8E; stroke-width: .8; }
+.gg-sq-c { fill: #F0CFC5; stroke: #C08A80; stroke-width: .8; }
+.gg-sq-b { fill: #E2AFA4; stroke: #B5847A; stroke-width: .8; }
+.gg-mm { fill: #D98B7F; }
+.gg-cm { fill: #C8685C; stroke: #9E4A40; stroke-width: .6; }
+.gg-lm { fill: #D27A6E; stroke: #9E4A40; stroke-width: .6; }
+.gg-gast { fill: #E3906F; stroke: #B5654E; stroke-width: 1; }
+.gg-zl { fill: none; stroke: #7A2E25; stroke-width: 2.6; stroke-linejoin: round; }
+.gg-win { fill: none; stroke: #8A4F38; stroke-width: 1.6; }
+.gg-ven-t { fill: none; stroke: #4A6FA5; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+/* gallenblase */
+.gg-gb { stroke: #557A37; stroke-width: 1.2; }
+.gg-gb.fu { fill: #8DB068; } .gg-gb.co { fill: #7DA35A; } .gg-gb.cl { fill: #6E9650; }
+.gg-gb-d { fill: none; stroke: #557A37; stroke-width: 1; stroke-dasharray: 4 3; pointer-events: none; }
+.gg-bile { fill: none; stroke: #5E9A45; stroke-linecap: round; stroke-linejoin: round; }
+.gg-bile-o { fill: none; stroke: #3F6E2C; stroke-linecap: round; stroke-linejoin: round; }
+.gg-bile-r { fill: none; stroke: #5E9A45; stroke-width: 5; stroke-linecap: round; stroke-dasharray: 5 3; }
+.gg-spiral { fill: none; stroke: #2F5A20; stroke-width: 1.2; pointer-events: none; }
+.gg-calot { fill: #E8B84A; fill-opacity: .5; stroke: #B38A1E; stroke-width: 1.4; stroke-dasharray: 4 3; }
+.gg-oddi { fill: #8C5A2E; stroke: #B9654E; stroke-width: 3; }
+.gg-panc { fill: #E5C277; fill-opacity: .75; stroke: #B89340; stroke-width: 1.2; }
+.gg-blum { fill: #DCE4A8; }
+.gg-gbf { fill: #F6DDD3; }
+.gg-epn { fill: none; stroke: #8E4A43; stroke-width: 4; stroke-dasharray: 1.6 4.4; stroke-opacity: .7; pointer-events: none; }
+.gg-smc-b { fill: #C8685C; stroke: #9E4A40; stroke-width: .6; }
+.gg-serosa { fill: #F3E7DA; stroke: #B79A88; stroke-width: 1.2; }
+.gg-gut { fill: none; stroke: #EFCB9E; stroke-linecap: round; stroke-linejoin: round; }
+.gg-gut-o { fill: none; stroke: #C99F6C; stroke-linecap: round; stroke-linejoin: round; }
+.gg-mic { fill: #F2D57A; stroke: #A98A2A; stroke-width: 1; }
+.gg-mic-s { fill: none; stroke: #A98A2A; stroke-width: 1.2; stroke-linecap: round; }
+.gg-bili { fill: #B8692E; stroke: #7A3F12; stroke-width: .8; }
+.gg-bili-a { fill: none; stroke: #B8692E; stroke-width: 3; stroke-linecap: round; }
+.gg-bili-h { fill: #B8692E; }
+:root[data-theme="dark"] .gg-blum { fill: #3A3F2A; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .gg-blum { fill: #3A3F2A; } }
+
+/* harnwege */
+.gg-detr { fill: #C8685C; stroke: #8E3A33; stroke-width: 1.4; }
+.gg-detr-f { fill: none; stroke: #8E3A33; stroke-width: 1; stroke-dasharray: 7 5; stroke-opacity: .6; pointer-events: none; }
+.gg-bl-lum { fill: #F7E2C4; stroke: #C9A26A; stroke-width: 1; }
+.gg-rug { fill: none; stroke: #D9B98A; stroke-width: 1.4; stroke-linecap: round; pointer-events: none; }
+.gg-trig { fill: #F2C4B2; stroke: #B5746A; stroke-width: 1.2; }
+.gg-orif { fill: #6E3A2E; }
+.gg-sphi { fill: #9E4A40; stroke: #6E2D22; stroke-width: 1; }
+.gg-sphe { fill: #B23B3B; stroke: #7A2020; stroke-width: 1.2; }
+.gg-canal { fill: #F7E2C4; }
+.gg-pf { fill: none; stroke: #C2594F; stroke-width: 6; stroke-linecap: round; }
+.gg-vag { fill: none; stroke: #E7B0BA; stroke-linecap: round; } .gg-vag-o { fill: none; stroke: #B0606F; stroke-linecap: round; }
+.gg-pen { fill: none; stroke: #E8BFA8; stroke-linecap: round; stroke-linejoin: round; } .gg-pen-o { fill: none; stroke: #B98A70; stroke-linecap: round; stroke-linejoin: round; }
+.gg-lab { fill: none; stroke: #D98A9A; stroke-width: 3; stroke-linecap: round; }
+.gg-umb { fill: #F4DCCD; stroke: #B5847A; stroke-width: 1; }
+.gg-int-u { fill: #EDC5B6; stroke: #B5847A; stroke-width: .8; }
+.gg-bas-u { fill: #E2AFA4; stroke: #B5847A; stroke-width: .8; }
+.gg-urine { fill: #F7E7B4; }
+.gg-cord { fill: #F2E3A6; stroke: #C9A53A; stroke-width: 1.2; }
+.gg-gang { fill: #E5BE3D; stroke: #A9871E; stroke-width: 1; }
+:root[data-theme="dark"] .gg-urine { fill: #3E3826; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .gg-urine { fill: #3E3826; } }
+
+/* milz */
+.gg-spl { fill: #8F4256; stroke: #66283A; stroke-width: 1; }
+.gg-caps { fill: none; stroke: #F0DCE2; stroke-width: 3; stroke-linejoin: round; }
+.gg-trab { fill: none; stroke: #EBC9D2; stroke-width: 1.8; stroke-linecap: round; }
+.gg-fd { fill: none; stroke: #8FB4D9; stroke-width: 7; stroke-opacity: .85; stroke-linecap: round; }
+.gg-fv { fill: none; stroke: #E3BE5C; stroke-width: 7; stroke-opacity: .85; stroke-linecap: round; }
+.gg-hil { fill: #3E1A26; stroke: #F0DCE2; stroke-width: 1.2; }
+.gg-lig2 { fill: none; stroke: #C2A77E; stroke-width: 2.2; stroke-linecap: round; }
+.gg-imp-d { fill: none; stroke: #C88A9A; stroke-width: 1.2; stroke-dasharray: 4 3; pointer-events: none; }
+.gg-rp { fill: #C2606C; stroke: #8E3A48; stroke-width: 1.2; }
+.gg-cordc { fill: #9E3E4E; }
+.gg-sin { fill: #F3D4D6; stroke: #B5747E; stroke-width: 1.2; }
+.gg-mz { fill: #ECC1C8; stroke: #ECC1C8; }
+.gg-fol { fill: #BCCBEA; stroke: #7F93C0; stroke-width: 1.2; }
+.gg-gc { fill: #E9EEF9; stroke: #9FB0D6; stroke-width: 1; }
+.gg-pals { fill: #8EAAD0; stroke: #5F7DAA; stroke-width: 1.2; }
+.gg-lym-d { fill: #4E6A96; }
+.gg-wp { fill: #A9BDE0; stroke: #ECC1C8; stroke-width: 5; }
+.gg-stave { fill: #D9A3AE; stroke: #9E5A68; stroke-width: 1; }
+.gg-ringf { fill: #B98692; }
+.gg-mph { fill: #C7B28F; stroke: #8C7651; stroke-width: 1.2; }

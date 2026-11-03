@@ -157,6 +157,11 @@ h3 { font-size: 17px; font-weight: 700; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 <link rel="stylesheet" href="med.css">
+<link rel="stylesheet" href="med-maps-sinne.css">
+<link rel="stylesheet" href="med-maps-bewegung.css">
+<link rel="stylesheet" href="med-maps-gaenge.css">
+<link rel="stylesheet" href="med-maps-system.css">
+<link rel="stylesheet" href="psy.css">
 <style>
 .hero { display: grid; grid-template-columns: minmax(0, 44%) minmax(0, 1fr); gap: 12px; align-items: center; }
 .mapbox.hero-map { padding: 0; box-shadow: none; background: none; }
@@ -194,6 +199,8 @@ h3 { font-size: 17px; font-weight: 700; }
 .seg { display: flex; background: var(--surface-2); border-radius: 12px; padding: 3px; gap: 2px; }
 .seg button { flex: 1; border: 0; background: none; border-radius: 10px; padding: 9px 6px; font-weight: 700; font-size: 14px; color: var(--muted); }
 .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.seg.segscroll { overflow-x: auto; scrollbar-width: none; } .seg.segscroll::-webkit-scrollbar { display: none; } .seg.segscroll button { flex: 1 0 auto; white-space: nowrap; padding: 9px 10px; }
+.row > .btn { min-width: 0; }
 .dcard { background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); padding: 14px 16px; display: grid; gap: 10px; }
 .dcard.sel { box-shadow: 0 0 0 2px var(--gold), var(--shadow); }
 .frow { display: grid; gap: 2px; font-size: 15px; border: 0; background: none; padding: 0; text-align: left; }
@@ -256,7 +263,14 @@ details.dis .dcard h3 { display: none; }
 <body>
 <div id="app"><p class="loading">Lädt den Atlas …</p></div>
 <script src="med-svg.js"></script>
+<script src="med-maps-sinne.js"></script>
+<script src="med-maps-bewegung.js"></script>
+<script src="med-maps-gaenge.js"></script>
+<script src="med-maps-system.js"></script>
+<script src="psy-svg.js"></script>
 <script src="med-data.js"></script>
 <script src="med.js"></script>
+<script src="psy-data.js"></script>
+<script src="psy.js"></script>
 </body>
 </html>

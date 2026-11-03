@@ -1,0 +1,153 @@
+/* Medizin-Atlas maps: blut, lymphe, weiblich, maennlich, stoffwechsel */
+.sy-t { font-size: 8px; font-weight: 700; fill: var(--muted); }
+.sy-ctx { opacity: .55; pointer-events: none; }
+.sy-arr { fill: none; stroke: #9A8F84; stroke-width: 1.4; stroke-linecap: round; } .sy-arr-h { fill: #9A8F84; }
+/* Blut */
+.sy-bone { fill: #EFE8D8; stroke: #BDB297; stroke-width: 1.5; }
+.sy-redm { fill: #C9505A; stroke: #9C3540; stroke-width: 1; }
+.sy-yelm { fill: #EFD27C; stroke: #C4A24A; stroke-width: 1; }
+.sy-trab { fill: none; stroke: #EFE8D8; stroke-width: 2.2; stroke-linecap: round; opacity: .85; }
+.sy-glass { fill: none; stroke: #9AA39C; stroke-width: 2; stroke-linecap: round; }
+.sy-plasma { fill: #F1D98A; stroke: #C9AE57; stroke-width: .8; }
+.sy-plasma-l { fill: #F7EAC0; }
+.sy-buffy { fill: #EDE7EF; stroke: #B7A9BE; stroke-width: .8; }
+.sy-erys { fill: #B8333E; stroke: #87212B; stroke-width: .8; }
+.sy-ery { fill: #D4504A; stroke: #9E3B30; stroke-width: 1; } .sy-ery-c { fill: #E9867C; }
+.sy-leuko { fill: #E4D6EC; stroke: #9C84AE; stroke-width: 1.2; }
+.sy-nuc { fill: #6F4F8C; stroke: #553770; stroke-width: .8; }
+.sy-nucl { fill: none; stroke: #6F4F8C; stroke-width: 2.2; stroke-linecap: round; }
+.sy-gran-d { fill: #B89BC8; }
+.sy-plt { fill: #A784C2; stroke: #74528F; stroke-width: .8; }
+.sy-hsc { fill: #CDB8DE; stroke: #8E77A8; stroke-width: 1.4; }
+.sy-prog { fill: #DCCFE6; stroke: #A896B8; stroke-width: 1; }
+.sy-mega { fill: #DDB9D2; stroke: #A07A94; stroke-width: 1.4; }
+.sy-propl { fill: none; stroke: #C99BBF; stroke-width: 3; stroke-linecap: round; }
+.sy-retic { fill: #E2867C; stroke: #B0574B; stroke-width: 1.2; } .sy-retic-n { fill: none; stroke: #4F5FA0; stroke-width: 1.2; stroke-linecap: round; }
+.sy-neu { fill: #EBD8DF; stroke: #A98793; stroke-width: 1.2; }
+.sy-eos { fill: #F3D3C2; stroke: #C08A6E; stroke-width: 1.2; } .sy-eos-g { fill: #D8603F; }
+.sy-mono { fill: #D3CBE0; stroke: #8E84A8; stroke-width: 1.2; }
+.sy-sin { fill: #F3CFC9; } .sy-endo { fill: none; stroke: #B5574B; stroke-width: 1.6; stroke-dasharray: 7 3; }
+.sy-ha { fill: #E7A0A6; stroke: #B5636B; stroke-width: 1.2; } .sy-hb { fill: #C56A84; stroke: #8E4058; stroke-width: 1.2; }
+.sy-heme { fill: #A3262E; stroke: #F6E2C8; stroke-width: 1; } .sy-fe { fill: #F2C14E; }
+/* Lymphe */
+.sy-vein { fill: none; stroke: #5C7FB8; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; opacity: .55; }
+.sy-lv { fill: none; stroke: #8DBB72; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+.sy-ly { fill: none; stroke: #CDE6B4; stroke-linecap: round; stroke-linejoin: round; } .sy-ly-o { fill: none; stroke: #5E8A4A; stroke-linecap: round; stroke-linejoin: round; }
+.sy-cist { fill: #CDE6B4; stroke: #5E8A4A; stroke-width: 1.2; }
+.sy-node { fill: #7FB069; stroke: #4F7F3B; stroke-width: 1; }
+.sy-thy { fill: #A9C98F; stroke: #6E9A57; stroke-width: 1.2; } .sy-thy-l { fill: none; stroke: #6E9A57; stroke-width: 1; }
+.sy-tons { fill: #8DBB72; stroke: #557F40; stroke-width: 1.2; }
+.sy-phar { fill: #F0C2BA; stroke: #C98E84; stroke-width: 1.2; }
+.sy-ringd { fill: none; stroke: #7FB069; stroke-width: 1.4; stroke-dasharray: 4 3; }
+.sy-gut { fill: #EFCB9E; stroke: #C99F6C; stroke-width: 1.2; } .sy-fold { fill: none; stroke: #C99F6C; stroke-width: 1; stroke-linecap: round; }
+.sy-mes { fill: none; stroke: #E5C39A; stroke-width: 6; stroke-linecap: round; }
+.sy-peyer { fill: #9CC386; stroke: #5E8A4A; stroke-width: 1.2; } .sy-foll { fill: #D4E8C4; }
+.sy-lkcap { fill: #E9DCCB; stroke: #A88B74; stroke-width: 2.5; }
+.sy-rsin { fill: none; stroke: #F5EDDF; stroke-width: 6; }
+.sy-cortex { fill: #A58BBF; stroke: #7E6599; stroke-width: .8; }
+.sy-fol { fill: #866AA3; stroke: #6E558A; stroke-width: 1; } .sy-gc { fill: #C4B0D8; }
+.sy-para { fill: #C2ADD2; stroke: #8F78A8; stroke-width: .8; }
+.sy-hev { fill: #F4D9D4; stroke: #C77D74; stroke-width: 1.8; }
+.sy-med { fill: #EDE0E8; stroke: #B992AE; stroke-width: .8; } .sy-cord { fill: none; stroke: #B58FB0; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+.sy-trabl { fill: none; stroke: #A88B74; stroke-width: 1.4; stroke-linecap: round; }
+.sy-ist { fill: #F4E6DC; }
+:root[data-theme="dark"] .sy-ist { fill: #352D29; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sy-ist { fill: #352D29; } }
+.sy-lcap { fill: #DDEBC8; stroke: #6E9A57; stroke-width: 1.8; } .sy-scal { fill: none; stroke: #6E9A57; stroke-width: 1.2; }
+.sy-anch { fill: none; stroke: #B5A08A; stroke-width: .9; }
+.sy-cell-g { fill: #E8D3C4; stroke: #C2A28C; stroke-width: 1; }
+.sy-flow { fill: none; stroke: #6A97AE; stroke-width: 1.3; stroke-linecap: round; } .sy-flow-h { fill: #6A97AE; }
+.sy-tcx { fill: #8F74AA; stroke: #6E558A; stroke-width: 1; } .sy-tmed { fill: #DCCDE6; stroke: #A08DB8; stroke-width: 1; }
+.sy-hass { fill: #EBB2BC; stroke: #B9707E; stroke-width: 1; } .sy-hass-l { fill: none; stroke: #B9707E; stroke-width: .8; }
+.sy-sept { fill: none; stroke: #A88B74; stroke-width: 2; stroke-linecap: round; }
+.sy-tc { fill: #C3D6EE; stroke: #5F80AE; stroke-width: 1.2; } .sy-tc-n { fill: #3F5E8C; }
+.sy-tcr { fill: none; stroke: #3F5E8C; stroke-width: 1.6; stroke-linecap: round; }
+.sy-bc { fill: #E3CDE8; stroke: #9A78A8; stroke-width: 1.2; } .sy-bc-n { fill: #6F4F8C; }
+.sy-pc { fill: #C9A6D6; stroke: #8E6AA0; stroke-width: 1.2; } .sy-pc-h { fill: #EFE4F2; } .sy-pc-c { fill: #F1E6F4; }
+.sy-ab { fill: none; stroke: #6F4F8C; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+/* Weiblich */
+.sy-lig { fill: #F1D3D3; fill-opacity: .8; stroke: #D3A3A8; stroke-width: 1.2; }
+.sy-ut { fill: #D98A9A; stroke: #A95A6A; stroke-width: 1.4; }
+.sy-utc { fill: #F2BCC4; stroke: #C77F8C; stroke-width: 1; }
+.sy-cx { fill: #C97384; stroke: #A0505F; stroke-width: 1.2; }
+.sy-canal { fill: none; stroke: #8E3F50; stroke-width: 1.6; stroke-linecap: round; }
+.sy-vag { fill: #EDB9BE; stroke: #C48690; stroke-width: 1.2; } .sy-rug { fill: none; stroke: #C48690; stroke-width: 1; stroke-linecap: round; }
+.sy-vt { fill: none; stroke: #EDB9BE; stroke-linecap: round; } .sy-vt-o { fill: none; stroke: #C48690; stroke-linecap: round; }
+.sy-tube { fill: none; stroke: #E3A0AB; stroke-linecap: round; stroke-linejoin: round; } .sy-tube-o { fill: none; stroke: #B0606F; stroke-linecap: round; stroke-linejoin: round; }
+.sy-fimb { fill: none; stroke: #C97888; stroke-width: 2.4; stroke-linecap: round; }
+.sy-ov { fill: #EBC6C4; stroke: #B0757A; stroke-width: 1.3; } .sy-fdot { fill: #F8EBD8; stroke: #C9A07E; stroke-width: .8; }
+.sy-ligc { fill: none; stroke: #D3A3A8; stroke-width: 3; stroke-linecap: round; }
+.sy-blad { fill: #F0D27A; stroke: #C4A24A; stroke-width: 1.2; }
+.sy-rect { fill: none; stroke: #C98E5E; stroke-linecap: round; stroke-linejoin: round; } .sy-rect-o { fill: none; stroke: #9C6A40; stroke-linecap: round; stroke-linejoin: round; }
+.sy-doug { fill: #BCD3E3; stroke: #6F94AE; stroke-width: 1.2; stroke-dasharray: 3 2; }
+.sy-perit { fill: none; stroke: #6F94AE; stroke-width: 1.2; stroke-linecap: round; }
+.sy-pect { fill: #C2594F; stroke: #8E3A33; stroke-width: 1; }
+.sy-fat { fill: #F3DFA8; stroke: #D2B572; stroke-width: 1.2; }
+.sy-gland { fill: #E3A1A7; stroke: #B86E76; stroke-width: 1; }
+.sy-mduct { fill: none; stroke: #B86E76; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.sy-nip { fill: #C98478; stroke: #9E5E52; stroke-width: 1; }
+.sy-ovc { fill: #EFCFCB; stroke: #B0757A; stroke-width: 1.5; } .sy-ovm { fill: #E4B3B5; }
+.sy-oo { fill: #FBEBC8; stroke: #C9A45A; stroke-width: 1; } .sy-oon { fill: #B98A3A; }
+.sy-gr { fill: #E9B97E; stroke: #B98446; stroke-width: .8; }
+.sy-antr { fill: #FAF1D8; stroke: #D9B87A; stroke-width: .8; }
+.sy-gra-r { fill: none; stroke: #E5AE6C; stroke-width: 5; } .sy-thec-r { fill: none; stroke: #B7735E; stroke-width: 4; }
+.sy-zp { fill: none; stroke: #F6EFDF; stroke-width: 1.6; }
+.sy-cl { fill: #E7BE52; stroke: #B38F2A; stroke-width: 1.4; } .sy-cl-l { fill: none; stroke: #B38F2A; stroke-width: 1.2; stroke-linecap: round; } .sy-clot { fill: #C9705C; }
+.sy-ca { fill: #F1E7E1; stroke: #C9B8AA; stroke-width: 1; }
+.sy-funct { fill: #F2C6CB; } .sy-basal { fill: #E0A2AB; }
+.sy-glnd { fill: none; stroke: #B9606F; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.sy-spir { fill: none; stroke: #D35A4A; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.sy-epi-u { fill: none; stroke: #B9606F; stroke-width: 2; }
+.sy-myu { fill: #C46E7B; } .sy-myl { fill: none; stroke: #9E4D5A; stroke-width: 1.4; stroke-linecap: round; }
+.sy-perim { fill: #EDE0D4; }
+.sy-alvc { fill: #E9A9AE; stroke: #B86E76; stroke-width: .8; } .sy-milk { fill: #FBF6EA; stroke: #D8C9A8; stroke-width: .8; } .sy-myoep { fill: #A9505F; }
+.sy-lum { fill: #F8EEE6; }
+/* Maennlich */
+.sy-ureth { fill: none; stroke: #E9C46A; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.sy-pros { fill: #C99A8A; stroke: #9E6E5E; stroke-width: 1.3; }
+.sy-sv { fill: #D9B88E; stroke: #A9875C; stroke-width: 1.2; } .sy-sv-l { fill: none; stroke: #A9875C; stroke-width: 1; stroke-linecap: round; }
+.sy-cav { fill: none; stroke: #C9707E; stroke-linecap: round; stroke-linejoin: round; } .sy-cav-o { fill: none; stroke: #9E4D5A; stroke-linecap: round; stroke-linejoin: round; }
+.sy-spo { fill: none; stroke: #E39AA3; stroke-linecap: round; stroke-linejoin: round; } .sy-spo-o { fill: none; stroke: #B5636E; stroke-linecap: round; stroke-linejoin: round; }
+.sy-glans { fill: #E39AA3; stroke: #B5636E; stroke-width: 1.2; }
+.sy-scrot { fill: #E8C6AE; stroke: #B98C70; stroke-width: 1.5; } .sy-wr { fill: none; stroke: #C9A084; stroke-width: 1; stroke-linecap: round; }
+.sy-testis { fill: #E7BDA8; stroke: #9E7462; stroke-width: 2.2; } .sy-sep { fill: none; stroke: #C2927C; stroke-width: 1; stroke-linecap: round; }
+.sy-epid { fill: #CF957E; stroke: #9E6A55; stroke-width: 1.2; }
+.sy-vd { fill: none; stroke: #F3E3CF; stroke-linecap: round; stroke-linejoin: round; } .sy-vd-o { fill: none; stroke: #9C7A5A; stroke-linecap: round; stroke-linejoin: round; }
+.sy-cordf { fill: none; stroke: #D8C3A0; stroke-opacity: .8; stroke-linecap: round; stroke-linejoin: round; } .sy-cordf-o { fill: none; stroke: #9C8A6C; stroke-opacity: .7; stroke-linecap: round; stroke-linejoin: round; }
+.sy-germ { fill: #F1D9C8; stroke: none; } .sy-bm { fill: none; stroke: #B98C70; stroke-width: 3; }
+.sy-tlum { fill: #FBF3EA; stroke: #E0C9B4; stroke-width: 1; }
+.sy-sert { fill: #F7EEE4; stroke: #C9AE96; stroke-width: 1; } .sy-sert-n { fill: #D9C2AE; stroke: #9E8470; stroke-width: .8; }
+.sy-spg { fill: #9A7BB2; stroke: #6E558A; stroke-width: .8; }
+.sy-spc { fill: #E3C2C6; stroke: #B5878E; stroke-width: .8; } .sy-spc-n { fill: #8E5A6C; }
+.sy-spt { fill: #EBD3D0; stroke: #B5878E; stroke-width: .7; }
+.sy-leyd { fill: #E3A776; stroke: #B07646; stroke-width: 1; } .sy-leyd-n { fill: #7A4A28; }
+.sy-sph { fill: #7F5A8E; stroke: #5A3C68; stroke-width: 1; } .sy-acro { fill: #C9B4DA; stroke: #8E77A8; stroke-width: .8; }
+.sy-mid { fill: none; stroke: #C77D4E; stroke-width: 5; stroke-linecap: round; } .sy-mid-s { fill: none; stroke: #8E4E2A; stroke-width: 1.2; stroke-dasharray: 2 2; }
+.sy-tail { fill: none; stroke: #8E77A8; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.sy-pz { fill: #D9A08E; stroke: #9E6E5E; stroke-width: 1; } .sy-tz { fill: #ECC9AE; stroke: #B08A6E; stroke-width: 1; } .sy-cz { fill: #C4847A; stroke: #8E5A50; stroke-width: 1; } .sy-afms { fill: #E9DCD2; stroke: #B5A496; stroke-width: 1; }
+/* Stoffwechsel */
+.sy-liver { fill: #A4503F; stroke: #6E2D22; stroke-width: 1.5; }
+.sy-kid { fill: #B0503F; stroke: #7F3024; stroke-width: 1.4; } .sy-kid-h { fill: #F0D58C; stroke: #C4A24A; stroke-width: 1; }
+.sy-panc { fill: #E5C277; stroke: #B89340; stroke-width: 1.2; }
+.sy-islet { fill: #FBF1DF; stroke: #C99A4A; stroke-width: 1.6; } .sy-ib { fill: #7FB8A2; } .sy-ia { fill: #EBA07F; }
+.sy-si { fill: #EFCB9E; stroke: #C99F6C; stroke-width: 1.2; } .sy-coil { fill: none; stroke: #C99F6C; stroke-width: 1.3; stroke-linecap: round; }
+.sy-musc { fill: #C2594F; stroke: #8E3A33; stroke-width: 1.3; } .sy-fib { fill: none; stroke: #8E3A33; stroke-width: .9; stroke-linecap: round; } .sy-tend { fill: none; stroke: #EFE3CC; stroke-width: 5; stroke-linecap: round; }
+.sy-wat { fill: #F4E2A8; stroke: #C9AE57; stroke-width: 1; } .sy-wat-n { fill: #A88B3A; }
+.sy-bat { fill: #B97A4E; stroke: #7E4E2C; stroke-width: 1; } .sy-bat-d { fill: #F1D9A6; } .sy-bat-n { fill: #4E2E18; }
+.sy-fg { fill: none; stroke: #C9902C; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; } .sy-fg-h { fill: #C9902C; }
+.sy-fi { fill: none; stroke: #2F8F80; stroke-width: 1.8; stroke-dasharray: 5 3; stroke-linecap: round; } .sy-fi-h { fill: #2F8F80; }
+.sy-ff { fill: none; stroke: #8E9E2E; stroke-width: 2; stroke-linecap: round; } .sy-ff-h { fill: #8E9E2E; }
+.sy-fp { fill: none; stroke: #7C6FB0; stroke-width: 2.4; stroke-linecap: round; } .sy-fp-h { fill: #7C6FB0; }
+.sy-fn { fill: none; stroke: #B38F2A; stroke-width: 1.8; stroke-dasharray: 2 3; stroke-linecap: round; } .sy-fn-h { fill: #B38F2A; }
+.sy-blood { fill: #F3D0CA; stroke: #C77D74; stroke-width: 1.5; }
+.sy-cellm { fill: #F4E1DA; stroke: #C79A8C; stroke-width: 2; }
+:root[data-theme="dark"] .sy-cellm { fill: #3A2E2A; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sy-cellm { fill: #3A2E2A; } }
+.sy-glut { fill: #5FA8C8; stroke: #2F6E8C; stroke-width: 1; } .sy-ves { fill: #DCEAF2; stroke: #6A97AE; stroke-width: 1; }
+.sy-insr { fill: none; stroke: #2F8F80; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; } .sy-ins { fill: #2F8F80; }
+.sy-glc { fill: #F2D57A; stroke: #B3932E; stroke-width: .8; }
+.sy-mito { fill: #E9A36B; stroke: #A9663A; stroke-width: 1.6; } .sy-mito-i { fill: #F6D2AE; stroke: none; } .sy-cris { fill: none; stroke: #A9663A; stroke-width: 1.6; stroke-linejoin: round; }
+.sy-adc { fill: #E9CFA8; stroke: #B5956A; stroke-width: 1.4; } .sy-lip { fill: #F6E7A6; stroke: #D2BB64; stroke-width: 1; } .sy-adn { fill: #8C6A3A; }
+.sy-chylo { fill: #F7EBC0; stroke: #C9AE57; stroke-width: 1.2; }
+.sy-ldl { fill: #E8A04B; stroke: #A9741E; stroke-width: 1; } .sy-hdl { fill: #7FB8A2; stroke: #4E8C76; stroke-width: 1; } .sy-apo { fill: none; stroke: #5A3C2A; stroke-width: 1.4; }
+.sy-urat { fill: #F3F0E2; stroke: #9C9478; stroke-width: 1; }

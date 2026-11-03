@@ -122,6 +122,7 @@
     endokrin: ['niere:ghost', 'nebenniere', 'pankreas:ghost', 'schilddruese', 'hypophyse', 'gehirn:ghost', 'stoffwechsel'],
     blut: ['blut', 'lymphe', 'milz'], bewegung: ['muskeln', 'knochen', 'gelenke'], haut: ['haut'],
     fortpflanzung: ['harnwege:ghost', 'SEX', 'BRUST'], sinne: ['gehirn:ghost', 'auge', 'ohr'],
+    psyche: ['nerven:ghost', 'rueckenmark:ghost', 'gehirn'],
   };
   function body(view = 'all', sex = 'w') {
     const parts = (VIEWS[view] || VIEWS.all).map(p => {
@@ -131,7 +132,7 @@
       const s = B[k] || ''; return mod === 'ghost' ? s.replace('class="part"', 'class="ghost"') : s;
     }).join('');
     const sil = view === 'haut' ? '' : path(SIL, 'sil');
-    return `<svg viewBox="0 0 400 800" class="map body" role="img" aria-label="Körperkarte">${sil}${parts}</svg>`;
+    return `<svg viewBox="0 0 400 800" class="map body${view === 'psyche' ? ' psy' : ''}" role="img" aria-label="Körperkarte">${sil}${parts}</svg>`;
   }
 
   /* ================= organ detail maps (Stufe 3) and micro views (Stufe 4) ================= */
@@ -431,5 +432,8 @@
   function detail(key) { return CACHE[key] || (CACHE[key] = D[key] ? D[key]() : ''); }
   function mapFor(organ, sid) { for (const [k] of MAPS[organ] || []) if (detail(k).includes(`data-s="${sid}"`)) return k; return null; }
 
-  root.MEDSVG = { cr, body, VIEWS, SIL, detail, MAPS, mapFor };
+  // extension files (med-maps-*.js) add organs: MEDSVG.addMaps('auge', [['auge', 'Auge im Schnitt', 3], ['auge4', 'Netzhaut', 4]], { auge: () => svg, auge4: () => svg })
+  function addMaps(organ, list, fns) { MAPS[organ] = list; Object.assign(D, fns); for (const k in fns) delete CACHE[k]; }
+  const h = { f, cr, mir, path, blob, line, ell, circ, g, S, O, txt, svgw, tube, zlabel, zs };
+  root.MEDSVG = { cr, body, VIEWS, SIL, detail, MAPS, mapFor, addMaps, h };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1,0 +1,74 @@
+/* Gehirn & Psyche: brain view colours and overlays */
+.py-lobe { stroke: #B8807E; stroke-width: 1.1; opacity: .9; }
+.py-fr { fill: #F3D2D0; } .py-pa { fill: #F1DDC4; } .py-te { fill: #D5E4CF; } .py-oc { fill: #CFDDE9; }
+.py-medial { fill: #F1DCD8; stroke: #B8807E; stroke-width: 1.2; }
+.py-r { stroke: #8E5A58; stroke-width: .9; }
+.py-pfc { fill: #E79E9C; } .py-pfc2 { fill: #EDB0AE; } .py-ofc { fill: #D98C8A; }
+.py-lang { fill: #E8B66E; } .py-m1 { fill: #E2A6A0; } .py-s1 { fill: #EBC8A0; } .py-ppc { fill: #E3C38F; }
+.py-aud { fill: #A9CFA0; } .py-tp { fill: #B9D5AE; } .py-ins { fill: #C79BC4; } .py-v1 { fill: #9FC0DB; }
+.py-ins-l { fill: none; stroke: #8E5A8C; stroke-width: 1; stroke-dasharray: 3 2; pointer-events: none; }
+.py-stem { fill: #D8C7A8; stroke: #A99470; stroke-width: 1.2; }
+.py-cb { fill: #D7B7D9; stroke: #A688A9; stroke-width: 1.2; }
+.py-fol { fill: none; stroke: #A688A9; stroke-width: 1; pointer-events: none; }
+.py-sulc { fill: none; stroke: #8E5A58; stroke-width: 2; stroke-linecap: round; pointer-events: none; }
+.py-cing { fill: #E9A889; } .py-cing2 { fill: #E5B98F; } .py-sg { fill: #D9634F; }
+.py-cc { fill: none; stroke: #F4EFE6; stroke-linecap: round; stroke-linejoin: round; }
+.py-cc-o { fill: none; stroke: #A89A80; stroke-linecap: round; stroke-linejoin: round; }
+.py-cc-s { fill: #F4EFE6; stroke: #A89A80; stroke-width: 1; }
+.py-fornix { fill: none; stroke: #CDBFA6; stroke-width: 3; stroke-linecap: round; pointer-events: none; opacity: .8; }
+.py-thal { fill: #E3A86B; } .py-hab { fill: #8C6BB0; } .py-pin { fill: #B39A72; } .py-sep { fill: #D9A0B8; }
+.py-hyth { fill: #E07A6C; } .py-mam { fill: #C8574A; } .py-pit { fill: #D9A441; }
+.py-stalk { fill: none; stroke: #D9A441; stroke-width: 2.5; }
+.py-nbm { fill: #7FB8C9; } .py-nacc { fill: #F2C14E; } .py-amy { fill: #C9575E; } .py-ent { fill: #9DC08B; }
+.py-hipp { fill: none; stroke: #7FB069; stroke-width: 9; stroke-linecap: round; }
+.proj .py-r, .proj .py-hipp { stroke-dasharray: 3 2; }
+.py-da { fill: #E8B63E; } .py-sn { fill: #4A4038; } .py-5ht { fill: #5E9BD6; } .py-ne { fill: #4FA3A0; }
+.py-hit-l { fill: none; stroke: transparent; stroke-width: 12; }
+.py-tlobe { fill: none; stroke: #9BB08E; stroke-width: 1.2; stroke-dasharray: 5 4; pointer-events: none; }
+.py-gray { fill: #E2BDB5; stroke: #B8807E; stroke-width: 1.2; }
+.py-white { fill: #F7EFE6; stroke: none; }
+:root[data-theme="dark"] .py-white { fill: #3A3430; } :root[data-theme="dark"] .py-medial { fill: #3B302E; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .py-white { fill: #3A3430; } :root:not([data-theme="light"]) .py-medial { fill: #3B302E; } }
+.py-fiss { fill: none; stroke: #9C6A66; stroke-width: 1.4; pointer-events: none; }
+.py-cla { fill: #B98AB6; } .py-put { fill: #9FB8D8; } .py-gp { fill: #C9D6E8; } .py-cap { fill: #FBF7F0; stroke: #C9B8A0; }
+.py-caud { fill: #8FAAD0; } .py-vent { fill: #7D95B5; stroke: #5D7595; } .py-bnst { fill: #A86B8C; }
+.py-layer0 { fill: #F8EEEA; } .py-layer1 { fill: #F3E4DE; }
+:root[data-theme="dark"] .py-layer0 { fill: #2E2826; } :root[data-theme="dark"] .py-layer1 { fill: #29231F; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .py-layer0 { fill: #2E2826; } :root:not([data-theme="light"]) .py-layer1 { fill: #29231F; } }
+.py-pyr { fill: #D8A9D4; stroke: #A47AA0; stroke-width: 1.5; }
+.py-den, .py-axon { fill: none; stroke: #C79BC4; stroke-width: 4; stroke-linecap: round; }
+.py-axon { stroke-width: 3; }
+.py-spine { fill: #C79BC4; }
+.py-rec2a { fill: none; stroke: #E0533A; stroke-width: 2.6; stroke-linecap: round; }
+.py-rec1a { fill: none; stroke: #3F7FC4; stroke-width: 2.6; stroke-linecap: round; }
+.py-5ht-ax { fill: none; stroke: #5E9BD6; stroke-width: 3; stroke-linecap: round; }
+.py-term { fill: #BFD7EE; stroke: #5E9BD6; stroke-width: 1.5; }
+.py-ves { fill: #5E9BD6; }
+.py-sert { fill: none; stroke: #1F5E9E; stroke-width: 3; stroke-linecap: round; }
+.py-glu-ax { fill: none; stroke: #9DBF6E; stroke-width: 3; stroke-linecap: round; }
+.py-gterm { fill: #DDEBC8; stroke: #7FA34E; stroke-width: 1.5; }
+.py-nmda { fill: none; stroke: #4E7A2A; stroke-width: 2; }
+.py-int { fill: #A8D5A0; stroke: #6E9A57; stroke-width: 1.2; }
+.py-int-l { fill: none; stroke: #8DBF83; stroke-width: 2.4; stroke-linecap: round; }
+.py-trkb { fill: none; stroke: #C47F25; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.py-bdnf { fill: #E8A04B; }
+.py-mg { fill: #B7A28C; stroke: #7E6A52; stroke-width: 1; }
+.py-mg-l { fill: none; stroke: #9C8870; stroke-width: 2; stroke-linecap: round; }
+
+/* overlays drawn by psy.js */
+.map .ov { pointer-events: none; }
+.map .ov-path { fill: none; stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 7 6; animation: ovflow 1.6s linear infinite; filter: drop-shadow(0 0 3px currentColor); }
+@keyframes ovflow { to { stroke-dashoffset: -26; } }
+.map .ov-dot { filter: drop-shadow(0 0 4px currentColor); }
+.map .part.hl { filter: drop-shadow(0 0 2px var(--hlc, #E8A04B)) drop-shadow(0 0 8px var(--hlc, #E8A04B)); }
+.map .part.hl-hyper { --hlc: #E0533A; } .map .part.hl-hypo { --hlc: #3F7FC4; } .map .part.hl-atrophy, .map .part.hl-loss { --hlc: #8C6BB0; }
+.map .part.hl-dysconnect, .map .part.hl-lesion { --hlc: #9C6A40; } .map .part.hl-focus { --hlc: #E8A04B; }
+.map.fade .part:not(.hl) { opacity: .38; }
+.map .part.hl-hyper { animation: hlpulse 2.2s ease-in-out infinite; }
+@keyframes hlpulse { 50% { filter: drop-shadow(0 0 1px var(--hlc)) drop-shadow(0 0 14px var(--hlc)); } }
+.map.body.psy [data-o="gehirn"] { animation: brainglow 3.6s ease-in-out infinite; }
+@keyframes brainglow { 0%, 100% { filter: drop-shadow(0 0 4px #E8A04B) drop-shadow(0 0 10px rgba(232,160,75,.6)); } 50% { filter: drop-shadow(0 0 8px #F2C14E) drop-shadow(0 0 24px rgba(242,193,78,.85)); } }
+.how { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; flex: none; overflow-wrap: normal; font-size: 11px; font-weight: 700; border-radius: 99px; padding: 2px 8px; }
+.how.hyper { background: rgba(224,83,58,.15); color: #C0432C; } .how.hypo { background: rgba(63,127,196,.15); color: #2F6AA8; }
+.how.atrophy, .how.loss { background: rgba(140,107,176,.16); color: #7553A0; } .how.dysconnect, .how.lesion { background: rgba(156,106,64,.16); color: #8A5A30; }
+.how.focus { background: var(--gold-soft); color: var(--gold); }
