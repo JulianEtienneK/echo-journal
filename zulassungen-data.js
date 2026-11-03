@@ -2082,7 +2082,7 @@ window.ZULASSUNGEN = {
 "first_in_class": true,
 "psychedelikum": true,
 "designations": "Breakthrough Therapy (TRD), CNPV (Apr 2026), Rolling Review, UK ILAP",
-"status": "Zwei positive Phase-3-Studien (COMP005 vs Placebo, COMP006 vs 1 mg) mit 26-Wochen-Daten; NDA rollend, Launch H1 2027 geplant (vorbehaltlich Zulassung und DEA-Rescheduling).",
+"status": "Zwei positive Phase-3-Studien (COMP005 vs Placebo, COMP006 vs 1 mg) mit 26-Wochen-Daten; NDA rollend, Launch H1 2027 geplant (vorbehaltlich Zulassung und DEA-Rescheduling). Q3-Bericht 03.11.2026: Abschluss der NDA-Einreichung innerhalb von zwei Wochen; Priority Voucher kann die Prüfung auf 1–2 Monate verkürzen.",
 "fda_status": "Rolling NDA läuft (Rolling Review seit Apr 2026), Abschluss für Q4 2026 angekündigt; CNPV (Prüfung Ziel 1–2 Monate); FDA-Inspektionen seit Sep 2026",
 "fda_termin": "Q1 2027",
 "ema_status": "Kein MAA angekündigt; UK: ILAP-Status (MHRA)",
@@ -2117,9 +2117,9 @@ window.ZULASSUNGEN = {
 "marktkap_mrd": 1.16,
 "handelbar_de": "",
 "depot_bezug": "Depot",
-"depot_notiz": "Compass (Depot) ist ein Pure Play: die Entscheidung über COMP360 bestimmt den Kurs. Die NDA-Meldung von Usona hat am 02.11.2026 rund 27 % gekostet; ein früheres oder breiteres Usona-Label wäre das Hauptrisiko. Klumpenrisiko: vier Depotwerte hängen am Psychedelika-Thema.",
+"depot_notiz": "Compass (Depot) ist ein Pure Play: die Entscheidung über COMP360 bestimmt den Kurs. Laut Q3-Bericht vom 03.11.2026 wird die NDA in den nächsten zwei Wochen fertig eingereicht; der Priority Voucher könnte die Prüfung auf 1–2 Monate verkürzen, Launch geplant für H1 2027. Hauptrisiko ist Usona mit einem früheren oder breiteren Label. Klumpenrisiko: vier Depotwerte hängen am Psychedelika-Thema.",
 "pruefstatus": "live (Sep–Nov 2026 Quellen)",
-"quellen": "https://www.sec.gov/Archives/edgar/data/0001816590/000181659026000059/q22026pressrelease.htm | https://www.sec.gov/Archives/edgar/data/0001816590/000181659026000047/cmps-20260707.htm | https://www.hcplive.com/view/comp360-psilocybin-meets-primary-endpoint-second-phase-3-trial-trd | https://healingmaps.com/fda-grants-priority-vouchers-to-three-psychedelic-drug-programs/ | https://www.fool.com/investing/2026/11/02/1-reason-compass-pathways-is-worth-a-second-look/ | https://finance.yahoo.com/healthcare/articles/cmps-help-stocks-track-worst-195733318.html | https://psychedelicalpha.com/news/usona-files-psilocybin-for-depression-nda-as-race-with-compass-tightens/"
+"quellen": "https://www.sec.gov/Archives/edgar/data/0001816590/000181659026000078/q32026pressrelease.htm | https://www.sec.gov/Archives/edgar/data/0001816590/000181659026000059/q22026pressrelease.htm | https://www.sec.gov/Archives/edgar/data/0001816590/000181659026000047/cmps-20260707.htm | https://www.hcplive.com/view/comp360-psilocybin-meets-primary-endpoint-second-phase-3-trial-trd | https://healingmaps.com/fda-grants-priority-vouchers-to-three-psychedelic-drug-programs/ | https://www.fool.com/investing/2026/11/02/1-reason-compass-pathways-is-worth-a-second-look/ | https://finance.yahoo.com/healthcare/articles/cmps-help-stocks-track-worst-195733318.html | https://psychedelicalpha.com/news/usona-files-psilocybin-for-depression-nda-as-race-with-compass-tightens/"
 },
 {
 "id": "psilocybin-usona",
@@ -2171,7 +2171,7 @@ window.ZULASSUNGEN = {
 "handelbar_de": "",
 "depot_bezug": "Depot (indirekt)",
 "depot_notiz": "Kein börsennotierter Sponsor. Wirkt als Konkurrenz direkt auf Compass (Depot): Eine Erstzulassung für Usona mit breiterem Label würde COMP360 unter Druck setzen.",
-"pruefstatus": "live (Filing-Status Nov 2026, ClinicalTrials.gov API)",
+"pruefstatus": "NDA-Einreichung laut Branchenbericht (Psychedelic Alpha), vom Sponsor bei dieser Recherche nicht offiziell bestätigt",
 "quellen": "https://psychedelicalpha.com/news/usona-files-psilocybin-for-depression-nda-as-race-with-compass-tightens/ | https://healingmaps.com/psilocybin-nda-usona-compass-indications/ | https://clinicaltrials.gov/study/NCT06308653 | https://psychedelicalpha.com/news/momentum-amidst-tumult-the-fda-reshuffle-approval-timelines-and-the-compass-usona-race/"
 },
 {
@@ -3974,7 +3974,7 @@ window.ZULASSUNGEN = {
 "depot_bezug": "Merkliste",
 "depot_notiz": "Ionis (Merkliste) hätte über Lizenzgebühren profitiert. Nach dem verfehlten Endpunkt ist dieser Teil der Ionis-These weitgehend weg.",
 "pruefstatus": "live recherchiert, Quellen unten",
-"quellen": "https://www.novartis.com/us-en/news/media-releases/novartis-announces-lpahorizon-phase-iii-topline-results-pelacarsen-patients-elevated-lpa-and-established-cardiovascular-disease-cvd.md | https://www.tctmd.com/news/lpahorizon-top-line-results-dash-hopes-pelacarsen | https://www.spglobal.com/market-intelligence/en/news-insights/research/2026/09/visible-alpha-consensus-shows-novartis-pipeline-reset-after-trial-failures"
+"quellen": "https://www.hcplive.com/view/pelacarsen-misses-primary-endpoint-in-lp-a-horizon-phase-3-trial | https://www.novartis.com/us-en/news/media-releases/novartis-announces-lpahorizon-phase-iii-topline-results-pelacarsen-patients-elevated-lpa-and-established-cardiovascular-disease-cvd.md | https://www.tctmd.com/news/lpahorizon-top-line-results-dash-hopes-pelacarsen | https://www.spglobal.com/market-intelligence/en/news-insights/research/2026/09/visible-alpha-consensus-shows-novartis-pipeline-reset-after-trial-failures"
 },
 {
 "id": "obicetrapib",
@@ -6001,7 +6001,7 @@ window.ZULASSUNGEN = {
 "datum": "2026-11-02",
 "kandidat": "Psilocybin (Usona)",
 "art": "Antrag",
-"notiz": "Meldung zur eingereichten NDA; Compass verlor am selben Tag rund 27 %."
+"notiz": "Branchenbericht über eine eingereichte NDA; offiziell noch nicht bestätigt. Compass reagierte deutlich negativ."
 },
 {
 "nr": 3,
@@ -6012,7 +6012,7 @@ window.ZULASSUNGEN = {
 },
 {
 "nr": 4,
-"datum": "2026-11-03",
+"datum": "2026-09-05",
 "kandidat": "Pelacarsen",
 "art": "Studienergebnis",
 "notiz": "Lp(a)HORIZON hat den primären Endpunkt verfehlt; Zulassung unwahrscheinlich, Dämpfer für die Lp(a)-Klasse."
@@ -6030,6 +6030,13 @@ window.ZULASSUNGEN = {
 "kandidat": "Oveporexton",
 "art": "FDA-Zulassung",
 "notiz": "Erster Orexin-Agonist (Narkolepsie Typ 1); Japan und EU folgen."
+},
+{
+"nr": 7,
+"datum": "2026-11-03",
+"kandidat": "COMP360 Psilocybin",
+"art": "Firmenmeldung",
+"notiz": "Q3-Bericht: NDA-Einreichung wird in zwei Wochen abgeschlossen; Priority Voucher kann die Prüfung auf 1–2 Monate verkürzen; Launch H1 2027 geplant."
 }
 ],
 "stand": {
