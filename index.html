@@ -300,6 +300,7 @@ i[data-l="0"] { background: var(--surface-2); }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--surface); }
 .seg button { border: 0; background: none; border-radius: 999px; padding: 6px 12px; font-size: 14px; }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.seg.segscroll { max-width: 100%; overflow-x: auto; scrollbar-width: none; } .seg.segscroll::-webkit-scrollbar { display: none; } .seg.segscroll button { flex: none; white-space: nowrap; }
 hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
 .has-player #app { padding-bottom: calc(var(--tabh) + 240px + env(safe-area-inset-bottom, 0px)); }
 .has-player .composer { bottom: calc(var(--tabh) + 118px + env(safe-area-inset-bottom, 0px)); }
@@ -318,6 +319,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
 <script src="puzzles3.js"></script>
 <script src="puzzles4.js"></script>
 <script src="puzzles5.js"></script>
+<script src="puzzles6.js"></script>
 <script src="skandale-data.js"></script>
 <script src="xwinfo.js"></script>
 <script src="xwgen.js"></script>
@@ -402,7 +404,7 @@ const I18N = {
     socModeEs: 'Español', esIntro: 'Sprich Spanisch mit einer sehr seltsamen Figur. Sie bleibt in ihrer Rolle, korrigiert kurz und spricht ihre Antworten laut.', esChar: 'Wer soll heute mit dir reden?', esLevel: 'Niveau', esVoice: 'Stimme', esVoiceBrowser: 'Browser (kostenlos)', esVoiceAI: 'OpenAI (lebendiger)',
     esAutoSay: 'Antworten automatisch vorlesen', esStart: '¡Vamos!', esTalk: 'Hablar', esListening: 'Escuchando … tippen zum Senden', esSay: 'Vorlesen', esStop: 'Stopp',
     esThinking: n => n + ' denkt nach …', esHint: '¡Ayuda! Gib mir bitte auf Deutsch zwei, drei Wörter oder einen Satzanfang, mit dem ich antworten kann.', esPlaceholder: 'Escribe … oder tippe auf Hablar', esNoVoice: 'Dieser Browser kann nicht vorlesen.', esNoMic: 'Spracheingabe geht hier nicht – schreib einfach.',
-    socModeNutri: 'Ernährungsmedizin', socModeSci: 'Wissenschaftsskandale', socSciIntro: 'Ein Fall aus den Skandal-Akten als kurze Geschichte. Claude fragt: Was lief schief, welche Warnsignale gab es, wie hätte man es früher bemerkt, und was heißt das für deine eigene Forschung?', socSciCase: c => 'Fall: ' + c, xwSci: 'Wissenschaftsskandale', q_sk: 'Skandal-Akten: ein Fall', gamesSk: 'Skandal-Akten', gamesSkSub: 'Wissenschaftsskandale: lesen, Quiz, Detektiv, Zeitstrahl', socModeTalk: 'Vortrag & Diskussion', socTalkTopic: 'Thema deines Vortrags', socTalkMaterial: 'Material (optional): Gliederung, Abstract, Kernaussagen',
+    socModeNutri: 'Ernährungsmedizin', socModeSci: 'Wissenschaftsskandale', socModeMed: 'Medizin', socMedIntro: 'Ein Thema aus dem Medizin-Atlas. Claude fragt dich vom Mechanismus bis zur Klinik durch: was normal passiert, was schiefgeht, warum das Leitsymptom entsteht, welcher Befund es beweist und wie man behandelt.', socMedTopic: c => 'Thema: ' + c, socMedNone: 'Wähle zuerst im Medizin-Atlas ein Thema.', socMedPick: 'Thema im Medizin-Atlas wählen', xwMed: 'Medizin', q_med: 'Medizin-Atlas: eine Lernrunde', gamesMed: 'Medizin-Atlas', gamesMedSub: 'Anatomie in 4 Stufen, Krankheiten, Stoffwechselwege', socSciIntro: 'Ein Fall aus den Skandal-Akten als kurze Geschichte. Claude fragt: Was lief schief, welche Warnsignale gab es, wie hätte man es früher bemerkt, und was heißt das für deine eigene Forschung?', socSciCase: c => 'Fall: ' + c, xwSci: 'Wissenschaftsskandale', q_sk: 'Skandal-Akten: ein Fall', gamesSk: 'Skandal-Akten', gamesSkSub: 'Wissenschaftsskandale: lesen, Quiz, Detektiv, Zeitstrahl', socModeTalk: 'Vortrag & Diskussion', socTalkTopic: 'Thema deines Vortrags', socTalkMaterial: 'Material (optional): Gliederung, Abstract, Kernaussagen',
     socTalkIntro: 'Claude spielt das kritische Publikum: eine Frage nach der anderen, wie in der Diskussion nach dem Vortrag. Du antwortest, Claude gibt kurzes Feedback und hakt nach.', socTalkNeed: 'Gib zuerst das Thema ein.', socTalkStart: 'Diskussion starten',
     goalsCarry: 'Ziele der Vorwoche übernehmen', goalsDone: 'Alle Wochenziele erreicht',
     echoTitle: 'Echo', echoAgo: n => n === 1 ? 'Gestern' : 'Vor ' + n + ' Tagen', echoYear: 'Vor einem Jahr', echoRandom: 'Aus deinem Archiv',
@@ -518,7 +520,7 @@ const I18N = {
     socModeEs: 'Español', esIntro: 'Speak Spanish with a very strange character. It stays in role, corrects you briefly and speaks its replies out loud.', esChar: 'Who should talk to you today?', esLevel: 'Level', esVoice: 'Voice', esVoiceBrowser: 'Browser (free)', esVoiceAI: 'OpenAI (more lively)',
     esAutoSay: 'Read replies aloud automatically', esStart: '¡Vamos!', esTalk: 'Hablar', esListening: 'Escuchando … tap to send', esSay: 'Read aloud', esStop: 'Stop',
     esThinking: n => n + ' is thinking …', esHint: '¡Ayuda! Please give me two or three words in English or the start of a sentence I can answer with.', esPlaceholder: 'Escribe … or tap Hablar', esNoVoice: 'This browser cannot read aloud.', esNoMic: 'Voice input does not work here – just type.',
-    socModeNutri: 'Nutritional medicine', socModeSci: 'Science scandals', socSciIntro: 'A case from the scandal files as a short story. Claude asks: what went wrong, which red flags were there, how could it have been caught earlier, and what does it mean for your own research?', socSciCase: c => 'Case: ' + c, xwSci: 'Science scandals', q_sk: 'Scandal files: one case', gamesSk: 'Scandal files', gamesSkSub: 'Science scandals: read, quiz, detective, timeline', socModeTalk: 'Talk & discussion', socTalkTopic: 'Topic of your talk', socTalkMaterial: 'Material (optional): outline, abstract, key claims',
+    socModeNutri: 'Nutritional medicine', socModeSci: 'Science scandals', socModeMed: 'Medicine', socMedIntro: 'A topic from the medicine atlas. Claude takes you from mechanism to clinic: what normally happens, what goes wrong, why the leading symptom appears, which finding proves it and how it is treated.', socMedTopic: c => 'Topic: ' + c, socMedNone: 'Pick a topic in the medicine atlas first.', socMedPick: 'Pick a topic in the medicine atlas', xwMed: 'Medicine', q_med: 'Medicine atlas: one round', gamesMed: 'Medicine atlas', gamesMedSub: 'Anatomy in 4 levels, diseases, metabolic pathways', socSciIntro: 'A case from the scandal files as a short story. Claude asks: what went wrong, which red flags were there, how could it have been caught earlier, and what does it mean for your own research?', socSciCase: c => 'Case: ' + c, xwSci: 'Science scandals', q_sk: 'Scandal files: one case', gamesSk: 'Scandal files', gamesSkSub: 'Science scandals: read, quiz, detective, timeline', socModeTalk: 'Talk & discussion', socTalkTopic: 'Topic of your talk', socTalkMaterial: 'Material (optional): outline, abstract, key claims',
     socTalkIntro: 'Claude plays the critical audience: one question at a time, like the discussion after a talk. You answer, Claude gives brief feedback and follows up.', socTalkNeed: 'Enter the topic first.', socTalkStart: 'Start discussion',
     goalsCarry: "Copy last week's goals", goalsDone: 'All weekly goals reached',
     echoTitle: 'Echo', echoAgo: n => n === 1 ? 'Yesterday' : n + ' days ago', echoYear: 'A year ago', echoRandom: 'From your archive',
@@ -759,7 +761,7 @@ function computeStats() {
   xp = Math.max(0, xp); // revealed crossword words can subtract, never below zero overall
   const level = levelFrom(xp);
   const quests = { memo: dayMin.has(td), socratic: socDays.has(td), recap: recapSet.has(td), echo: (pl[td] || []).length > 0,
-    es: esDone.some(d => d.day === td), skandal: !!gToday.skandal, xw: xwDoneDays.has(td), geo: geoDays.includes(td), note: !!nr[td], plan: !!pls[td], wordle: !!gToday.wordle, rechnen: !!gToday.rechnen, quiz_ernmed: !!gToday.quiz_ernmed, quiz_steuer: !!gToday.quiz_steuer };
+    es: esDone.some(d => d.day === td), skandal: !!gToday.skandal, med: !!gToday.med, xw: xwDoneDays.has(td), geo: geoDays.includes(td), note: !!nr[td], plan: !!pls[td], wordle: !!gToday.wordle, rechnen: !!gToday.rechnen, quiz_ernmed: !!gToday.quiz_ernmed, quiz_steuer: !!gToday.quiz_steuer };
   // Extra counters for badges.
   const perDay = new Map(), imps = new Set(); let longest = 0, night = 0, early = 0, pi = 0, mirror = 0, holiday = 0;
   for (const m of S.memos) {
@@ -1351,6 +1353,7 @@ function viewToday() {
       ${quest('note', '🏛️ ' + t('q_note'), NOTE_XP, 'note-open')}
       ${quest('es', '🗣️ ' + t('q_es'), 15 * JX, 'quest-es')}
       ${quest('skandal', '🕵️ ' + t('q_sk'), 10, 'quest-sk')}
+      ${quest('med', '🩺 ' + t('q_med'), 10, 'quest-med')}
     </div>
   </section>
   ${phoneCard()}
@@ -1456,8 +1459,8 @@ function md(text) {
 
 /* Crossword: one puzzle a day from puzzles.js, alternating Ernmed / Allgemeinwissen and German / English. */
 const XW = window.ECHO_XW || { start: today(), puzzles: [] };
-XW.puzzles = XW.puzzles.concat(window.ECHO_XW2 || [], window.ECHO_XW3 || [], window.ECHO_XW4 || [], window.ECHO_XW5 || [], LS.get('echo-xw-gen', []));
-const XW_CATS = { ern: ['🥗', 'xwErn'], aw: ['🌍', 'xwAw'], geo: ['🗺️', 'xwGeo'], psy: ['🧠', 'xwPsy'], tax: ['🧾', 'xwTax'], sci: ['🔬', 'xwSci'], es: ['🇪🇸', 'xwEs'], rev: ['🔁', 'xwRev'] };
+XW.puzzles = XW.puzzles.concat(window.ECHO_XW2 || [], window.ECHO_XW3 || [], window.ECHO_XW4 || [], window.ECHO_XW5 || [], window.ECHO_XW6 || [], LS.get('echo-xw-gen', []));
+const XW_CATS = { ern: ['🥗', 'xwErn'], aw: ['🌍', 'xwAw'], geo: ['🗺️', 'xwGeo'], psy: ['🧠', 'xwPsy'], tax: ['🧾', 'xwTax'], sci: ['🔬', 'xwSci'], med: ['🩺', 'xwMed'], es: ['🇪🇸', 'xwEs'], rev: ['🔁', 'xwRev'] };
 const XW_TOUCH = () => (window.matchMedia && matchMedia('(pointer: coarse)').matches) || (navigator.maxTouchPoints > 0 && innerWidth < 900);
 const XW_KB = () => XW_TOUCH() && LS.get('echo-xw-kb', true);
 function xwKbKey(k) {
@@ -1531,7 +1534,7 @@ function xwTopUp() {
 function xwPickTarget() {
   const f = LS.get('echo-xw-cat', 'all'), lg = LS.get('echo-xw-lang', 'all');
   const cat = f !== 'all' ? f : xwShuffle(Object.keys(XW_CATS).filter(k => k !== 'rev'))[0];
-  const lang = lg !== 'all' ? lg : cat === 'es' ? 'es' : cat === 'tax' ? 'de' : (S.set.lang === 'en' ? 'en' : 'de');
+  const lang = lg !== 'all' ? lg : cat === 'es' ? 'es' : cat === 'tax' || cat === 'med' ? 'de' : (S.set.lang === 'en' ? 'en' : 'de');
   return { cat, lang };
 }
 async function xwMakeAI(cat, lang) {
@@ -1657,6 +1660,7 @@ function viewGames() {
     <div class="row" style="align-items:flex-end;gap:6px;height:70px">${wk.map(w => `<div class="stack grow" style="gap:3px;align-items:center"><i style="display:block;width:100%;height:${Math.max(3, Math.round(w.xp / wmax * 54))}px;border-radius:6px 6px 2px 2px;background:${w.k === today() ? 'var(--gold)' : 'var(--calm)'}"></i><span class="small muted" style="font-size:11px">${esc(new Date(w.k + 'T12:00').toLocaleDateString(locale(), { weekday: 'narrow' }))}</span></div>`).join('')}</div></section>
   ${game('🌍', t('gamesAtlas'), t('gamesAtlasSub'), 'Level ' + lv + ' · ' + t('gamesSeen', seen, 197), q.geo, 'geo-open', `<div class="bar"><i style="width:${Math.round(seen / 197 * 100)}%"></i></div>`)}
   ${XW.puzzles.length ? game('🧩', t('gamesXw'), t('gamesXwSub'), t('gamesXwCount', xwOpen, xwDone), q.xw, 'xw-hub') : ''}
+  ${(() => { const md = LS.get('echo-med', null) || { c: {} }, all = Object.values(md.c || {}), now = Date.now(), kn = all.filter(x => x.b >= 1).length, due = all.filter(x => (x.n + x.w) > 0 && x.d <= now).length; return link('medizin.html', '🩺', t('gamesMed'), t('gamesMedSub'), (due ? due + ' ⏰ · ' : '') + '✓ ' + kn, q.med); })()}
   ${(() => { const sk = (gm.sk || {}), n = (window.SCANDALS || []).length, rd = Object.keys(sk.read || {}).length, sf = Object.values(sk.c || {}).filter(x => x.b >= 3).length; return link('spiele.html#skandale', '🕵️', t('gamesSk'), t('gamesSkSub'), rd + '/' + n + ' · ✓ ' + sf, q.skandal); })()}
   ${link('spiele.html#wordle', '🔤', 'Wordle', t('gamesWordleSub'), '🔥 ' + ((gm.wordle || {}).streak || 0) + ' · ' + ((gm.wordle || {}).won || 0) + '/' + ((gm.wordle || {}).played || 0), q.wordle)}
   ${link('spiele.html#rechnen', '🧮', t('gamesCalc'), t('gamesCalcSub'), t('gamesBest', (gm.rechnen || {}).best || 0), q.rechnen)}
@@ -1904,8 +1908,22 @@ Method:
 - If the core of an answer is correct, confirm it clearly ("Richtig." / "Genau."), then go deeper. Only call an answer incomplete if a key element is actually missing, and name which part.
 - Keep each turn under 90 words, always finish your last sentence and end with exactly one question.`;
 }
+/* Medicine topics come from the Medizin-Atlas (medizin.html), which leaves the chosen topic in echo-med-soc. */
+function medSystem(d) {
+  const m = d.med || {};
+  return `You are a Socratic tutor in basic medicine (physiology, pathophysiology, clinical reasoning) for a master's student in nutritional medicine who works in psychiatric research. Speak ${langName()}.
+Topic: ${m.title}${m.organ ? ' (' + m.organ + ')' : ''}.
+The student's atlas notes on it (the agreed core; you may add standard textbook knowledge, but say when you are unsure and never invent numbers):
+${m.text || ''}
+Method:
+- Ask exactly ONE question per turn and build on the student's answer. Go from mechanism to clinic: normal function, what goes wrong, why that produces the leading symptom, which finding or lab value proves it and why, the principle of treatment, the nutritional-medicine angle where it matters, and finally one transfer question (a differential diagnosis, a related disease or a "what if" variation).
+- Do not lecture; let the student work it out. After two unsuccessful tries give a small hint, never the whole answer at once.
+- If the core of an answer is correct, confirm it clearly ("Richtig." / "Genau."), then go one level deeper. Only call an answer incomplete if a key element is actually missing, and name which part.
+- No drug doses. Keep each turn under 90 words, always finish your last sentence and end with exactly one question.`;
+}
 function socSystem(d) {
   if (d.mode === 'es') return esSystem(d);
+  if (d.mode === 'med') return medSystem(d);
   if (d.mode === 'sci') return sciSystem(d);
   if (d.mode === 'talk') return `You are the audience in the discussion after a student's talk. Speak ${langName()}.
 Talk topic: ${d.topic}
@@ -1943,6 +1961,11 @@ async function socStart() {
     const d = { id: uid(), day: today(), createdAt: Date.now(), mode: 'es', char: LS.get('echo-es-char', 'pulpo'), level: esLevel(), topic: '', messages: [{ role: 'user', content: 'Start the round. First line: "TOPIC: <the absurd scene in 2-5 Spanish words>", then a blank line, then open the scene in character: greet me, set the scene in one or two vivid sentences and ask me your first question.', hidden: true }], completed: false };
     S.dialogs.push(d); S.activeDialog = d.id; await DB.put('dialogs', d);
     await socAsk(d); return;
+  }
+  if (S.socMode === 'med') {
+    const m = LS.get('echo-med-soc', null); if (!m) { toast(t('socMedNone'), 'err'); return; }
+    const d = { id: uid(), day: today(), createdAt: Date.now(), mode: 'med', topic: m.title, med: m, messages: [{ role: 'user', content: 'Start the round. Open with a short clinical vignette or a concrete question about this topic (without giving away the explanation), then ask your first question.', hidden: true }], completed: false };
+    S.dialogs.push(d); S.activeDialog = d.id; await DB.put('dialogs', d); await socAsk(d); return;
   }
   if (S.socMode === 'sci') {
     const c = sciPick(); if (!c) return;
@@ -2007,7 +2030,7 @@ function socSummary(d) {
     ${d.summary.next ? `<h4>${esc(t('nextTopic'))}</h4><p>${esc(d.summary.next)}</p>` : ''}</div>`;
 }
 function viewSocratic() {
-  const head = `<header class="top"><div class="stack" style="gap:4px"><span class="eyebrow">${esc(t(S.socMode === 'talk' ? 'socModeTalk' : S.socMode === 'es' ? 'socModeEs' : S.socMode === 'sci' ? 'socModeSci' : 'socSub'))}</span><h1>${esc(S.socMode === 'es' ? '¡Hablemos!' : t('socTitle'))}</h1></div>
+  const head = `<header class="top"><div class="stack" style="gap:4px"><span class="eyebrow">${esc(t(S.socMode === 'talk' ? 'socModeTalk' : S.socMode === 'es' ? 'socModeEs' : S.socMode === 'sci' ? 'socModeSci' : S.socMode === 'med' ? 'socModeMed' : 'socSub'))}</span><h1>${esc(S.socMode === 'es' ? '¡Hablemos!' : t('socTitle'))}</h1></div>
     <button class="icon-btn" data-act="settings" aria-label="${esc(t('settings'))}">${icon('settings')}</button></header>`;
   const past = S.dialogs.filter(d => d.completed && d.id !== S.activeDialog && (S.socMode === 'es') === (d.mode === 'es')).sort((a, b) => b.createdAt - a.createdAt);
   const pastHTML = past.length ? `<h3 style="margin-top:6px">${esc(t('socPast'))}</h3>${past.slice(0, 30).map(d => `<details class="card flat"><summary class="row spread" style="cursor:pointer"><b>${d.mode === 'es' ? esChar(d).em + ' ' : ''}${esc(d.topic || '?')}</b><span class="small muted mono">${esc(fmtDate(d.day, { day: 'numeric', month: 'short' }))}${d.rating ? ' · ' + esc(t(d.rating)) : ''}</span></summary>${socSummary(d)}</details>`).join('')}` : '';
@@ -2016,7 +2039,7 @@ function viewSocratic() {
   if (!d) {
     const doneToday = S.dialogs.some(x => x.completed && x.day === today());
     const talk = S.socMode === 'talk';
-    const modes = `<div class="seg" style="justify-self:start">${[['nutri', 'socModeNutri'], ['sci', 'socModeSci'], ['talk', 'socModeTalk'], ['es', 'socModeEs']].map(([k, l]) => `<button data-act="soc-mode" data-v="${k}" aria-pressed="${S.socMode === k}">${esc(t(l))}</button>`).join('')}</div>`;
+    const modes = `<div class="seg segscroll" style="justify-self:start">${[['nutri', 'socModeNutri'], ['med', 'socModeMed'], ['sci', 'socModeSci'], ['talk', 'socModeTalk'], ['es', 'socModeEs']].map(([k, l]) => `<button data-act="soc-mode" data-v="${k}" aria-pressed="${S.socMode === k}">${esc(t(l))}</button>`).join('')}</div>`;
     if (S.socMode === 'es') {
       const ck = LS.get('echo-es-char', 'pulpo'), lv = esLevel(), vm = esVoiceMode();
       return head + `<section class="card">${modes}
@@ -2030,8 +2053,8 @@ function viewSocratic() {
         ${S.socBusy ? `<div class="status"><span class="spin"></span>${esc(t('esThinking', ES_CHARS[ck].name))}</div>` : ''}</section>` + pastHTML;
     }
     return head + `<section class="card">
-      <div class="seg" style="justify-self:start">${[['nutri', 'socModeNutri'], ['sci', 'socModeSci'], ['talk', 'socModeTalk'], ['es', 'socModeEs']].map(([k, l]) => `<button data-act="soc-mode" data-v="${k}" aria-pressed="${S.socMode === k}">${esc(t(l))}</button>`).join('')}</div>
-      <p>${esc(t(talk ? 'socTalkIntro' : S.socMode === 'sci' ? 'socSciIntro' : 'socIntro'))}</p>${S.socMode === 'sci' && sciPick() ? `<span class="chip" aria-pressed="true" style="justify-self:start;white-space:normal">📁 ${esc(t('socSciCase', sciPick().t))}</span>` : ''}
+      <div class="seg segscroll" style="justify-self:start">${[['nutri', 'socModeNutri'], ['med', 'socModeMed'], ['sci', 'socModeSci'], ['talk', 'socModeTalk'], ['es', 'socModeEs']].map(([k, l]) => `<button data-act="soc-mode" data-v="${k}" aria-pressed="${S.socMode === k}">${esc(t(l))}</button>`).join('')}</div>
+      <p>${esc(t(talk ? 'socTalkIntro' : S.socMode === 'sci' ? 'socSciIntro' : S.socMode === 'med' ? 'socMedIntro' : 'socIntro'))}</p>${S.socMode === 'med' ? (LS.get('echo-med-soc', null) ? `<span class="chip" aria-pressed="true" style="justify-self:start;white-space:normal">🩺 ${esc(t('socMedTopic', LS.get('echo-med-soc', null).title))}</span> <a class="chip" href="medizin.html#soc-pick" style="justify-self:start;text-decoration:none;color:inherit">${esc(t('socMedPick'))}</a>` : `<a class="chip" href="medizin.html#soc-pick" style="justify-self:start;text-decoration:none;color:inherit">${esc(t('socMedPick'))}</a>`) : ''}${S.socMode === 'sci' && sciPick() ? `<span class="chip" aria-pressed="true" style="justify-self:start;white-space:normal">📁 ${esc(t('socSciCase', sciPick().t))}</span>` : ''}
       ${talk ? `<div class="field"><label for="socTopic">${esc(t('socTalkTopic'))}</label><input class="input" id="socTopic" value="${esc(LS.get('echo-soc-topic', ''))}"></div>
         <div class="field"><label for="socMaterial">${esc(t('socTalkMaterial'))}</label><textarea class="input" id="socMaterial" rows="4">${esc(LS.get('echo-soc-material', ''))}</textarea></div>` : ''}
       <button class="btn primary" data-act="soc-start" style="justify-self:start" ${S.socBusy ? 'disabled' : ''}>${icon('socrates')} ${esc(talk ? t('socTalkStart') : doneToday ? t('socAnother') : t('socStart'))}</button>
@@ -2049,7 +2072,7 @@ function viewSocratic() {
       <button class="saybtn" data-act="es-say" data-v="${i}">${esSpeakingId === key ? '⏹ ' + esc(t('esStop')) : '🔊 ' + esc(t('esSay'))}</button></div></div>`;
   };
   // Mode switch also during a round; the open round stays and can be resumed.
-  const modeSeg = d.completed ? '' : `<div class="seg" style="justify-self:start">${[['nutri', 'socModeNutri'], ['sci', 'socModeSci'], ['talk', 'socModeTalk'], ['es', 'socModeEs']].map(([k, l]) => `<button data-act="soc-mode" data-v="${k}" aria-pressed="${(d.mode || 'nutri') === k}">${esc(t(l))}</button>`).join('')}</div>`;
+  const modeSeg = d.completed ? '' : `<div class="seg segscroll" style="justify-self:start">${[['nutri', 'socModeNutri'], ['med', 'socModeMed'], ['sci', 'socModeSci'], ['talk', 'socModeTalk'], ['es', 'socModeEs']].map(([k, l]) => `<button data-act="soc-mode" data-v="${k}" aria-pressed="${(d.mode || 'nutri') === k}">${esc(t(l))}</button>`).join('')}</div>`;
   return head + modeSeg + `${d.topic || es ? `<div class="row spread"><span class="chip" aria-pressed="true" style="white-space:normal">${es ? ec.em + ' ' + esc(ec.name) + (d.topic ? ' · ' : '') : ''}${esc(d.topic || '')}</span><span class="small muted mono">${Math.max(1, Math.round((Date.now() - d.createdAt) / 60000))} min</span></div>` : ''}
   <div class="chat">${visible.map(bubble).join('')}
     ${S.socBusy ? `<div class="status"><span class="spin"></span>${esc(es ? t('esThinking', ec.name) : t('thinking'))}</div>` : ''}</div>
@@ -2360,7 +2383,7 @@ async function buildBackup() {
   const memos = [];
   for (const m of S.memos) memos.push(Object.assign({}, m, { blob: m.blob ? await blobToDataURL(m.blob) : null, status: '' }));
   const settings = Object.assign({}, S.set); delete settings.anthropicKey; delete settings.openaiKey; // keys never leave the browser
-  const data = { app: 'echo-journal', version: 1, exportedAt: new Date().toISOString(), memos, dialogs: S.dialogs, recaps: Object.values(S.recaps), goals: Object.values(S.goals), commitments: S.commitments, xw: Object.values(S.xw), played: played(), geo: LS.get('echo-geo', null), games: LS.get('echo-games', null), notes: notesRead(), noteAns: noteAnswers(), fails: fails(), plans: plans(), phone: LS.get('echo-phone', null), xwGen: LS.get('echo-xw-gen', []), xwReview: xwReview(), xwRx: xwRx(), settings };
+  const data = { app: 'echo-journal', version: 1, exportedAt: new Date().toISOString(), memos, dialogs: S.dialogs, recaps: Object.values(S.recaps), goals: Object.values(S.goals), commitments: S.commitments, xw: Object.values(S.xw), played: played(), geo: LS.get('echo-geo', null), games: LS.get('echo-games', null), notes: notesRead(), noteAns: noteAnswers(), fails: fails(), plans: plans(), phone: LS.get('echo-phone', null), med: LS.get('echo-med', null), xwGen: LS.get('echo-xw-gen', []), xwReview: xwReview(), xwRx: xwRx(), settings };
   return new Blob([JSON.stringify(data)], { type: 'application/json' });
 }
 async function exportBackup() {
@@ -2393,6 +2416,7 @@ async function importBackup(file) {
     if (data.xwReview) { const rl = xwReview(), have = new Set(rl.map(w => w.a)); LS.set('echo-xw-review', rl.concat(data.xwReview.filter(w => !have.has(w.a)))); }
     if (data.xwRx && data.xwRx.n > xwRx().n) LS.set('echo-xw-rx', data.xwRx);
     if (data.noteAns) LS.set('echo-note-ans', Object.assign({}, data.noteAns, noteAnswers()));
+    if (data.med && (data.med.updated || 0) > ((LS.get('echo-med', null) || {}).updated || 0)) LS.set('echo-med', data.med);
     if (data.games && (data.games.xp || 0) > ((LS.get('echo-games', null) || {}).xp || 0)) LS.set('echo-games', data.games);
     if (data.played) { const pl = played(); for (const [d, ids] of Object.entries(data.played)) pl[d] = [...new Set([...(pl[d] || []), ...ids])]; LS.set('echo-played', pl); }
     if (data.settings) { const keep = { anthropicKey: S.set.anthropicKey, openaiKey: S.set.openaiKey }; S.set = Object.assign({}, S.set, data.settings, keep); saveSettings(); applyTheme(); }
@@ -2612,6 +2636,7 @@ document.addEventListener('click', async e => {
     }
     case 'note-later': LS.set('echo-note-later', today()); closeSheet(); break;
     case 'quest-sk': location.href = 'spiele.html#skandale'; break;
+    case 'quest-med': location.href = 'medizin.html#round'; break;
     case 'quest-es': S.tab = 'socratic'; S.socMode = 'es'; LS.set('echo-soc-mode', 'es'); render(); scrollTo(0, 0); break;
     case 'xw-open': xwOpen(v); break;
     case 'xw-back': if (S.tab === 'xw' && S.xwId) { S.xwId = null; } else S.tab = 'games'; render(); scrollTo(0, 0); break;
@@ -2876,9 +2901,11 @@ if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListen
   if (open) S.activeDialog = open.id;
   { const tv = LS.get('echo-tabs', []); if (!tv.includes('today')) LS.set('echo-tabs', [...tv, 'today']); }
   if (location.hash === '#games') { S.tab = 'games'; try { history.replaceState(null, '', location.pathname); } catch { /* ignore */ } }
-  { const qp = new URLSearchParams(location.search); if (qp.get('soc') === 'sci') { S.tab = 'socratic'; S.socMode = 'sci'; LS.set('echo-soc-mode', 'sci'); S.sciCase = qp.get('case') || null; try { history.replaceState(null, '', location.pathname); } catch { /* ignore */ } } }
+  { const qp = new URLSearchParams(location.search); if (qp.get('soc') === 'med') { S.tab = 'socratic'; S.socMode = 'med'; LS.set('echo-soc-mode', 'med'); try { history.replaceState(null, '', location.pathname); } catch { /* ignore */ } }
+    if (qp.get('xw') && XW_CATS[qp.get('xw')]) { LS.set('echo-xw-cat', qp.get('xw')); LS.set('echo-xw-sec', 'new'); S.tab = 'xw'; S.xwId = null; xwTopUp(); try { history.replaceState(null, '', location.pathname); } catch { /* ignore */ } }
+    if (qp.get('soc') === 'sci') { S.tab = 'socratic'; S.socMode = 'sci'; LS.set('echo-soc-mode', 'sci'); S.sciCase = qp.get('case') || null; try { history.replaceState(null, '', location.pathname); } catch { /* ignore */ } } }
   await abInit();
-  { const g = LS.get('echo-geo', null), gm = LS.get('echo-games', null); if ((g && g.updated > (AB.last || 0)) || (gm && gm.updated > (AB.last || 0))) abSchedule(); }
+  { const g = LS.get('echo-geo', null), gm = LS.get('echo-games', null), md = LS.get('echo-med', null); if ((g && g.updated > (AB.last || 0)) || (gm && gm.updated > (AB.last || 0)) || (md && md.updated > (AB.last || 0))) abSchedule(); }
   if (!journalEmpty()) LS.set('echo-restore-hide', false);
   render(); celebrate();
   if (!notesRead()[today()] && LS.get('echo-note-later', '') !== today() && !journalEmpty()) setTimeout(openNote, 600);
