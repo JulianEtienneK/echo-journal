@@ -262,3 +262,23 @@
 .sinus-fat { fill: #F1E2BE; stroke: none; }
 .map .zs { display: none; }
 .map.explore:not(.labeled) .zs { display: inline; }
+
+/* image maps (Servier Medical Art) with invisible tap areas */
+.map.imgmap image { pointer-events: none; }
+.map .hot { fill: rgba(232,160,75,0); stroke: rgba(232,160,75,0); stroke-width: 2; vector-effect: non-scaling-stroke; transition: fill .2s, stroke .2s; }
+.map .hotl { fill: none; stroke: rgba(232,160,75,0); stroke-width: calc(16px * var(--ls, 1)); stroke-linecap: round; stroke-linejoin: round; pointer-events: stroke; transition: stroke .2s; }
+.map.explore .part:hover .hot, .map.ask .part:hover .hot { fill: rgba(232,160,75,.14); stroke: rgba(232,160,75,.75); }
+.map.explore .part:hover .hotl, .map.ask .part:hover .hotl { stroke: rgba(232,160,75,.3); }
+.map .part.on .hot, .map .part.pulse .hot { fill: rgba(232,160,75,.3); stroke: var(--pin); stroke-width: 2.5; }
+.map .part.on .hotl, .map .part.pulse .hotl { stroke: rgba(232,160,75,.5); }
+.map .part.ok .hot { fill: rgba(47,158,110,.32); stroke: #2f9e6e; stroke-width: 2.5; } .map .part.ok .hotl { stroke: rgba(47,158,110,.55); }
+.map .part.bad .hot { fill: rgba(224,83,58,.3); stroke: #e0533a; stroke-width: 2.5; } .map .part.bad .hotl { stroke: rgba(224,83,58,.5); }
+.map .part.hl .hot { fill: color-mix(in srgb, var(--hlc, #E8A04B) 30%, transparent); stroke: var(--hlc, #E8A04B); stroke-width: 2.5; }
+.map .part.hl .hotl { stroke: color-mix(in srgb, var(--hlc, #E8A04B) 50%, transparent); }
+.map.imgmap .lbl { font-size: calc(10px * var(--ls, 1)); stroke-width: calc(3px * var(--ls, 1)); }
+.map.imgmap .lbl-z { font-size: calc(9px * var(--ls, 1)); stroke-width: calc(3px * var(--ls, 1)); }
+.map.imgmap .lead { stroke-width: calc(1px * var(--ls, 1)); }
+.map.imgmap .ov-path { stroke-width: calc(3.5px * var(--ls, 1)); }
+.map .credit { font-size: calc(7px * var(--ls, 1)); fill: var(--muted); opacity: .75; stroke: none; pointer-events: none; }
+.map a .credit { pointer-events: auto; cursor: pointer; }
+.map.dbg .hot { fill: rgba(255,0,0,.18); stroke: #e00; stroke-width: 1.5; } .map.dbg .hotl { stroke: rgba(255,0,0,.35); }

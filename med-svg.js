@@ -432,8 +432,20 @@
   function detail(key) { return CACHE[key] || (CACHE[key] = D[key] ? D[key]() : ''); }
   function mapFor(organ, sid) { for (const [k] of MAPS[organ] || []) if (detail(k).includes(`data-s="${sid}"`)) return k; return null; }
 
+  /* image-based maps: Servier Medical Art illustrations (CC BY 4.0) with invisible tap areas on top.
+     imgw(w, h, [[file, x, y, width, height], ...], inner, label): coordinates are in the image's own pixel space. */
+  // the credit line gets its own strip below the drawing, so it never sits on the picture
+  const imgw = (w, h, imgs, inner, label, credit = 'Servier Medical Art · CC BY 4.0 · bearbeitet') => { const ls = w / 400, pad = credit ? Math.round(13 * ls) : 0; return `<svg viewBox="0 0 ${w} ${h + pad}" class="map detail imgmap" style="--ls:${ls.toFixed(3)}" role="img" aria-label="${label}">` +
+    imgs.map(([src, x, y, iw, ih]) => `<image href="med-img/${src}" x="${x}" y="${y}" width="${iw}" height="${ih}" preserveAspectRatio="xMidYMid meet"/>`).join('') +
+    inner + (credit ? `<a href="https://creativecommons.org/licenses/by/4.0/deed.de" target="_blank" rel="noopener"><text x="${w - 4}" y="${h + pad - Math.round(3 * ls)}" class="credit" text-anchor="end">${credit}</text></a>` : '') + '</svg>'; };
+  const hot = (id, pts, k = .3) => S(id, `<path d="${cr(pts, true, k)}" class="hot"/>`);
+  const hotp = (id, pts) => S(id, `<polygon points="${pts.map(p => f(p[0]) + ',' + f(p[1])).join(' ')}" class="hot"/>`);
+  const hotc = (id, cx, cy, r) => S(id, `<circle cx="${cx}" cy="${cy}" r="${r}" class="hot"/>`);
+  const hote = (id, cx, cy, rx, ry, rot = 0) => S(id, `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" transform="rotate(${rot} ${cx} ${cy})" class="hot"/>`);
+  const hotl = (id, pts) => S(id, `<path d="${cr(pts, false)}" class="hotl"/>`);
+
   // extension files (med-maps-*.js) add organs: MEDSVG.addMaps('auge', [['auge', 'Auge im Schnitt', 3], ['auge4', 'Netzhaut', 4]], { auge: () => svg, auge4: () => svg })
   function addMaps(organ, list, fns) { MAPS[organ] = list; Object.assign(D, fns); for (const k in fns) delete CACHE[k]; }
-  const h = { f, cr, mir, path, blob, line, ell, circ, g, S, O, txt, svgw, tube, zlabel, zs };
+  const h = { f, cr, mir, path, blob, line, ell, circ, g, S, O, txt, svgw, tube, zlabel, zs, imgw, hot, hotp, hotc, hote, hotl };
   root.MEDSVG = { cr, body, VIEWS, SIL, detail, MAPS, mapFor, addMaps, h };
 })(typeof window !== 'undefined' ? window : globalThis);
