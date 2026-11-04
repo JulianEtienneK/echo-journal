@@ -12,17 +12,26 @@
   const addI = (id, kind, stage, ref) => { const it = { id, kind, organ: '_nut', stage, ref }; ITEMS[id] = it; ALL.push(it); (BY_ORGAN._nut = BY_ORGAN._nut || []).push(it); };
   for (const n of N) { addI('n.' + n.id, 'nut', 1, n); (n.mcq || []).forEach((m, i) => addI('nq.' + n.id + '.' + i, 'nutq', 2, Object.assign({ n }, m))); }
 
-  // hide the nutrient's own name and its active forms in a description (Vitamin itself is too generic to hide)
-  const hide = n => [n.name.replace(/\bVitamin\b/g, ''), n.aktiveForm || ''].join(' ');
-  const mates = n => { const g = N.filter(x => x.id !== n.id && x.gruppe === n.gruppe); return g.length >= 3 ? g : N.filter(x => x.id !== n.id); };
+  // hide the nutrient's own name in a description (the word Vitamin itself is too generic to hide)
+  const hide = n => n.name.replace(/\bVitamin\b/g, ''); // its active forms stay visible: they are descriptive, hiding them blanks half the sentence
+  // "Vitamin D" / "25-OH-Vitamin-D" would survive the word masking (one-letter names), so they are hidden explicitly
+const vit = n => (n.name.match(/Vitamin\s+([A-Z]\d{0,2})/) || [])[1];
+// D2/D3, K1/K2 belong to their letter; B1 must not swallow B12. Three-letter names (Jod/Iod) are below mask()'s word length.
+const msk = (n, t) => {
+  const v = vit(n); let x = String(t || '');
+  if (v) x = x.replace(new RegExp('Vitamin[- ]?' + v + (v.length === 1 ? '\\d?' : '(?![0-9])'), 'g'), '[…]');
+  for (const w of n.name.split(/[\s()]+/)) if (w.length === 3 && /^\p{Lu}\p{Ll}+$/u.test(w)) x = x.replace(new RegExp('(?<![\\p{L}])' + w + '[\\p{L}-]*', 'giu'), '[…]');
+  return mask(x, hide(n));
+};
+const mates = n => { const g = N.filter(x => x.id !== n.id && x.gruppe === n.gruppe); return g.length >= 3 ? g : N.filter(x => x.id !== n.id); };
   X.q.nut = (it, rot) => {
     const n = it.ref, c = M.c[it.id] || {}, S = c.S || 0, tier = S < 4 ? 0 : S < 21 ? 1 : 2;
     const fs = FLD.filter(([k, , t]) => t <= tier && n[k]), [k, lab] = fs[rot % fs.length], ms = mates(n);
     if (tier >= 1 && rot % 2 === 1) { // reverse: which statement belongs to this nutrient (neighbours of the same group as distractors)
-      const w = others(ms.filter(x => x[k]), n, 3, x => x.id).map(x => mask(x[k], hide(x)));
-      return { it, type: 'mc', eyebrow: 'Mikronährstoffe · ' + lab, prompt: n.name + ': was trifft zu?', opts: mcOpts(mask(n[k], hide(n)), w), long: true };
+      const w = others(ms.filter(x => x[k]), n, 3, x => x.id).map(x => msk(x, x[k]));
+      return { it, type: 'mc', eyebrow: 'Mikronährstoffe · ' + lab, prompt: n.name + ': was trifft zu?', opts: mcOpts(msk(n, n[k]), w), long: true };
     }
-    return { it, type: 'mc', eyebrow: 'Mikronährstoffe · ' + lab, prompt: 'Welcher Mikronährstoff ist gemeint?', sub: mask(n[k], hide(n)), opts: mcOpts(n.name, others(ms, n, 3, x => x.id).map(x => x.name)) };
+    return { it, type: 'mc', eyebrow: 'Mikronährstoffe · ' + lab, prompt: 'Welcher Mikronährstoff ist gemeint?', sub: msk(n, n[k]), opts: mcOpts(n.name, others(ms, n, 3, x => x.id).map(x => x.name)) };
   };
   X.q.nutq = it => { const m = it.ref; return { it, type: 'mc', eyebrow: 'Mikronährstoffe · ' + m.n.name, prompt: m.q, opts: mcOpts(m.a, (m.w || []).slice(0, 3)), long: (m.a + (m.w || []).join('')).length > 120 }; };
   X.title.nut = it => it.ref.name; X.title.nutq = it => it.ref.n.name + ': ' + it.ref.q;
