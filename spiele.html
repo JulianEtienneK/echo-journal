@@ -159,18 +159,6 @@ h3 { font-size: 17px; font-weight: 700; }
 </head>
 <body>
 <style>
-.wgrid { display: grid; grid-template-rows: repeat(6, 1fr); gap: 6px; width: min(330px, 100%); margin: 0 auto; }
-.wrow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-.wcell { aspect-ratio: 1; border: 2px solid var(--line); border-radius: 8px; display: grid; place-items: center; font: 700 26px/1 var(--f-display); text-transform: uppercase; background: var(--surface); }
-.wcell.filled { border-color: var(--muted); }
-.wcell.g { background: #3E9C5C; border-color: #3E9C5C; color: #fff; }
-.wcell.y { background: #C9A227; border-color: #C9A227; color: #fff; }
-.wcell.x { background: var(--surface-2); border-color: var(--surface-2); color: var(--muted); }
-.kb { display: grid; gap: 6px; }
-.kbrow { display: flex; gap: 5px; justify-content: center; }
-.kbrow button { flex: 1; max-width: 42px; height: 52px; border: 0; border-radius: 8px; background: var(--surface-2); font-weight: 700; padding: 0; }
-.kbrow button.wide { max-width: 68px; flex: 1.6; font-size: 13px; }
-.kbrow button.g { background: #3E9C5C; color: #fff; } .kbrow button.y { background: #C9A227; color: #fff; } .kbrow button.x { opacity: .35; }
 .sum { font: 700 44px/1.1 var(--f-display); text-align: center; letter-spacing: -.01em; }
 .numin { width: 100%; font: 700 30px/1.2 var(--f-mono); text-align: center; padding: 14px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); }
 .numin:focus { outline: none; border-color: var(--calm); }
@@ -200,7 +188,7 @@ const LS = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* blocked */ } },
 };
 const KEY = 'echo-games';
-const G = LS.get(KEY, null) || { xp: 0, days: {}, wordle: { played: 0, won: 0, streak: 0, best: 0, dist: [0, 0, 0, 0, 0, 0] }, rechnen: { best: 0 }, quiz: {}, sound: true };
+const G = LS.get(KEY, null) || { xp: 0, days: {}, rechnen: { best: 0 }, quiz: {}, sound: true };
 const save = () => { G.updated = Date.now(); LS.set(KEY, G); };
 (() => { const s = LS.get('echo-settings', {}); if (s.theme && s.theme !== 'system') document.documentElement.dataset.theme = s.theme; })();
 const esc = s => String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
@@ -214,54 +202,6 @@ function toast(msg) { document.querySelectorAll('.toast').forEach(t => t.remove(
 let AC = null;
 function beep(ok) { if (G.sound === false) return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); const o = AC.createOscillator(), g = AC.createGain(); o.frequency.value = ok ? 780 : 200; g.gain.setValueAtTime(.0001, AC.currentTime); g.gain.exponentialRampToValueAtTime(.1, AC.currentTime + .02); g.gain.exponentialRampToValueAtTime(.0001, AC.currentTime + .18); o.connect(g).connect(AC.destination); o.start(); o.stop(AC.currentTime + .2); } catch { /* no audio */ } }
 const back = `<div class="topbar"><a class="link" href="./#games">← Spiele</a><button class="link" data-act="sound">${G.sound === false ? '🔇' : '🔊'}</button></div>`;
-
-/* ================= Wordle ================= */
-const WORDS = ('ABEND ACKER ADLER ANGST BANDE BIBER BLATT BLICK BLITZ BODEN BRAUT BRIEF BUCHE CHAOS DACHS DAMPF DECKE DOLCH EBENE EIMER EISEN ENGEL ENKEL ERBSE ESSIG FABEL FADEN FALKE FEDER FEIER FELGE FERNE FLOSS FLUSS FORST FRAGE FUCHS GABEL GEIST GLANZ GNADE GRIFF GRUBE GURKE HAFEN HAGEL HALLE HEIDE HERDE HONIG HOTEL HUMOR INSEL JACKE JUWEL KABEL KAKAO KAMEL KANAL KARTE KATZE KERZE KETTE KISTE KLAGE KLIMA KNOPF KRAFT KRONE KUGEL KUNST LACHS LEDER LIEBE LILIE LISTE LUNGE MAGEN MANGO MARKT MAUER MEILE METER MIETE MILCH MINZE MOTOR NADEL NEBEL NUDEL OLIVE ONKEL OPFER ORGEL PALME PANDA PAUSE PERLE PILOT PINIE PIZZA PLATZ PRINZ PUPPE QUARK QUOTE RADIO RASEN REGAL REISE RIESE ROMAN RUDER SALAT SALBE SAMEN SCHAF SCHUH SEIFE SEITE SOCKE SONNE SPASS SPIEL STADT STAHL STAMM STAUB STEIN STIER STIRN STOCK STROM STUBE SUPPE TAFEL TANNE TANTE TASSE TEICH THRON TIGER TINTE TONNE TRAUM TREUE TULPE VOGEL WAAGE WAFFE WAGEN WALZE WANGE WANNE WEIDE WELLE WESPE WETTE WIESE WOLLE WURST ZANGE ZEBRA ZWERG BLASS BRAUN BREIT FRECH GLATT GROSS HEISS KLEIN LEISE RUHIG SAUER STARK STILL STUMM WEICH BAUEN BETEN GEHEN HOLEN JAGEN KAUEN LEBEN LESEN MALEN RATEN REDEN RUFEN SAGEN SEHEN WEBEN LOBEN HEBEN APFEL BIRNE TISCH STUHL LAMPE BLUME WOLKE REGEN NACHT STERN FEUER GRUND INSEL KREIS PUNKT LINIE FARBE KLANG MUSIK GEBEN HABEN FREMD WITZE BLUSE HOSEN MANTEL KLEID GEIGE FLOTE TROMMEL VIOLA ATLAS GLOBE ERDE').split(' ').filter(w => /^[A-Z]{5}$/.test(w));
-const SOL = [...new Set(WORDS)];
-const W = { mode: 'daily', target: '', guesses: [], cur: '', done: false, won: false };
-function dailyWord() { const n = Math.floor((new Date(today()) - new Date('2026-01-01')) / 864e5); let h = n * 2654435761 % 4294967296; return SOL[h % SOL.length]; }
-function wordleStart(mode) {
-  W.mode = mode; W.cur = '';
-  if (mode === 'daily') { const s = G.wordle.daily && G.wordle.daily.date === today() ? G.wordle.daily : null; W.target = dailyWord(); W.guesses = s ? s.guesses : []; W.done = s ? s.done : false; W.won = s ? s.won : false; }
-  else { W.target = SOL[Math.floor(Math.random() * SOL.length)]; W.guesses = []; W.done = false; W.won = false; }
-  view = 'wordle'; render();
-}
-function scoreGuess(g, t) {
-  const res = Array(5).fill('x'), left = {};
-  for (let i = 0; i < 5; i++) { if (g[i] === t[i]) res[i] = 'g'; else left[t[i]] = (left[t[i]] || 0) + 1; }
-  for (let i = 0; i < 5; i++) if (res[i] !== 'g' && left[g[i]]) { res[i] = 'y'; left[g[i]]--; }
-  return res;
-}
-function wordleKey(k) {
-  if (W.done) return;
-  if (k === 'ENTER') {
-    if (W.cur.length < 5) { toast('Zu kurz'); return; }
-    W.guesses.push(W.cur); const won = W.cur === W.target; W.cur = '';
-    if (won || W.guesses.length >= 6) {
-      W.done = true; W.won = won; const st = G.wordle;
-      if (W.mode === 'daily') { st.played++; if (won) { st.won++; st.streak++; st.best = Math.max(st.best, st.streak); st.dist[W.guesses.length - 1]++; } else st.streak = 0; }
-      const xp = won ? (W.mode === 'daily' ? 10 : 5) + (6 - W.guesses.length) * 4 : 2;
-      gain('wordle', xp); beep(won); toast(won ? `Gelöst! +${xp} XP` : `Das Wort war ${W.target}`);
-    }
-    if (W.mode === 'daily') G.wordle.daily = { date: today(), guesses: W.guesses, done: W.done, won: W.won };
-    save(); render(); return;
-  }
-  if (k === '⌫') W.cur = W.cur.slice(0, -1); else if (/^[A-Z]$/.test(k) && W.cur.length < 5) W.cur += k;
-  render();
-}
-function viewWordle() {
-  const rows = []; for (let r = 0; r < 6; r++) {
-    const g = W.guesses[r], sc = g ? scoreGuess(g, W.target) : null, txt = g || (r === W.guesses.length ? W.cur : '');
-    rows.push(`<div class="wrow">${[0, 1, 2, 3, 4].map(i => `<div class="wcell ${sc ? sc[i] : txt[i] ? 'filled' : ''}">${txt[i] || ''}</div>`).join('')}</div>`);
-  }
-  const keyState = {}; W.guesses.forEach(g => scoreGuess(g, W.target).forEach((s, i) => { const k = g[i], o = keyState[k]; if (s === 'g' || (s === 'y' && o !== 'g') || (!o)) keyState[k] = s === 'x' && o ? o : s; }));
-  const kb = ['QWERTZUIOP', 'ASDFGHJKL', '↵YXCVBNM⌫'].map(r => `<div class="kbrow">${[...r].map(k => k === '↵' ? `<button class="wide" data-key="ENTER">Enter</button>` : `<button class="${k === '⌫' ? 'wide' : ''} ${keyState[k] || ''}" data-key="${k}">${k}</button>`).join('')}</div>`).join('');
-  const st = G.wordle;
-  return `${back}<div class="row spread"><div style="display:grid;gap:2px"><span class="eyebrow">${W.mode === 'daily' ? 'Wort des Tages' : 'Übungsrunde'}</span><h2>Wordle</h2></div><span class="small muted mono">🔥 ${st.streak} · ${st.won}/${st.played}</span></div>
-  <p class="small muted" style="margin:0">Deutsches Wort mit 5 Buchstaben, ohne Umlaute (ß = SS). Grün: richtige Stelle, gelb: kommt vor.</p>
-  <div class="wgrid">${rows.join('')}</div>
-  ${W.done ? `<section class="card" style="text-align:center"><b>${W.won ? 'Geschafft in ' + W.guesses.length + '!' : 'Gesucht war: ' + W.target}</b><div class="row" style="gap:8px"><button class="btn primary grow" data-act="wordle-free">Übungsrunde</button><button class="btn grow" data-act="home">Übersicht</button></div></section>` : `<div class="kb">${kb}</div>`}`;
-}
 
 /* ================= Kopfrechnen: rechnen.js ================= */
 
@@ -303,7 +243,6 @@ function viewHome() {
   const card = (act, v, em, title, sub, meta, done) => `<button class="card" data-act="${act}" data-v="${v || ''}" style="text-align:left;cursor:pointer"><div class="row spread"><div class="row"><span style="font-size:28px">${em}</span><div style="display:grid"><h3>${title}</h3><span class="small muted">${sub}</span></div></div><span class="xp">${done ? '✓' : '+15'}</span></div><span class="small muted">${meta}</span></button>`;
   const qb = b => { const m = G.quiz[b] || {}, items = QUIZ[b].items; return Object.keys(m).length + '/' + items.length + ' gesehen · ' + items.filter(it => (m[it[0]] || {}).b >= 3).length + ' sicher'; };
   return `${back}<h2>Mehr Spiele</h2>
-  ${card('wordle-day', '', '🔤', 'Wordle', 'Wort des Tages + Übung', `Serie ${G.wordle.streak} · gewonnen ${G.wordle.won}/${G.wordle.played}`, d.wordle)}
   ${card('sk-home', '', '🕵️', 'Skandal-Akten', 'Wissenschaftsskandale: lesen, Quiz, Detektiv, Zeitstrahl', skMeta(), d.skandal)}
   ${card('rechnen-open', '', '🧮', 'Kopfrechnen', 'Sprint, Überleben, Ketten, Schätzen, Tricks', rechnenMeta(), d.rechnen)}
   ${Object.entries(QUIZ).map(([k, b]) => card('quiz-go', k, b.icon, esc(b.title), b.items.length + ' Fragen mit Erklärung', qb(k), d['quiz_' + k])).join('')}`;
@@ -312,20 +251,16 @@ function viewHome() {
 /* ================= router ================= */
 let view = (location.hash || '').replace('#', '') || 'home';
 function render() {
-  if (view === 'wordle') app.innerHTML = viewWordle();
-  else if (view === 'rechnen') { app.innerHTML = viewRechnen(); document.getElementById('rin')?.focus(); document.getElementById('rgo')?.focus(); }
+  if (view === 'rechnen') { app.innerHTML = viewRechnen(); document.getElementById('rin')?.focus(); document.getElementById('rgo')?.focus(); }
   else if (view === 'quiz') app.innerHTML = viewQuiz();
   else if (view === 'skandale') app.innerHTML = viewSk();
   else app.innerHTML = viewHome();
 }
 app.addEventListener('click', e => {
-  const k = e.target.closest('[data-key]'); if (k) return wordleKey(k.dataset.key);
   const pk = e.target.closest('[data-pad]'); if (pk) return rechnenPad(pk.dataset.pad);
   const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act;
   if (a === 'home') { view = 'home'; render(); }
   else if (a === 'sound') { G.sound = G.sound === false; save(); render(); }
-  else if (a === 'wordle-day') wordleStart('daily');
-  else if (a === 'wordle-free') wordleStart('free');
   else if (a === 'rechnen-open') { R.result = null; view = 'rechnen'; render(); }
   else if (a.startsWith('r-')) rechnenAct(a, b.dataset.v);
   else if (a.startsWith('sk-')) { if (a === 'sk-home') view = 'skandale'; skAct(a, b.dataset.v); }
@@ -335,14 +270,13 @@ app.addEventListener('click', e => {
 });
 app.addEventListener('input', e => { if (e.target.id === 'rin') rechnenInput(e.target.value); });
 document.addEventListener('keydown', e => {
-  if (view === 'wordle' && !e.metaKey && !e.ctrlKey) { const k = e.key === 'Enter' ? 'ENTER' : e.key === 'Backspace' ? '⌫' : e.key.toUpperCase(); if (k === 'ENTER' || k === '⌫' || /^[A-Z]$/.test(k)) { e.preventDefault(); wordleKey(k); } }
   if (view === 'rechnen') rechnenKey(e);
   if (view === 'skandale' && SK.mode === 'quiz' && SK.i < SK.seq.length) { const n = parseInt(e.key, 10); if (SK.ans == null && n >= 1 && n <= 4) skAnswer(n - 1); else if (SK.ans != null && e.key === 'Enter') { e.preventDefault(); skNext(); } }
   if (view === 'quiz') { const n = parseInt(e.key, 10); if (Q.ans == null && n >= 1 && n <= 4) quizAnswer(n - 1); else if (Q.ans != null && e.key === 'Enter') { e.preventDefault(); quizNext(); } }
 });
 function route() {
   view = (location.hash || '').replace('#', '') || 'home';
-  if (view.startsWith('quiz-') && QUIZ[view.slice(5)]) quizStart(view.slice(5)); else if (view === 'wordle') wordleStart('daily'); else { if (view === 'skandale') SK.mode = null; else if (view !== 'rechnen') view = 'home'; if (!R.on) R.result = null; render(); }
+  if (view.startsWith('quiz-') && QUIZ[view.slice(5)]) quizStart(view.slice(5)); else { if (view === 'skandale') SK.mode = null; else if (view !== 'rechnen') view = 'home'; if (!R.on) R.result = null; render(); }
 }
 window.addEventListener('hashchange', route);
 route();
