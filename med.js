@@ -21,7 +21,7 @@ function beep(ok) {
 }
 
 /* ---------- extension hooks (psy.js adds the Gehirn & Psyche layer) ---------- */
-const EXT = { views: {}, acts: {}, q: {}, info: {}, title: {}, names: {}, decorate: [] };
+const EXT = { views: {}, acts: {}, q: {}, info: {}, title: {}, names: {}, decorate: [], disExtra: [], pathExtra: [], soc: {} };
 window.MEDEXT = EXT;
 
 /* ---------- state ---------- */
@@ -396,6 +396,7 @@ function socratic(kind, id) {
   if (kind === 'dis') { const d = DIS_ID[id]; if (!d) return; payload = { kind, id, title: d.name, organ: short(ORG[d.organ].name), text: FIELDS.map(([k, l]) => d[k] ? l + ': ' + d[k] : '').filter(Boolean).join('\n') }; }
   if (kind === 'org') { const o = ORG[id]; if (!o) return; payload = { kind, id, title: short(o.name), organ: short(o.name), text: ['Lage: ' + o.lage, 'Funktion: ' + o.fn, 'Blut: ' + o.blut, ...(o.facts || []), ...(STR[id] || []).map(s => s.name + ': ' + s.fact)].filter(Boolean).join('\n') }; }
   if (kind === 'path') { const p = PATH_ID[id]; if (!p) return; payload = { kind, id, title: p.name, organ: p.ort, text: ['Ort: ' + p.ort, 'Zweck: ' + p.zweck, 'Bilanz: ' + p.bilanz, 'Schrittmacher: ' + p.schritt, 'Regulation: ' + p.reg, 'Schritte: ' + p.nodes.map((n, i) => n + (p.edges[i] ? ' →(' + p.edges[i].e + ')' : '')).join(' '), 'Krankheiten: ' + (p.dis || []).join('; '), 'Ernährung: ' + p.nut, ...(p.facts || [])].join('\n') }; }
+  if (!payload && EXT.soc[kind]) payload = EXT.soc[kind](id);
   if (!payload) return;
   LS.set('echo-med-soc', Object.assign(payload, { at: Date.now() }));
   location.href = './?soc=med';
@@ -412,7 +413,7 @@ function disCard(d, opts = {}) {
     const locked = l > lv && !shown[k];
     return locked ? `<button class="frow locked" data-act="reveal" data-v="${d.id}|${k}"><span class="flab">${lab}</span><span class="small muted">🔒 ab Stufe ${l} · antippen zum Aufdecken</span></button>`
       : `<div class="frow ${k === 'nut' ? 'nut' : ''}"><span class="flab">${k === 'nut' ? '🥗 ' : ''}${lab}</span><span>${esc(d[k])}</span></div>`;
-  }).join('');
+  }).join('') + (opts.actions === false ? '' : EXT.disExtra.map(fn => fn(d)).join(''));
   return `<div class="dcard"><div class="row spread" style="align-items:flex-start"><div style="display:grid;gap:2px"><h3>${esc(d.name)}</h3><span class="small muted">${esc(short(ORG[d.organ].name))} · ${TIER[d.tier]}</span></div><span class="tier t${d.tier}">${d.tier}</span></div>${rows}
     ${opts.actions === false ? '' : `<div class="row" style="gap:8px;flex-wrap:wrap"><button class="chip" data-act="soc" data-v="dis|${d.id}">🦉 Sokratisch vertiefen</button>${opts.organLink ? `<button class="chip" data-act="organ" data-v="${d.organ}">→ ${esc(short(ORG[d.organ].name))}</button>` : ''}</div>`}</div>`;
 }
@@ -495,6 +496,7 @@ function viewHome() {
   <div class="modes">
     <button class="mode" data-act="atlas"><span>🗺️</span><b>Atlas</b><small>Körper antippen, reinzoomen</small></button>
     ${EXT.views.psy ? '<button class="mode" data-act="psy-open"><span>🧠</span><b>Gehirn & Psyche</b><small>Regionen, Botenstoffe, Störungen, Psilocybin</small></button>' : ''}
+    ${EXT.views.nut ? `<button class="mode" data-act="nut-open"><span>🥗</span><b>Mikronährstoffe</b><small>${(BY_ORGAN._nut || []).filter(i => i.kind === 'nut').length} Vitamine & Mineralstoffe</small></button>` : ''}
     <button class="mode" data-act="det"><span>🔍</span><b>Fall-Detektiv</b><small>Hinweise → Diagnose</small></button>
     <button class="mode" data-act="paths"><span>🧪</span><b>Stoffwechselwege</b><small>${PATH.length} Wege als Diagramm</small></button>
     <button class="mode" data-act="index"><span>📋</span><b>Krankheiten</b><small>${DIS.length} nach Organ & Stufe</small></button>
@@ -612,7 +614,7 @@ function viewPath() {
     <div class="pathbox">${pathDiagram(p, mode)}</div>
     <div class="dcard">${f('ort', 'Ort')}${f('zweck', 'Zweck')}${f('bilanz', 'Bilanz')}${f('schritt', 'Schrittmacher')}${mode === 'd' ? f('reg', 'Regulation') : ''}${f('nut', '🥗 Ernährungsmedizin')}
       ${(p.dis || []).length ? `<div class="frow"><span class="flab">Krankheiten</span><span>${p.dis.map(x => '• ' + esc(x)).join('<br>')}</span></div>` : ''}
-      ${mode === 'd' && (p.facts || []).length ? `<div class="frow"><span class="flab">Prüfungsfakten</span><span>${p.facts.map(x => '• ' + esc(x)).join('<br>')}</span></div>` : ''}</div>
+      ${mode === 'd' && (p.facts || []).length ? `<div class="frow"><span class="flab">Prüfungsfakten</span><span>${p.facts.map(x => '• ' + esc(x)).join('<br>')}</span></div>` : ''}${EXT.pathExtra.map(fn => fn(p)).join('')}</div>
     <div class="row" style="gap:8px"><button class="btn primary grow" data-act="drill" data-v="${p.id}">Lücken-Training</button><button class="btn grow" data-act="round-1path" data-v="${p.id}">Abfragen</button></div>
     <button class="chip" data-act="soc" data-v="path|${p.id}" style="justify-self:start">🦉 Sokratisch durchdenken</button>`;
 }
