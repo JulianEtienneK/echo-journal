@@ -81,10 +81,16 @@ const IV = [0, 1, 3, 7, 16, 35, 80, 180]; // level thresholds (days of stability
    that question format, and an optional "zu leicht" / "geraten" tap. Evidence from guessable formats counts less:
    a right answer among four options moves stability only part of the way. */
 const FW = [0.4872, 1.4003, 3.7145, 13.8206, 5.1618, 1.2298, 0.8975, 0.031, 1.6474, 0.1367, 1.0461, 2.1072, 0.0793, 0.3246, 1.587, 0.2272, 2.8755];
-const RET = 0.9, DECAY = -0.5, FACTOR = 19 / 81, MAXI = 365, NEW_CAP = 30, LEECH = 4;
+// Tempo = target retention (a card comes back when recall has dropped to this value) + new cards per day.
+// Simulation (8 seeds, 3 forgetting models): between 85 and 92 % total workload changes by only ±5 %, because below 90 %
+// relearning after lapses eats what longer intervals save – but recall drops 4–7 points. Daily workload scales almost
+// linearly with new cards per day (5 → 10 → 20 new ≈ 1× → 2× → 4× reviews). So the load knob is mainly the new-card rate.
+const TEMPO = [{ k: 'spar', r: .85, n: 5, l: 'Sparsam' }, { k: 'std', r: .9, n: 10, l: 'Standard' }, { k: 'int', r: .92, n: 20, l: 'Intensiv' }];
+const tempo = () => TEMPO.find(t => t.k === M.tempo) || TEMPO[1];
+const RET = () => tempo().r, NEW_CAP = () => tempo().n, DECAY = -0.5, FACTOR = 19 / 81, MAXI = 730, LEECH = 4;
 const clampD = d => Math.min(10, Math.max(1, d));
 const retr = (t, S) => Math.pow(1 + FACTOR * t / S, DECAY);
-const ivlDays = S => Math.min(MAXI, Math.max(1, Math.round(S / FACTOR * (Math.pow(RET, 1 / DECAY) - 1))));
+const ivlDays = S => Math.min(MAXI, Math.max(1, Math.round(S / FACTOR * (Math.pow(RET(), 1 / DECAY) - 1))));
 const lvl = S => { let b = 0; for (let i = 1; i < IV.length; i++) if (S >= IV[i]) b = i; return b; };
 function memInit(s) { // cards from the old box system get a stability that matches their box
   if (s.S != null || !(s.n + s.w)) return s;
@@ -93,6 +99,8 @@ function memInit(s) { // cards from the old box system get a stability that matc
   return s;
 }
 const Rnow = (s, now = Date.now()) => s && s.S ? retr(Math.max(0, now - (s.L || now)) / DAY, s.S) : 0;
+// switching the target redistributes every card's next date from its last review
+function setTempo(k) { M.tempo = k; for (const id in M.c) { const c = M.c[id]; if (c.S && c.L && c.d > Date.now()) c.d = Math.max(Date.now(), c.L + ivlDays(c.S) * DAY); } saveM(); }
 const isLeech = s => !!s && (s.lp || 0) >= LEECH && (s.S || 0) < 7;
 function review(s, G, w = 1, now = Date.now()) {
   memInit(s);
@@ -261,9 +269,9 @@ function buildRound(scope = {}) {
   // reviews: the cards closest to being forgotten first; at most two leeches per round so one stubborn card can't take over
   let due = pool.filter(i => seen(i.id) && M.c[i.id].d <= now).sort((a, b) => rc(a) - rc(b));
   if (!scope.leech) { let nl = 0; due = due.filter(i => !isLeech(M.c[i.id]) || ++nl <= 2); }
-  // new cards only when the backlog allows it, and at most NEW_CAP per day
+  // new cards only when the backlog allows it, and at most NEW_CAP() per day (set by the tempo)
   const nd = M.nd && M.nd.day === today() ? M.nd.n : 0, backlog = dueList(pool).length;
-  const nNew = scope.leech ? 0 : Math.max(0, Math.min(NEW_CAP - nd, backlog >= 40 ? 1 : backlog >= 20 ? 2 : backlog >= 10 ? 3 : 5));
+  const nNew = scope.leech ? 0 : Math.max(0, Math.min(NEW_CAP() - nd, backlog >= 40 ? 1 : backlog >= 20 ? 2 : backlog >= 10 ? 3 : 5));
   const pr = it => [it.stage, it.organ === '_sys' ? -1 : it.organ === '_path' ? 99 : ORG_ORDER.indexOf(it.organ)];
   const fresh = pool.filter(i => !seen(i.id)).sort((a, b) => { const x = pr(a), y = pr(b); return x[0] - y[0] || x[1] - y[1]; });
   const rev = due.slice(0, LEN - Math.min(nNew, fresh.length));
@@ -463,7 +471,7 @@ function memCard() {
   const avg = cs.reduce((a, c) => a + Rnow(c, now), 0) / cs.length, leech = cs.filter(isLeech).length;
   const base = new Date().setHours(0, 0, 0, 0), days = [...Array(7)].map((_, k) => { const a = base + k * DAY, e = a + DAY; return cs.filter(c => k === 0 ? c.d < e : c.d >= a && c.d < e).length; });
   const mx = Math.max(1, ...days), wd = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-  return `<section class="card memcard"><div class="row spread"><h3>Gedächtnis</h3><span class="small muted">Ziel: 90 % behalten</span></div>
+  return `<section class="card memcard"><div class="row spread"><h3>Gedächtnis</h3><button class="chip" data-act="tempo" title="Tempo: Zielquote und neue Karten pro Tag">Tempo: ${tempo().l} · ${Math.round(RET() * 100)} % · ${NEW_CAP()} neu/Tag</button></div>
     <div class="row spread" style="align-items:flex-end;gap:14px"><div class="stat"><span class="small muted">Jetzt abrufbar</span><b>${Math.round(avg * 100)} %</b></div>
     <div class="fc" aria-label="Fällige Karten der nächsten 7 Tage">${days.map((n, k) => `<span><i style="height:${Math.round(4 + 36 * n / mx)}px"></i><small>${k === 0 ? 'heute' : wd[new Date(base + k * DAY).getDay()]}</small><small class="muted">${n}</small></span>`).join('')}</div></div>
     ${leech ? `<button class="btn" data-act="round-leech">🌰 ${leech} Knacknüsse üben</button>` : ''}</section>`;
@@ -779,6 +787,7 @@ app.addEventListener('click', e => {
   else if (a === 'round-organ') startRound({ organ: v });
   else if (a === 'round-leech') startRound({ leech: true });
   else if (a === 'regrade') regrade(v);
+  else if (a === 'tempo') { const n = TEMPO[(TEMPO.indexOf(tempo()) + 1) % TEMPO.length]; setTempo(n.k); toast(n.l + ': ' + Math.round(n.r * 100) + ' % behalten, ' + n.n + ' neue Karten am Tag · Termine neu verteilt'); render(); }
   else if (a === 'round-path') startRound({ path: true });
   else if (a === 'round-1path') startRound({ path: v });
   else if (a === 'ans') answerMC(+v);

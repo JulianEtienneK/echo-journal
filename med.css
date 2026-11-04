@@ -287,6 +287,8 @@
 
 /* Gedächtnis: memory card, 7-day forecast, regrade chips */
 .memcard h3 { margin: 0; }
+.memcard > .row:first-child { flex-wrap: wrap; gap: 6px; }
+.memcard [data-act=tempo] { font-size: 12px; padding: 4px 10px; }
 .memcard .fc { display: flex; gap: 6px; align-items: flex-end; flex: 1; justify-content: flex-end; min-width: 0; }
 .memcard .fc span { display: grid; justify-items: center; gap: 2px; min-width: 0; }
 .memcard .fc i { display: block; width: 14px; border-radius: 4px 4px 2px 2px; background: color-mix(in srgb, var(--calm, #1B8173) 70%, transparent); }
