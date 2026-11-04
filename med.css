@@ -284,3 +284,13 @@
 .map .credit { font-size: calc(7px * var(--ls, 1)); fill: var(--muted); opacity: .75; stroke: none; pointer-events: none; }
 .map a .credit { pointer-events: auto; cursor: pointer; }
 .map.dbg .hot { fill: rgba(255,0,0,.18); stroke: #e00; stroke-width: 1.5; } .map.dbg .hotl { stroke: rgba(255,0,0,.35); }
+
+/* Gedächtnis: memory card, 7-day forecast, regrade chips */
+.memcard h3 { margin: 0; }
+.memcard .fc { display: flex; gap: 6px; align-items: flex-end; flex: 1; justify-content: flex-end; min-width: 0; }
+.memcard .fc span { display: grid; justify-items: center; gap: 2px; min-width: 0; }
+.memcard .fc i { display: block; width: 14px; border-radius: 4px 4px 2px 2px; background: color-mix(in srgb, var(--calm, #1B8173) 70%, transparent); }
+.memcard .fc span:first-child i { background: var(--gold, #A87D14); }
+.memcard .fc small { font-size: 10px; line-height: 1.1; }
+.fb .regrade { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.fb .regrade .chip { font-size: 12px; padding: 4px 10px; }

@@ -73,7 +73,49 @@ const st = id => M.c[id] || (M.c[id] = { b: 0, d: 0, n: 0, w: 0 });
 const seen = id => !!M.c[id] && (M.c[id].n + M.c[id].w) > 0;
 const known = id => (M.c[id] || {}).b >= 1;
 const solid = id => (M.c[id] || {}).b >= 3;
-const IV = [0, 1, 3, 7, 16, 35, 80, 180];
+const IV = [0, 1, 3, 7, 16, 35, 80, 180]; // level thresholds (days of stability) for b, known (b>=1) and solid (b>=3)
+
+/* MEM:start ---------- memory model: FSRS-4.5 ----------
+   Each card keeps stability S (days until recall drops to 90 %), difficulty D (1–10), last review L, lapses lp.
+   Grades: 1 again, 2 hard, 3 good, 4 easy. They come from correctness, answer time relative to your usual time for
+   that question format, and an optional "zu leicht" / "geraten" tap. Evidence from guessable formats counts less:
+   a right answer among four options moves stability only part of the way. */
+const FW = [0.4872, 1.4003, 3.7145, 13.8206, 5.1618, 1.2298, 0.8975, 0.031, 1.6474, 0.1367, 1.0461, 2.1072, 0.0793, 0.3246, 1.587, 0.2272, 2.8755];
+const RET = 0.9, DECAY = -0.5, FACTOR = 19 / 81, MAXI = 365, NEW_CAP = 30, LEECH = 4;
+const clampD = d => Math.min(10, Math.max(1, d));
+const retr = (t, S) => Math.pow(1 + FACTOR * t / S, DECAY);
+const ivlDays = S => Math.min(MAXI, Math.max(1, Math.round(S / FACTOR * (Math.pow(RET, 1 / DECAY) - 1))));
+const lvl = S => { let b = 0; for (let i = 1; i < IV.length; i++) if (S >= IV[i]) b = i; return b; };
+function memInit(s) { // cards from the old box system get a stability that matches their box
+  if (s.S != null || !(s.n + s.w)) return s;
+  s.S = s.b ? IV[s.b] : 0.6; s.D = clampD(4 + 6 * s.w / (s.n + s.w)); s.lp = Math.floor(s.w / 2); // old counts include the retry at the end of a round
+  s.L = s.t || Math.max(0, (s.d || Date.now()) - IV[s.b] * DAY) || Date.now();
+  return s;
+}
+const Rnow = (s, now = Date.now()) => s && s.S ? retr(Math.max(0, now - (s.L || now)) / DAY, s.S) : 0;
+const isLeech = s => !!s && (s.lp || 0) >= LEECH && (s.S || 0) < 7;
+function review(s, G, w = 1, now = Date.now()) {
+  memInit(s);
+  const t = s.S == null ? null : Math.max(0, now - (s.L || now)) / DAY;
+  if (t == null) { // first answer ever
+    s.D = clampD(FW[4] - (G - 3) * FW[5]);
+    s.S = G === 1 ? FW[0] : FW[G - 1] * (0.5 + 0.5 * w);
+  } else if (t < 0.5) { // same-day repeat (retry at the end of a round): short-term step, no spacing credit
+    if (G === 1) s.S = Math.min(s.S, FW[0] * 2);
+    s.D = clampD(s.D - FW[6] * (G - 3) * 0.3);
+  } else {
+    const R = retr(t, s.S), D = s.D;
+    if (G === 1) { s.S = Math.min(s.S, FW[11] * Math.pow(D, -FW[12]) * (Math.pow(s.S + 1, FW[13]) - 1) * Math.exp(FW[14] * (1 - R))); s.lp = (s.lp || 0) + 1; }
+    else s.S *= 1 + w * Math.exp(FW[8]) * (11 - D) * Math.pow(s.S, -FW[9]) * (Math.exp(FW[10] * (1 - R)) - 1) * (G === 2 ? FW[15] : 1) * (G === 4 ? FW[16] : 1);
+    s.D = clampD(FW[7] * FW[4] + (1 - FW[7]) * (D - FW[6] * (G - 3)));
+  }
+  s.S = Math.max(0.1, Math.min(s.S, 3650));
+  if (G === 1) { s.w++; s.d = now; }
+  else { s.n++; const I = ivlDays(s.S), fz = I >= 4 ? 1 + (Math.random() - .5) * .1 : 1; s.d = now + Math.round(I * fz) * DAY; }
+  s.L = now; s.t = now; s.b = lvl(s.S);
+  return s;
+}
+/* MEM:end */
 
 function stageOpen(organ) {
   if (M.all) return 4;
@@ -84,7 +126,9 @@ function stageOpen(organ) {
     if (it.length && it.filter(i => known(i.id)).length / it.length < .7) break;
     k++;
   }
-  return k;
+  // a stage once opened stays open, even if a few cards lapse later
+  M.stg = M.stg || {}; if (k > (M.stg[organ] || 1)) M.stg[organ] = k;
+  return Math.max(k, M.stg[organ] || 1);
 }
 const pathOpen = p => M.all || known('p.' + p.id + '.o');
 function isOpen(it) {
@@ -137,15 +181,15 @@ function pickMap(organ, s) {
   return pool.length ? pool[Math.floor(Math.random() * pool.length)] : MEDSVG.mapFor(organ, s.id);
 }
 function makeQ(it) {
-  const b = (M.c[it.id] || {}).b || 0;
-  if (EXT.q[it.kind]) return EXT.q[it.kind](it, b);
+  const c = M.c[it.id] || {}, b = c.b || 0, rot = (c.n || 0) + (c.w || 0), S = c.S || 0, tier = S < 4 ? 0 : S < 21 ? 1 : 2;
+  if (EXT.q[it.kind]) return EXT.q[it.kind](it, rot);
   if (it.kind === 'sys') {
     const s = SYS[it.ref], w = others(Object.keys(SYS), it.ref, 3).map(k => SYS[k].name);
     return { it, type: 'mc', eyebrow: 'Organsysteme', prompt: 'Welches Organsystem ist das?', sub: s.fn, opts: mcOpts(s.name, w) };
   }
   if (it.kind === 'org') {
     const o = ORG[it.ref];
-    if (b % 2 === 0) return { it, type: 'tap', eyebrow: 'Wo liegt …?', prompt: 'Tippe: ' + short(o.name), map: { kind: 'body', view: o.sys, sex: it.ref === 'maennlich' ? 'm' : it.ref === 'weiblich' ? 'w' : M.sex, target: it.ref } };
+    if (rot % 2 === 0) return { it, type: 'tap', eyebrow: 'Wo liegt …?', prompt: 'Tippe: ' + short(o.name), map: { kind: 'body', view: o.sys, sex: it.ref === 'maennlich' ? 'm' : it.ref === 'weiblich' ? 'w' : M.sex, target: it.ref } };
     const w = others(ORG_ORDER, it.ref, 3).map(k => ORG[k].fn).filter(Boolean);
     return { it, type: 'mc', eyebrow: short(o.name), prompt: 'Welche Aufgabe hat dieses Organ?', opts: mcOpts(o.fn, w), long: true };
   }
@@ -156,17 +200,20 @@ function makeQ(it) {
   }
   if (it.kind === 'str') {
     const s = it.ref, mk = pickMap(it.organ, s), sibs = (STR[it.organ] || []).filter(x => x.id !== s.id);
-    if (mk && b % 3 === 0) return { it, type: 'tap', eyebrow: short(ORG[it.organ].name) + ' · Stufe ' + s.l, prompt: 'Tippe: ' + short(s.name), map: { kind: 'detail', key: mk, target: s.id } };
-    if (mk && b % 3 === 1) {
+    // fresh cards: recognition with a cue (what is marked / which statement fits); stable cards: find it yourself on the plate
+    const fmt = !mk ? (rot % 2 ? 'q' : 'fact') : tier === 0 ? ['mark', 'fact'][rot % 2] : tier === 1 ? ['tap', 'mark', 'q'][rot % 3] : ['tap', 'q'][rot % 2];
+    if (mk && fmt === 'tap') return { it, type: 'tap', eyebrow: short(ORG[it.organ].name) + ' · Stufe ' + s.l, prompt: 'Tippe: ' + short(s.name), map: { kind: 'detail', key: mk, target: s.id } };
+    if (mk && fmt === 'mark') {
       const onMap = sibs.filter(x => MEDSVG.detail(mk).includes(`data-s="${x.id}"`));
       return { it, type: 'mc', eyebrow: short(ORG[it.organ].name) + ' · Stufe ' + s.l, prompt: 'Was ist markiert?', map: { kind: 'detail', key: mk, mark: s.id }, opts: mcOpts(short(s.name), others(onMap.length >= 3 ? onMap : sibs, s, 3, x => x.id).map(x => short(x.name))) };
     }
-    if (b % 2 === 0 || !s.q) return { it, type: 'mc', eyebrow: short(ORG[it.organ].name) + ' · Stufe ' + s.l, prompt: 'Was trifft auf „' + short(s.name) + '“ zu?', opts: mcOpts(s.fact, others(sibs, s, 3, x => x.id).map(x => x.fact)), long: true };
+    if (fmt !== 'q' || !s.q) return { it, type: 'mc', eyebrow: short(ORG[it.organ].name) + ' · Stufe ' + s.l, prompt: 'Was trifft auf „' + short(s.name) + '“ zu?', opts: mcOpts(s.fact, others(sibs, s, 3, x => x.id).map(x => x.fact)), long: true };
     return { it, type: 'mc', eyebrow: short(ORG[it.organ].name) + ' · Stufe ' + s.l, prompt: s.q, opts: mcOpts(short(s.name), others(sibs, s, 3, x => x.id).map(x => short(x.name))) };
   }
   if (it.kind === 'dis') {
     const d = it.ref, lv = stageOpen(d.organ), vs = FIELDS.filter(([k, , l]) => l <= lv && d[k]).map(([k, lab]) => [k, lab]);
-    const [k, lab] = vs[b % vs.length], rev = b >= vs.length && ['def', 'leit', 'dx', 'tx'].includes(k);
+    // fresh: name the disease from its description; stable: also the reverse direction (pick the right description among close neighbours)
+    const [k, lab] = vs[rot % vs.length], rev = tier >= 1 && rot % 2 === 1 && ['def', 'leit', 'dx', 'tx'].includes(k);
     const ds = disDistractors(d, 3);
     if (rev) {
       const w = ds.map(x => mask(x[k] || x.def, x.name));
@@ -176,7 +223,7 @@ function makeQ(it) {
   }
   if (it.kind === 'po') {
     const p = it.ref, fs = [['ort', 'Wo läuft „' + p.name + '“ ab?'], ['bilanz', 'Bilanz von „' + p.name + '“?'], ['schritt', 'Schrittmacher von „' + p.name + '“?'], ['zweck', null]].filter(([f]) => p[f]);
-    const [f, q] = fs[b % fs.length], op = others(PATH, p, 3, x => x.id);
+    const [f, q] = fs[rot % fs.length], op = others(PATH, p, 3, x => x.id);
     if (!q) return { it, type: 'mc', eyebrow: 'Stoffwechselweg', prompt: 'Welcher Weg ist gemeint?', sub: mask(p.zweck, p.name), opts: mcOpts(p.name, op.map(x => x.name)) };
     return { it, type: 'mc', eyebrow: 'Stoffwechselweg', prompt: q, opts: mcOpts(p[f], op.map(x => x[f]).filter(Boolean)), long: true };
   }
@@ -202,34 +249,68 @@ let R = null; // current round
 function buildRound(scope = {}) {
   const inScope = it => {
     if (scope.kind && it.kind !== scope.kind) return false;
+    if (scope.leech) return isLeech(M.c[it.id]);
     if (scope.organ) return it.organ === scope.organ;
     if (scope.path) return scope.path === true ? it.organ === '_path' : it.organ === '_path' && it.ref.id === scope.path;
     if (scope.sys) return sysOf(it.organ) === scope.sys;
     return true;
   };
-  const pool = ALL.filter(it => inScope(it) && isOpen(it)), now = Date.now();
-  const due = pool.filter(i => seen(i.id) && M.c[i.id].d <= now).sort((a, b) => M.c[a.id].d - M.c[b.id].d);
+  const LEN = 12, now = Date.now(), pool = ALL.filter(it => inScope(it) && isOpen(it));
+  for (const it of pool) if (M.c[it.id]) memInit(M.c[it.id]);
+  const rc = it => Rnow(M.c[it.id], now);
+  // reviews: the cards closest to being forgotten first; at most two leeches per round so one stubborn card can't take over
+  let due = pool.filter(i => seen(i.id) && M.c[i.id].d <= now).sort((a, b) => rc(a) - rc(b));
+  if (!scope.leech) { let nl = 0; due = due.filter(i => !isLeech(M.c[i.id]) || ++nl <= 2); }
+  // new cards only when the backlog allows it, and at most NEW_CAP per day
+  const nd = M.nd && M.nd.day === today() ? M.nd.n : 0, backlog = dueList(pool).length;
+  const nNew = scope.leech ? 0 : Math.max(0, Math.min(NEW_CAP - nd, backlog >= 40 ? 1 : backlog >= 20 ? 2 : backlog >= 10 ? 3 : 5));
   const pr = it => [it.stage, it.organ === '_sys' ? -1 : it.organ === '_path' ? 99 : ORG_ORDER.indexOf(it.organ)];
   const fresh = pool.filter(i => !seen(i.id)).sort((a, b) => { const x = pr(a), y = pr(b); return x[0] - y[0] || x[1] - y[1]; });
-  const nNew = Math.max(4, 10 - due.length);
-  let seq = [...due.slice(0, 8), ...fresh.slice(0, Math.min(nNew, 10 - Math.min(8, due.length)))];
-  if (!seq.length) seq = pool.filter(i => seen(i.id)).sort((a, b) => M.c[a.id].d - M.c[b.id].d).slice(0, 10);
+  const rev = due.slice(0, LEN - Math.min(nNew, fresh.length));
+  let seq = [...rev, ...fresh.slice(0, Math.min(nNew, LEN - rev.length))];
+  // nothing due: pull forward only what is already slipping (recall < 93 %), never the cards that sit firmly
+  if (!seq.length) seq = pool.filter(i => seen(i.id) && rc(i) < .93).sort((a, b) => rc(a) - rc(b)).slice(0, 8);
   if (!seq.length) return null;
-  return { scope, seq: shuffle(seq).map(it => ({ it, q: null, ok: null })), i: 0, ans: null, ok: 0, xp: 0, retry: new Set(), started: Date.now() };
+  // interleave: no two cards of the same organ in a row where avoidable
+  const rest = shuffle(seq), out = [];
+  while (rest.length) { const j = rest.findIndex(x => !out.length || x.organ !== out[out.length - 1].organ); out.push(rest.splice(j < 0 ? 0 : j, 1)[0]); }
+  return { scope, seq: out.map(it => ({ it, q: null, ok: null })), i: 0, ans: null, ok: 0, xp: 0, retry: new Set(), started: now, t0: now };
 }
+const nextDue = () => { let m = Infinity; for (const it of ALL) { const c = M.c[it.id]; if (c && (c.n + c.w) && isOpen(it) && c.d < m) m = c.d; } return m; };
 function startRound(scope) {
   const r = buildRound(scope);
-  if (!r) { toast('Hier gibt es gerade nichts zu lernen'); return; }
-  R = r; R.seq[0].q = makeQ(R.seq[0].it); go('round');
+  if (!r) { const n = nextDue(); toast(n < Infinity ? 'Alles sitzt gerade · nächste Wiederholung ' + new Date(n).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'numeric' }) : 'Hier gibt es gerade nichts zu lernen'); return; }
+  R = r; R.seq[0].q = makeQ(R.seq[0].it); R.t0 = Date.now(); go('round');
+}
+// how much a right answer proves: guessable formats count less (1 of 4 options is right by chance)
+const fmtKey = q => q.type + (q.map ? (q.map.mark ? '-mark' : '-map') : '') + (q.path ? '-path' : '') + (q.long ? '-long' : '');
+const fmtWeight = q => q.type === 'tap' ? (q.map && q.map.targets ? .8 : .9) : q.path ? .7 : q.map && q.map.mark ? .7 : .6;
+function autoGrade(ok, q, dt) {
+  if (!ok) return 1;
+  const m = (M.rt || {})[fmtKey(q)];
+  if (m) { if (dt < m * .55 && dt < 8000) return 4; if (dt > m * 2.2 && dt > 9000) return 2; }
+  return 3;
 }
 function grade(ok) {
-  const cur = R.seq[R.i], s = st(cur.it.id); cur.ok = ok;
-  if (ok) { s.n++; s.b = Math.min(IV.length - 1, s.b + 1); s.d = Date.now() + IV[s.b] * DAY; R.ok++; R.xp += 5; }
+  const cur = R.seq[R.i], s = memInit(st(cur.it.id)), dt = Math.min(60000, Date.now() - (R.t0 || Date.now()));
+  const firstEver = !seen(cur.it.id), G = autoGrade(ok, cur.q, dt);
+  cur.ok = ok; cur.snap = JSON.stringify(s); cur.G = G; cur.w = fmtWeight(cur.q);
+  review(s, G, cur.w);
+  if (ok) { M.rt = M.rt || {}; const k = fmtKey(cur.q); M.rt[k] = M.rt[k] ? M.rt[k] * .9 + dt * .1 : dt; R.ok++; R.xp += 5; }
   else {
-    s.w++; s.b = 0; s.d = Date.now(); R.xp += 1;
+    R.xp += 1;
     if (!R.retry.has(cur.it.id)) { R.retry.add(cur.it.id); R.seq.push({ it: cur.it, q: null, ok: null, again: true }); }
   }
-  s.t = Date.now(); saveM(); beep(ok);
+  if (firstEver) { const d = today(); M.nd = M.nd && M.nd.day === d ? M.nd : { day: d, n: 0 }; M.nd.n++; }
+  saveM(); beep(ok);
+}
+// after a right answer: "zu leicht" (show it much less often) or "geraten" (it wasn't really known)
+function regrade(kind) {
+  const cur = R.seq[R.i]; if (!cur || !cur.ok || !cur.snap || cur.re) return;
+  const s = M.c[cur.it.id]; Object.keys(s).forEach(k => delete s[k]); Object.assign(s, JSON.parse(cur.snap));
+  if (kind === 'easy') { review(s, 4, 1); s.S = Math.max(s.S * 1.5, 21); s.d = Date.now() + ivlDays(s.S) * DAY; s.b = lvl(s.S); }
+  else { review(s, 1, 1); if (!R.retry.has(cur.it.id)) { R.retry.add(cur.it.id); R.seq.push({ it: cur.it, q: null, ok: null, again: true }); } }
+  cur.re = kind; saveM(); render();
 }
 function answerMC(i) {
   const cur = R.seq[R.i]; if (R.ans != null) return;
@@ -244,7 +325,7 @@ function answerTap(id) {
 function nextCard() {
   R.i++; R.ans = null;
   if (R.i >= R.seq.length) { R.done = true; const bonus = 10; R.xp += bonus; gain(R.xp, true); M.rounds = (M.rounds || 0) + 1; saveM(); }
-  else R.seq[R.i].q = makeQ(R.seq[R.i].it);
+  else { R.seq[R.i].q = makeQ(R.seq[R.i].it); R.t0 = Date.now(); }
   render(); scrollTo(0, 0);
 }
 
@@ -268,10 +349,10 @@ function detPick(id) {
   const max = detClues(c.d).length;
   if (id === c.d.id) {
     c.done = true; c.solved = true; c.pts = Math.max(1, 6 - c.k); DT.pts += c.pts; beep(true);
-    const s = st('d.' + c.d.id); s.n++; if (c.k <= 2) { s.b = Math.min(IV.length - 1, s.b + 1); s.d = Date.now() + IV[s.b] * DAY; } s.t = Date.now();
+    review(st('d.' + c.d.id), c.k === 1 ? 4 : c.k === 2 ? 3 : 2, 1); // fewer clues needed = surer diagnosis
   } else {
     c.wrong.add(id); beep(false);
-    if (c.k < max) c.k++; else { c.done = true; const s = st('d.' + c.d.id); s.w++; s.b = 0; s.d = Date.now(); }
+    if (c.k < max) c.k++; else { c.done = true; review(st('d.' + c.d.id), 1, 1); }
   }
   saveM(); render();
 }
@@ -296,7 +377,7 @@ function drillNext() {
   PD.i++; PD.ans = null;
   if (PD.i >= PD.qs.length) {
     PD.over = true; gain(PD.ok * 3, false);
-    const s = st('p.' + PD.p.id + '.d'); if (PD.ok >= PD.qs.length - 1) { s.n++; s.b = Math.min(IV.length - 1, s.b + 1); s.d = Date.now() + IV[s.b] * DAY; } else { s.w++; s.b = 0; s.d = Date.now(); } s.t = Date.now(); saveM();
+    review(st('p.' + PD.p.id + '.d'), PD.ok === PD.qs.length ? 3 : PD.ok >= PD.qs.length - 1 ? 2 : 1, .9); saveM();
   }
   render(); scrollTo(0, 0);
 }
@@ -375,6 +456,18 @@ function pathDiagram(p, mode = 'd', blank = {}) {
 }
 
 /* ---------- views ---------- */
+// what you would still know right now, what is coming, and the stubborn cards
+function memCard() {
+  const now = Date.now(), cs = ALL.filter(i => seen(i.id) && isOpen(i)).map(i => memInit(M.c[i.id]));
+  if (cs.length < 10) return '';
+  const avg = cs.reduce((a, c) => a + Rnow(c, now), 0) / cs.length, leech = cs.filter(isLeech).length;
+  const base = new Date().setHours(0, 0, 0, 0), days = [...Array(7)].map((_, k) => { const a = base + k * DAY, e = a + DAY; return cs.filter(c => k === 0 ? c.d < e : c.d >= a && c.d < e).length; });
+  const mx = Math.max(1, ...days), wd = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  return `<section class="card memcard"><div class="row spread"><h3>Gedächtnis</h3><span class="small muted">Ziel: 90 % behalten</span></div>
+    <div class="row spread" style="align-items:flex-end;gap:14px"><div class="stat"><span class="small muted">Jetzt abrufbar</span><b>${Math.round(avg * 100)} %</b></div>
+    <div class="fc" aria-label="Fällige Karten der nächsten 7 Tage">${days.map((n, k) => `<span><i style="height:${Math.round(4 + 36 * n / mx)}px"></i><small>${k === 0 ? 'heute' : wd[new Date(base + k * DAY).getDay()]}</small><small class="muted">${n}</small></span>`).join('')}</div></div>
+    ${leech ? `<button class="btn" data-act="round-leech">🌰 ${leech} Knacknüsse üben</button>` : ''}</section>`;
+}
 function viewHome() {
   const due = dueList().length, learned = ALL.filter(i => known(i.id)).length, sol = ALL.filter(i => solid(i.id)).length;
   const G = LS.get('echo-games', {}) || {}, td = (G.days || {})[today()] || {};
@@ -390,6 +483,7 @@ function viewHome() {
     <button class="btn primary big" data-act="round">${due ? `Lernrunde · ${due} fällig` : 'Lernrunde starten'}</button>
     ${td.med ? '<span class="small muted" style="text-align:center">✓ Heute schon eine Runde geschafft</span>' : ''}
   </section>
+  ${memCard()}
   <div class="modes">
     <button class="mode" data-act="atlas"><span>🗺️</span><b>Atlas</b><small>Körper antippen, reinzoomen</small></button>
     ${EXT.views.psy ? '<button class="mode" data-act="psy-open"><span>🧠</span><b>Gehirn & Psyche</b><small>Regionen, Botenstoffe, Störungen, Psilocybin</small></button>' : ''}
@@ -450,12 +544,18 @@ function viewOrgan() {
   return `${topbar('atlas')}<div class="row spread" style="align-items:flex-end"><div style="display:grid;gap:2px"><span class="eyebrow">${esc(SYS[o.sys].name)}</span><h2>${esc(o.name)}</h2></div><div style="text-align:right;display:grid;gap:4px;justify-items:end">${dots(S.stage)}<span class="small muted">Stufe ${S.stage} · ${S.known}/${S.n}</span></div></div>
     <div class="seg">${tabs.map(([t, l]) => `<button data-act="otab" data-v="${t}" aria-pressed="${V.tab === t}">${l}</button>`).join('')}</div>${body}`;
 }
+function backIn(cur) {
+  const s = M.c[cur.it.id];
+  if (!cur.ok || cur.re === 'guess') return 'kommt am Ende der Runde nochmal';
+  const d = Math.max(1, Math.round((s.d - Date.now()) / DAY)), when = d === 1 ? 'morgen' : d < 60 ? 'in ' + d + ' Tagen' : 'in ' + Math.round(d / 30) + ' Monaten';
+  return (cur.re === 'easy' ? 'seltener: ' : cur.G === 4 ? 'souverän · ' : cur.G === 2 ? 'knapp · ' : '') + 'kommt ' + when + ' wieder';
+}
 function viewRound() {
   if (R.done) {
     const wrong = R.seq.filter(x => x.ok === false && !x.again);
     return `${topbar('home')}<section class="card" style="text-align:center;justify-items:center"><span class="eyebrow">Lernrunde geschafft</span><div class="sum">${R.ok}/${R.seq.length}</div><p class="muted" style="margin:0">+${R.xp} XP</p></section>
       ${wrong.length ? `<section class="card"><h3>Das kommt bald wieder</h3>${wrong.map(x => `<span class="small">• ${esc(EXT.title[x.it.kind] ? EXT.title[x.it.kind](x.it) : x.it.kind === 'dis' ? x.it.ref.name : x.it.kind === 'str' ? x.it.ref.name : x.it.kind === 'org' ? ORG[x.it.ref].name : x.it.kind === 'sys' ? SYS[x.it.ref].name : x.it.kind === 'fact' ? ORG[x.it.organ].name + ': ' + x.it.ref.text : x.it.ref.name)}</span>`).join('')}</section>` : ''}
-      <button class="btn primary big" data-act="${R.scope.organ ? 'round-organ' : 'round'}" data-v="${R.scope.organ || ''}">Nächste Runde</button><button class="btn" data-act="home">Übersicht</button>`;
+      <button class="btn primary big" data-act="${R.scope.leech ? 'round-leech' : R.scope.organ ? 'round-organ' : 'round'}" data-v="${R.scope.organ || ''}">Nächste Runde</button><button class="btn" data-act="home">Übersicht</button>`;
   }
   const cur = R.seq[R.i], q = cur.q, answered = R.ans != null;
   const prog = `<div class="progress">${R.seq.map((x, i) => `<i class="${i < R.i ? (x.ok ? 'ok' : 'bad') : i === R.i ? 'cur' : ''}"></i>`).join('')}</div>`;
@@ -467,9 +567,9 @@ function viewRound() {
   if (q.path) stage = `<div class="pathbox">${pathDiagram(q.path.p, 'd', q.path)}</div>`;
   const opts = q.type === 'mc' ? `<div class="opts ${q.long ? 'long' : ''}">${q.opts.map((o, i) => { const cls = !answered ? '' : o.ok ? 'ok' : i === R.ans ? 'bad' : ''; return `<button class="opt ${cls}" data-act="ans" data-v="${i}" ${answered ? 'disabled' : ''}><span class="k">${i + 1}</span><span>${esc(o.label)}</span></button>`; }).join('')}</div>` : '';
   const ok = answered && cur.ok;
-  return `${topbar('home')}${prog}<span class="eyebrow">${esc(q.eyebrow || '')}${cur.again ? ' · nochmal' : ''}</span><div class="q">${esc(q.prompt)}</div>
+  return `${topbar('home')}${prog}<span class="eyebrow">${esc(q.eyebrow || '')}${cur.again ? ' · nochmal' : isLeech(M.c[cur.it.id]) ? ' · Knacknuss' : ''}</span><div class="q">${esc(q.prompt)}</div>
     ${q.sub ? `<div class="qsub">${esc(q.sub)}</div>` : ''}${stage}${opts}
-    ${answered ? `<div class="fb ${ok ? 'ok' : 'bad'}"><b>${ok ? '✓ Richtig' : '✗ Nicht ganz'}</b><span class="small">+${ok ? 5 : 1} XP${ok ? ' · kommt in ' + IV[st(cur.it.id).b] + ' Tag' + (IV[st(cur.it.id).b] === 1 ? '' : 'en') + ' wieder' : ' · kommt am Ende der Runde nochmal'}</span></div>${itemInfo(cur.it)}<button class="btn primary big" data-act="next" id="qnext">Weiter</button>` : ''}`;
+    ${answered ? `<div class="fb ${ok ? 'ok' : 'bad'}"><b>${ok ? '✓ Richtig' : '✗ Nicht ganz'}</b><span class="small">+${ok ? 5 : 1} XP · ${backIn(cur)}</span>${ok && !cur.re && !cur.again ? `<span class="regrade"><button class="chip" data-act="regrade" data-v="easy">Zu leicht</button><button class="chip" data-act="regrade" data-v="guess">Geraten</button></span>` : ''}</div>${itemInfo(cur.it)}<button class="btn primary big" data-act="next" id="qnext">Weiter</button>` : ''}`;
 }
 function viewDet() {
   if (DT.over) return `${topbar('home')}<section class="card" style="text-align:center;justify-items:center"><span class="eyebrow">Fall-Detektiv</span><div class="sum">${DT.pts} Punkte</div><p class="muted" style="margin:0">+${DT.pts * 2} XP · Bestwert ${M.det.best || 0}</p></section>
@@ -677,6 +777,8 @@ app.addEventListener('click', e => {
   else if (a === 'reveal') { const [id, k] = v.split('|'); V.open[id] = Object.assign(V.open[id] || {}, { [k]: true }); render(); }
   else if (a === 'round') startRound({});
   else if (a === 'round-organ') startRound({ organ: v });
+  else if (a === 'round-leech') startRound({ leech: true });
+  else if (a === 'regrade') regrade(v);
   else if (a === 'round-path') startRound({ path: true });
   else if (a === 'round-1path') startRound({ path: v });
   else if (a === 'ans') answerMC(+v);
