@@ -169,6 +169,7 @@ h3 { font-size: 17px; font-weight: 700; }
 .mapbox.hero-map { padding: 0; box-shadow: none; background: none; }
 .mapbox.hero-map svg { max-height: 300px; margin: 0 auto; }
 .hero-stats { display: grid; gap: 8px; }
+.hero-stats .stat { padding: 9px 12px; }
 .hero-stats .stat b small { font-size: 13px; font-family: var(--f-body); }
 .lvdots { display: inline-flex; gap: 3px; }
 .lvdots i { width: 7px; height: 7px; border-radius: 50%; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
@@ -184,6 +185,9 @@ h3 { font-size: 17px; font-weight: 700; }
 .ochip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; background: var(--surface-2); border-radius: 99px; padding: 3px 8px; }
 .scrollx { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
 .scrollx::-webkit-scrollbar { display: none; }
+.scrollx.sr { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
+.scrollx.sl { -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px); mask-image: linear-gradient(90deg, transparent, #000 28px); }
+.scrollx.sl.sr { -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
 .scrollx .chip { flex: none; }
 .mapbox { position: relative; background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); padding: 10px; overflow: hidden; }
 .mapbox.body-box { padding: 6px 10px; }

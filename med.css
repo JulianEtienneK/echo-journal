@@ -285,14 +285,15 @@
 .map a .credit { pointer-events: auto; cursor: pointer; }
 .map.dbg .hot { fill: rgba(255,0,0,.18); stroke: #e00; stroke-width: 1.5; } .map.dbg .hotl { stroke: rgba(255,0,0,.35); }
 
-/* Gedächtnis: memory card, 7-day forecast, regrade chips */
-.memcard h3 { margin: 0; }
-.memcard > .row:first-child { flex-wrap: wrap; gap: 6px; }
-.memcard [data-act=tempo] { font-size: 12px; padding: 4px 10px; }
-.memcard .fc { display: flex; gap: 6px; align-items: flex-end; flex: 1; justify-content: flex-end; min-width: 0; }
-.memcard .fc span { display: grid; justify-items: center; gap: 2px; min-width: 0; }
-.memcard .fc i { display: block; width: 14px; border-radius: 4px 4px 2px 2px; background: color-mix(in srgb, var(--calm, #1B8173) 70%, transparent); }
-.memcard .fc span:first-child i { background: var(--gold, #A87D14); }
-.memcard .fc small { font-size: 10px; line-height: 1.1; }
+/* Gedächtnis: forecast strip in the hero card, regrade chips */
+.memstrip { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 10px; }
+.memstrip .fc { display: flex; gap: 4px; align-items: flex-end; justify-content: space-between; }
+.memstrip .fc span { display: grid; justify-items: center; gap: 3px; flex: 1; min-width: 0; }
+.memstrip .fc i { display: block; width: 100%; max-width: 30px; border-radius: 4px 4px 2px 2px; background: color-mix(in srgb, var(--calm, #1B8173) 55%, transparent); }
+.memstrip .fc span:first-child i { background: var(--gold, #A87D14); }
+.memstrip .fc small { font-size: 10px; line-height: 1; color: var(--muted); }
+.memstrip .memact { display: flex; gap: 6px; flex-wrap: wrap; }
+.memstrip .chip { font-size: 12px; padding: 5px 10px; }
+.memstrip.slim { display: flex; justify-content: space-between; align-items: center; }
 .fb .regrade { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
 .fb .regrade .chip { font-size: 12px; padding: 4px 10px; }

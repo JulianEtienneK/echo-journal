@@ -465,33 +465,33 @@ function pathDiagram(p, mode = 'd', blank = {}) {
 
 /* ---------- views ---------- */
 // what you would still know right now, what is coming, and the stubborn cards
-function memCard() {
+function memSum() {
   const now = Date.now(), cs = ALL.filter(i => seen(i.id) && isOpen(i)).map(i => memInit(M.c[i.id]));
-  if (cs.length < 10) return '';
-  const avg = cs.reduce((a, c) => a + Rnow(c, now), 0) / cs.length, leech = cs.filter(isLeech).length;
   const base = new Date().setHours(0, 0, 0, 0), days = [...Array(7)].map((_, k) => { const a = base + k * DAY, e = a + DAY; return cs.filter(c => k === 0 ? c.d < e : c.d >= a && c.d < e).length; });
-  const mx = Math.max(1, ...days), wd = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-  return `<section class="card memcard"><div class="row spread"><h3>Gedächtnis</h3><button class="chip" data-act="tempo" title="Tempo: Zielquote und neue Karten pro Tag">Tempo: ${tempo().l} · ${Math.round(RET() * 100)} % · ${NEW_CAP()} neu/Tag</button></div>
-    <div class="row spread" style="align-items:flex-end;gap:14px"><div class="stat"><span class="small muted">Jetzt abrufbar</span><b>${Math.round(avg * 100)} %</b></div>
-    <div class="fc" aria-label="Fällige Karten der nächsten 7 Tage">${days.map((n, k) => `<span><i style="height:${Math.round(4 + 36 * n / mx)}px"></i><small>${k === 0 ? 'heute' : wd[new Date(base + k * DAY).getDay()]}</small><small class="muted">${n}</small></span>`).join('')}</div></div>
-    ${leech ? `<button class="btn" data-act="round-leech">🌰 ${leech} Knacknüsse üben</button>` : ''}</section>`;
+  return { n: cs.length, avg: cs.length ? cs.reduce((a, c) => a + Rnow(c, now), 0) / cs.length : 0, leech: cs.filter(isLeech).length, days, base };
+}
+function memStrip(ms) {
+  if (ms.n < 10) return `<div class="memstrip slim"><span class="small muted">Jede Karte kommt wieder, kurz bevor du sie vergisst.</span><button class="chip" data-act="tempo" title="Tempo: Zielquote und neue Karten pro Tag">${tempo().l}</button></div>`;
+  const mx = Math.max(1, ...ms.days), wd = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  return `<div class="memstrip"><div class="fc" aria-label="Fällige Karten der nächsten 7 Tage">${ms.days.map((n, k) => `<span title="${n} fällig"><i style="height:${Math.round(3 + 25 * n / mx)}px"></i><small>${k === 0 ? 'heute' : wd[new Date(ms.base + k * DAY).getDay()]}</small></span>`).join('')}</div>
+    <div class="memact"><button class="chip" data-act="tempo" title="Tempo: Zielquote und neue Karten pro Tag">Tempo: ${tempo().l} · ${Math.round(RET() * 100)} % · ${NEW_CAP()} neu/Tag</button>${ms.leech ? `<button class="chip" data-act="round-leech">🌰 ${ms.leech} Knacknüsse</button>` : ''}</div></div>`;
 }
 function viewHome() {
-  const due = dueList().length, learned = ALL.filter(i => known(i.id)).length, sol = ALL.filter(i => solid(i.id)).length;
+  const due = dueList().length, learned = ALL.filter(i => known(i.id)).length, ms = memSum();
   const G = LS.get('echo-games', {}) || {}, td = (G.days || {})[today()] || {};
   const sysRows = Object.entries(SYS).map(([k, s]) => {
     const orgs = ORG_ORDER.filter(o => ORG[o].sys === k);
     return `<button class="sysrow" data-act="atlas-sys" data-v="${k}"><span class="sysname">${esc(s.name)}</span><span class="orgchips">${orgs.map(o => `<span class="ochip">${esc(oshort(o))}${dots(stageOpen(o))}</span>`).join('')}</span></button>`;
   }).join('');
   return `${topbar()}
-  <div style="display:grid;gap:4px"><h1>Medizin-Atlas</h1><p class="muted" style="margin:0">Vom Organsystem bis zur Zelle. Jede Karte kommt wieder, kurz bevor du sie vergisst.</p></div>
+  <div style="display:grid;gap:4px"><h1>Medizin-Atlas</h1><p class="muted" style="margin:0">Vom Organsystem bis zur Zelle, von der Krankheit bis zum Stoffwechselweg.</p></div>
   <section class="card">
     <div class="hero"><div class="mapbox hero-map" id="heroMap">${MEDSVG.body('all', M.sex)}</div>
-      <div class="hero-stats"><div class="stat"><span class="small muted">Fällig</span><b>${due}</b></div><div class="stat"><span class="small muted">Gelernt</span><b>${learned}<small class="muted"> / ${ALL.length}</small></b></div><div class="stat"><span class="small muted">Sicher</span><b>${sol}</b></div><span class="small muted">Je kräftiger ein Organ, desto weiter bist du. Antippen zum Reinzoomen.</span></div></div>
+      <div class="hero-stats"><div class="stat"><span class="small muted">Fällig</span><b>${due}</b></div><div class="stat"><span class="small muted">Jetzt abrufbar</span><b>${ms.n >= 10 ? Math.round(ms.avg * 100) + '<small class="muted"> %</small>' : '–'}</b></div><div class="stat"><span class="small muted">Gelernt</span><b>${learned}<small class="muted"> / ${ALL.length}</small></b></div><span class="small muted">Je kräftiger ein Organ, desto weiter bist du.</span></div></div>
     <button class="btn primary big" data-act="round">${due ? `Lernrunde · ${due} fällig` : 'Lernrunde starten'}</button>
     ${td.med ? '<span class="small muted" style="text-align:center">✓ Heute schon eine Runde geschafft</span>' : ''}
+    ${memStrip(ms)}
   </section>
-  ${memCard()}
   <div class="modes">
     <button class="mode" data-act="atlas"><span>🗺️</span><b>Atlas</b><small>Körper antippen, reinzoomen</small></button>
     ${EXT.views.psy ? '<button class="mode" data-act="psy-open"><span>🧠</span><b>Gehirn & Psyche</b><small>Regionen, Botenstoffe, Störungen, Psilocybin</small></button>' : ''}
@@ -558,10 +558,17 @@ function backIn(cur) {
   const d = Math.max(1, Math.round((s.d - Date.now()) / DAY)), when = d === 1 ? 'morgen' : d < 60 ? 'in ' + d + ' Tagen' : 'in ' + Math.round(d / 30) + ' Monaten';
   return (cur.re === 'easy' ? 'seltener: ' : cur.G === 4 ? 'souverän · ' : cur.G === 2 ? 'knapp · ' : '') + 'kommt ' + when + ' wieder';
 }
+// what the round did to memory: how many cards are now firm, how many were close calls, when the next ones come
+function roundMem() {
+  const fst = R.seq.filter(x => !x.again), c = g => fst.filter(x => x.G === g && x.ok).length, firm = c(4) + fst.filter(x => x.re === 'easy').length, tight = c(2);
+  const nx = fst.filter(x => x.ok && x.re !== 'guess').map(x => M.c[x.it.id].d).sort((a, b) => a - b)[0];
+  const parts = [firm ? firm + ' souverän' : '', tight ? tight + ' knapp' : '', nx ? 'die erste kommt ' + (Math.round((nx - Date.now()) / DAY) <= 1 ? 'morgen' : 'in ' + Math.round((nx - Date.now()) / DAY) + ' Tagen') + ' wieder' : ''].filter(Boolean);
+  return parts.length ? `<p class="small muted" style="margin:0">${parts.join(' · ')}</p>` : '';
+}
 function viewRound() {
   if (R.done) {
     const wrong = R.seq.filter(x => x.ok === false && !x.again);
-    return `${topbar('home')}<section class="card" style="text-align:center;justify-items:center"><span class="eyebrow">Lernrunde geschafft</span><div class="sum">${R.ok}/${R.seq.length}</div><p class="muted" style="margin:0">+${R.xp} XP</p></section>
+    return `${topbar('home')}<section class="card" style="text-align:center;justify-items:center"><span class="eyebrow">Lernrunde geschafft</span><div class="sum">${R.ok}/${R.seq.length}</div><p class="muted" style="margin:0">+${R.xp} XP</p>${roundMem()}</section>
       ${wrong.length ? `<section class="card"><h3>Das kommt bald wieder</h3>${wrong.map(x => `<span class="small">• ${esc(EXT.title[x.it.kind] ? EXT.title[x.it.kind](x.it) : x.it.kind === 'dis' ? x.it.ref.name : x.it.kind === 'str' ? x.it.ref.name : x.it.kind === 'org' ? ORG[x.it.ref].name : x.it.kind === 'sys' ? SYS[x.it.ref].name : x.it.kind === 'fact' ? ORG[x.it.organ].name + ': ' + x.it.ref.text : x.it.ref.name)}</span>`).join('')}</section>` : ''}
       <button class="btn primary big" data-act="${R.scope.leech ? 'round-leech' : R.scope.organ ? 'round-organ' : 'round'}" data-v="${R.scope.organ || ''}">Nächste Runde</button><button class="btn" data-act="home">Übersicht</button>`;
   }
@@ -667,6 +674,11 @@ function decorateMaps() {
     }
   }
   for (const fn of EXT.decorate) fn();
+  app.querySelectorAll('.scrollx').forEach(r => {
+    const c = r.querySelector('[aria-pressed="true"]'), cr = c && c.getBoundingClientRect(), rr = r.getBoundingClientRect();
+    if (c && cr.right > rr.right) r.scrollLeft += cr.left - rr.left - 28;
+    const fade = () => { r.classList.toggle('sl', r.scrollLeft > 2); r.classList.toggle('sr', r.scrollLeft + r.clientWidth < r.scrollWidth - 2); }; fade(); r.addEventListener('scroll', fade, { passive: true });
+  });
   const sm = document.querySelector('.mapbox.mini svg');
   if (sm && V.organ) sm.querySelectorAll(`[data-o="${V.organ}"]`).forEach(e => e.classList.add('on'));
 }
