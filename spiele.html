@@ -8,6 +8,7 @@
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="steuer.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 /* Spiele page reuses the Atlas styles. Layout: one column like Echo. Home = stats + start; round = map/flag stage on top, answers below; collection = prestige world map + grid. */
@@ -181,6 +182,8 @@ h3 { font-size: 17px; font-weight: 700; }
 <script src="rechnen.js"></script>
 <script src="skandale-data.js"></script>
 <script src="skandale.js"></script>
+<script src="steuer-data.js"></script>
+<script src="steuer.js"></script>
 <script>
 'use strict';
 const LS = {
@@ -243,6 +246,7 @@ function viewHome() {
   const card = (act, v, em, title, sub, meta, done) => `<button class="card" data-act="${act}" data-v="${v || ''}" style="text-align:left;cursor:pointer"><div class="row spread"><div class="row"><span style="font-size:28px">${em}</span><div style="display:grid"><h3>${title}</h3><span class="small muted">${sub}</span></div></div><span class="xp">${done ? '✓' : '+15'}</span></div><span class="small muted">${meta}</span></button>`;
   const qb = b => { const m = G.quiz[b] || {}, items = QUIZ[b].items; return Object.keys(m).length + '/' + items.length + ' gesehen · ' + items.filter(it => (m[it[0]] || {}).b >= 3).length + ' sicher'; };
   return `${back}<h2>Mehr Spiele</h2>
+  ${card('t-hub', '', '⚖️', 'Steuer-Akademie', 'Fristen, Buchungssätze, Fundstellen, Rechenfälle · Level und Ränge', stbMeta(), d.stb)}
   ${card('sk-home', '', '🕵️', 'Skandal-Akten', 'Wissenschaftsskandale: lesen, Quiz, Detektiv, Zeitstrahl', skMeta(), d.skandal)}
   ${card('rechnen-open', '', '🧮', 'Kopfrechnen', 'Sprint, Überleben, Ketten, Schätzen, Tricks', rechnenMeta(), d.rechnen)}
   ${Object.entries(QUIZ).map(([k, b]) => card('quiz-go', k, b.icon, esc(b.title), b.items.length + ' Fragen mit Erklärung', qb(k), d['quiz_' + k])).join('')}`;
@@ -254,6 +258,7 @@ function render() {
   if (view === 'rechnen') { app.innerHTML = viewRechnen(); document.getElementById('rin')?.focus(); document.getElementById('rgo')?.focus(); }
   else if (view === 'quiz') app.innerHTML = viewQuiz();
   else if (view === 'skandale') app.innerHTML = viewSk();
+  else if (view === 'stb') app.innerHTML = viewStb();
   else app.innerHTML = viewHome();
 }
 app.addEventListener('click', e => {
@@ -263,6 +268,7 @@ app.addEventListener('click', e => {
   else if (a === 'sound') { G.sound = G.sound === false; save(); render(); }
   else if (a === 'rechnen-open') { R.result = null; view = 'rechnen'; render(); }
   else if (a.startsWith('r-')) rechnenAct(a, b.dataset.v);
+  else if (a.startsWith('t-')) stbAct(a, b.dataset.v);
   else if (a.startsWith('sk-')) { if (a === 'sk-home') view = 'skandale'; skAct(a, b.dataset.v); }
   else if (a === 'quiz-go') quizStart(b.dataset.v);
   else if (a === 'quiz-ans') quizAnswer(+b.dataset.v);
@@ -271,12 +277,13 @@ app.addEventListener('click', e => {
 app.addEventListener('input', e => { if (e.target.id === 'rin') rechnenInput(e.target.value); });
 document.addEventListener('keydown', e => {
   if (view === 'rechnen') rechnenKey(e);
+  if (view === 'stb') stbKey(e);
   if (view === 'skandale' && SK.mode === 'quiz' && SK.i < SK.seq.length) { const n = parseInt(e.key, 10); if (SK.ans == null && n >= 1 && n <= 4) skAnswer(n - 1); else if (SK.ans != null && e.key === 'Enter') { e.preventDefault(); skNext(); } }
   if (view === 'quiz') { const n = parseInt(e.key, 10); if (Q.ans == null && n >= 1 && n <= 4) quizAnswer(n - 1); else if (Q.ans != null && e.key === 'Enter') { e.preventDefault(); quizNext(); } }
 });
 function route() {
   view = (location.hash || '').replace('#', '') || 'home';
-  if (view.startsWith('quiz-') && QUIZ[view.slice(5)]) quizStart(view.slice(5)); else { if (view === 'skandale') SK.mode = null; else if (view !== 'rechnen') view = 'home'; if (!R.on) R.result = null; render(); }
+  if (view.startsWith('quiz-') && QUIZ[view.slice(5)]) quizStart(view.slice(5)); else { if (view === 'skandale') SK.mode = null; else if (view === 'stb') stbEnter(); else if (view !== 'rechnen') view = 'home'; if (!R.on) R.result = null; render(); }
 }
 window.addEventListener('hashchange', route);
 route();
