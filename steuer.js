@@ -1,6 +1,6 @@
 'use strict';
-/* Steuer-Akademie for spiele.html: five games with four levels each (Fristen-Kalender, Buchungs-Werkstatt, Sortier-Sprint,
-   §-Jagd, Rechenfälle), a career ladder, a daily file ("Akte des Tages"), a review box and an exam simulation graded like the
+/* Steuer-Akademie for spiele.html: six games with four levels each (Fristen-Kalender, Buchungs-Werkstatt, Ort der Leistung,
+   Sortier-Sprint, §-Jagd, Rechenfälle), a career ladder, a daily file ("Akte des Tages"), a review box and an exam simulation graded like the
    written StB exam (bis 4,5 bestanden). Calendar, booking and calculation tasks are generated from rules, so they never run out;
    the norm and sorting cards (steuer-data.js) come back by spaced repetition. Rechtsstand 2026.
    Uses spiele.html globals at call time: G, save, gain, beep, esc, toast, app, back, view, render. */
@@ -261,6 +261,136 @@
     } },
   ];
 
+  /* ================= 6 · Ort der Leistung & Reihengeschäft ================= */
+  const LAND = { DE: ['Deutschland', ['München', 'Hamburg', 'Köln', 'Leipzig', 'Mannheim']], FR: ['Frankreich', ['Lyon', 'Paris', 'Straßburg']], AT: ['Österreich', ['Wien', 'Salzburg', 'Linz']],
+    IT: ['Italien', ['Mailand', 'Bologna', 'Verona']], NL: ['Niederlande', ['Utrecht', 'Rotterdam']], PL: ['Polen', ['Posen', 'Krakau']], ES: ['Spanien', ['Valencia', 'Sevilla']],
+    CH: ['Schweiz', ['Zürich', 'Basel']], NO: ['Norwegen', ['Oslo', 'Bergen']], US: ['USA', ['Boston', 'Chicago']] };
+  const EU = ['DE', 'FR', 'AT', 'IT', 'NL', 'PL', 'ES'], DRITT = ['CH', 'NO', 'US'];
+  const ART = { NL: ['den ', 'den '], CH: ['der ', 'der '], US: ['den ', 'den '] }, IN = c => 'in ' + (ART[c] ? ART[c][0] : '') + (c === 'NL' ? 'Niederlanden' : LAND[c][0]), AUS = c => 'aus ' + (ART[c] ? ART[c][1] : '') + (c === 'NL' ? 'Niederlanden' : LAND[c][0]);
+  const LN = c => LAND[c][0], CT = c => pick(LAND[c][1]), cpick = (pool, not = []) => pick(pool.filter(c => !not.includes(c)));
+  const T_NB = 'nicht steuerbar', T_SF = 'steuerbar, aber steuerfrei', T_SL = 'steuerpflichtig, Steuer schuldet der Leistende', T_SE = 'steuerpflichtig, Steuer schuldet der Empfänger (§ 13b)';
+  const T_ORDER = [T_NB, T_SF, T_SL, T_SE];
+  const B2B_RULE = 'An einen Unternehmer gilt die Grundregel: Ort am Sitz des Empfängers (§ 3a Abs. 2 UStG).';
+  function sonst(de) { // a service; de: Germany must be involved somewhere
+    for (;;) {
+      const k = pick(['beratung', 'beratung', 'grund', 'catering', 'pkwkurz', 'pkwlang', 'messe', 'konzert', 'reparatur', 'umzug', 'stream', 'vermittlung']);
+      let b2b = rnd() < 0.5, P = cpick(EU), R = null, S = null, F = null, To = null, place, rule, txt;
+      if (k === 'beratung') {
+        const w = pick([['Eine Steuerberaterin', 'berät'], ['Ein Rechtsanwalt', 'berät'], ['Eine Unternehmensberaterin', 'berät'], ['Ein Übersetzungsbüro', 'übersetzt Verträge für']]);
+        R = b2b ? cpick(EU.concat(DRITT), [P]) : rnd() < 0.4 ? pick(DRITT) : cpick(EU, [P]);
+        txt = `${w[0]} aus ${CT(P)} ${w[1]} ${b2b ? `eine GmbH in ${CT(R)}` : `einen Privatmann aus ${CT(R)}`}.`;
+        place = b2b || DRITT.includes(R) ? R : P;
+        rule = b2b ? B2B_RULE : DRITT.includes(R) ? 'Beratung oder Übersetzung für eine Privatperson mit Wohnsitz im Drittland: Ort am Wohnsitz des Empfängers (§ 3a Abs. 4 S. 1, S. 2 Nr. 3 UStG).' : 'Leistung an eine Privatperson in der EU: Grundregel, Ort am Sitz des Leistenden (§ 3a Abs. 1 UStG).';
+      } else if (k === 'grund') {
+        S = cpick(EU, [P]); R = cpick(EU, [P, S]);
+        const w = pick([['Ein Architekt', 'plant für', 'ein Wohnhaus in'], ['Ein Dachdecker', 'repariert für', 'das Dach eines Ferienhauses in'], ['Ein Gutachter', 'bewertet für', 'ein Grundstück in']]);
+        txt = `${w[0]} aus ${CT(P)} ${w[1]} ${b2b ? `eine GmbH aus ${CT(R)}` : `eine Privatperson aus ${CT(R)}`} ${w[2]} ${CT(S)}.`;
+        place = S; rule = 'Leistung im Zusammenhang mit einem Grundstück: Ort dort, wo das Grundstück liegt, an Unternehmer wie an Privatleute (§ 3a Abs. 3 Nr. 1 UStG).';
+      } else if (k === 'catering') {
+        S = cpick(EU, [P]); R = cpick(EU, [S]);
+        txt = `Ein Cateringunternehmen aus ${CT(P)} bewirtet mit eigenem Servicepersonal die Gäste ${b2b ? `einer GmbH aus ${CT(R)}` : `einer Privatperson aus ${CT(R)}`} bei einer Feier in ${CT(S)}.`;
+        place = S; rule = 'Restaurationsleistung (Speisen mit Service vor Ort): Ort der tatsächlichen Erbringung (§ 3a Abs. 3 Nr. 3a Buchst. a UStG).';
+      } else if (k === 'pkwkurz' || k === 'pkwlang') {
+        S = cpick(EU, [P]); R = cpick(EU, k === 'pkwlang' ? [P, S] : [S]);
+        txt = `Eine Autovermietung aus ${CT(P)} vermietet ${b2b ? 'einer GmbH' : 'einer Privatperson'} aus ${CT(R)} ${k === 'pkwkurz' ? 'für zwei Wochen' : 'für ein Jahr'} einen Pkw; Übergabe in ${CT(S)}.`;
+        place = k === 'pkwkurz' ? S : R;
+        rule = k === 'pkwkurz' ? 'Kurzfristige Vermietung eines Beförderungsmittels (bis 30 Tage): Ort, an dem es tatsächlich übergeben wird (§ 3a Abs. 3 Nr. 2 S. 1, 2 UStG).' : b2b ? B2B_RULE : 'Langfristige Vermietung eines Beförderungsmittels an eine Privatperson: Ort am Wohnsitz des Empfängers (§ 3a Abs. 3 Nr. 2 S. 3 UStG).';
+      } else if (k === 'messe') {
+        b2b = true; S = cpick(EU, [P]); R = cpick(EU, [S]);
+        txt = `Ein Messeveranstalter aus ${CT(P)} verkauft einer GmbH aus ${CT(R)} Eintrittskarten für eine Fachmesse in ${CT(S)}.`;
+        place = S; rule = 'Eintrittsberechtigung für eine Messe an einen Unternehmer: Ort der Veranstaltung (§ 3a Abs. 3 Nr. 5 UStG).';
+      } else if (k === 'konzert') {
+        b2b = false; S = cpick(EU, [P]); R = cpick(EU, [S]);
+        txt = `Ein Konzertveranstalter aus ${CT(P)} verkauft Privatleuten aus ${CT(R)} Karten für ein Konzert in ${CT(S)} (Besuch vor Ort).`;
+        place = S; rule = 'Kulturelle Veranstaltung für Privatpersonen vor Ort: Ort der tatsächlichen Durchführung (§ 3a Abs. 3 Nr. 3 S. 1 UStG).';
+      } else if (k === 'reparatur') {
+        S = cpick(EU, [P]); R = cpick(EU, [S]);
+        txt = `Ein Bootsbauer aus ${CT(P)} repariert vor Ort in ${CT(S)} die Segelyacht ${b2b ? `einer Charter-GmbH aus ${CT(R)}` : `eines Privatmanns aus ${CT(R)}`}.`;
+        place = b2b ? R : S; rule = b2b ? B2B_RULE : 'Arbeiten an beweglichen Gegenständen für Privatpersonen: Ort der Tätigkeit (§ 3a Abs. 3 Nr. 3a Buchst. b UStG).';
+      } else if (k === 'umzug') {
+        F = cpick(EU); To = cpick(EU, [F]); R = b2b ? cpick(EU, [F, To]) : To;
+        txt = b2b ? `Eine Spedition aus ${CT(P)} transportiert für eine GmbH aus ${CT(R)} Maschinen von ${CT(F)} nach ${CT(To)}.` : `Eine Spedition aus ${CT(P)} bringt den Hausrat einer Privatperson beim Umzug von ${CT(F)} nach ${CT(To)}.`;
+        place = b2b ? R : F; rule = b2b ? B2B_RULE : 'Innergemeinschaftliche Güterbeförderung für eine Privatperson: Ort am Abgangsort (§ 3b Abs. 3 UStG).';
+      } else if (k === 'stream') {
+        R = cpick(EU, [P]); const over = rnd() < 0.6;
+        txt = `Ein App-Anbieter, nur in ${CT(P)} ansässig, verkauft ${b2b ? `einer GmbH in ${CT(R)}` : `einer Privatperson in ${CT(R)}`} ein Jahresabo seiner vollautomatischen Lern-App.` + (b2b ? '' : over ? ' Seine Umsätze dieser Art an Kunden in anderen EU-Staaten lagen im Vorjahr bei rund 60.000 €.' : ' Seine Umsätze dieser Art an Kunden in anderen EU-Staaten lagen im Vorjahr bei 4.000 € und bleiben auch dieses Jahr unter 10.000 €; Fernverkäufe hat er keine.');
+        place = b2b || over ? R : P;
+        rule = b2b ? B2B_RULE : over ? 'Elektronische Dienstleistung an eine Privatperson: Ort am Wohnsitz des Empfängers (§ 3a Abs. 5 S. 1, S. 2 Nr. 3 UStG), abzurechnen über das OSS-Verfahren.' : 'Nur in einem Staat ansässig und EU-weit höchstens 10.000 €: Ort bleibt am Sitz des Leistenden (§ 3a Abs. 5 S. 3 UStG).';
+      } else {
+        R = cpick(EU, [P]); S = cpick(EU, [P, R]);
+        txt = `Eine Agentur aus ${CT(P)} vermittelt ${b2b ? 'einer GmbH' : 'einem Privatsammler'} aus ${CT(R)} den Kauf eines Oldtimers; der vermittelte Verkauf wird in ${CT(S)} ausgeführt.`;
+        place = b2b ? R : S; rule = b2b ? B2B_RULE : 'Vermittlung für eine Privatperson: Ort des vermittelten Umsatzes (§ 3a Abs. 3 Nr. 4 UStG).';
+      }
+      if (de && ![P, R, S, F, To].includes('DE')) continue;
+      return { k, b2b, P, R, S, F, To, place, rule, txt };
+    }
+  }
+  function lief(de) { // a supply of goods
+    for (;;) {
+      const k = pick(['versand', 'versand', 'abhol', 'lager', 'werk', 'fernhoch', 'fernniedrig', 'einfuhr', 'ausfuhr']);
+      let A, B, X = null, place, rule, txt;
+      if (k === 'versand') { A = cpick(EU); B = cpick(EU, [A]); txt = `Ein Großhändler aus ${CT(A)} verkauft einer GmbH in ${CT(B)} Ersatzteile und lässt sie per Spedition dorthin bringen.`; place = A; rule = 'Versendungslieferung: Ort dort, wo die Versendung beginnt (§ 3 Abs. 6 S. 1 UStG). Der Käufer versteuert im Bestimmungsland einen innergemeinschaftlichen Erwerb (§ 1a, § 3d UStG).'; }
+      else if (k === 'abhol') { A = cpick(EU); B = rnd() < 0.5 ? cpick(EU, [A]) : pick(DRITT); txt = `Eine Firma aus ${CT(B)} holt eine Maschine mit eigenem Lkw beim Hersteller in ${CT(A)} ab.`; place = A; rule = 'Auch wenn der Kunde abholt, beginnt die Beförderung beim Lieferer: Ort am Abgangsort (§ 3 Abs. 6 S. 1 UStG).'; }
+      else if (k === 'lager') { A = cpick(EU); B = cpick(EU, [A]); X = cpick(EU, [A, B]); txt = `Ein Kunsthändler aus ${CT(A)} verkauft einem Sammler aus ${CT(B)} ein Gemälde, das in einem Kunstdepot in ${CT(X)} lagert. Es bleibt dort; der Händler tritt den Herausgabeanspruch ab.`; place = X; rule = 'Ohne Beförderung (ruhende Lieferung): Ort dort, wo sich der Gegenstand bei Verschaffung der Verfügungsmacht befindet (§ 3 Abs. 7 S. 1 UStG).'; }
+      else if (k === 'werk') { A = cpick(EU); B = cpick(EU, [A]); txt = `Ein Anlagenbauer aus ${CT(A)} liefert und montiert eine Fertigungsstraße im Werk einer GmbH in ${CT(B)}. Die Montage dauert Wochen; übergeben wird die fertige Anlage.`; place = B; rule = 'Werklieferung mit Montage beim Kunden: ausgeführt dort, wo die fertige Anlage übergeben wird (§ 3 Abs. 7 S. 1 UStG, Abschn. 3.12 Abs. 4 UStAE).'; }
+      else if (k === 'fernhoch') { A = cpick(EU); B = cpick(EU, [A]); txt = `Ein Onlinehändler, nur in ${CT(A)} ansässig, versendet Kopfhörer an eine Privatperson in ${CT(B)}. Seine Fernverkäufe in andere EU-Staaten lagen im Vorjahr bei rund 80.000 €.`; place = B; rule = 'Innergemeinschaftlicher Fernverkauf über der EU-weiten Schwelle von 10.000 €: Ort am Ende der Versendung (§ 3c Abs. 1 UStG), abzurechnen über das OSS-Verfahren.'; }
+      else if (k === 'fernniedrig') { A = cpick(EU); B = cpick(EU, [A]); txt = `Eine Töpferei, nur in ${CT(A)} ansässig, versendet eine Vase an eine Privatperson in ${CT(B)}. Ihre Fernverkäufe in andere EU-Staaten lagen im Vorjahr bei 3.000 € und bleiben auch dieses Jahr unter 10.000 €.`; place = A; rule = 'Unter der EU-weiten Schwelle von 10.000 € bleibt es beim Abgangsort (§ 3c Abs. 4 mit § 3 Abs. 6 S. 1 UStG).'; }
+      else if (k === 'einfuhr') { A = 'CH'; B = 'DE'; txt = `Ein Uhrmacher aus ${CT('CH')} versendet eine Uhr „verzollt und versteuert“ an eine Privatperson in ${CT('DE')}; er meldet die Einfuhr selbst an und schuldet die Einfuhrumsatzsteuer.`; place = 'DE'; rule = 'Einfuhr aus dem Drittland, und der Lieferer schuldet die Einfuhrumsatzsteuer: Der Ort der Lieferung gilt als im Inland (§ 3 Abs. 8 UStG).'; }
+      else { A = cpick(EU); B = pick(DRITT); txt = `Ein Hersteller aus ${CT(A)} versendet Werkzeuge an einen Händler in ${CT(B)}.`; place = A; rule = 'Versendung ins Drittland: Ort am Beginn der Versendung (§ 3 Abs. 6 S. 1 UStG); dort ist sie als Ausfuhrlieferung steuerfrei.'; }
+      if (de && ![A, B, X].includes('DE')) continue;
+      return { k, A, B, X, place, rule, txt };
+    }
+  }
+  function reihe(de) { // chain transaction H → Z → K, goods travel directly from H's country A to K's country C
+    const A = de ? 'DE' : cpick(EU), C = cpick(EU, [A]), r0 = rnd(), B = de ? cpick(EU, ['DE', C]) : r0 < 0.7 ? cpick(EU, [A, C]) : r0 < 0.85 ? A : C;
+    const tr = pick(['H', 'Z', 'Z', 'K']), idA = tr === 'Z' && (B === A || rnd() < 0.5), mv = tr === 'H' ? 1 : tr === 'K' ? 2 : idA ? 2 : 1;
+    const cA = CT(A), cC = CT(C), zIdNr = idA && B !== A ? `eine ihm ${IN(A)} erteilte USt-IdNr.` : 'die USt-IdNr. seines Sitzstaats';
+    const txt = `H aus ${cA} verkauft eine Maschine an den Händler Z aus ${CT(B)}, der sie an K aus ${cC} weiterverkauft. Die Maschine geht direkt von ${cA} nach ${cC}; den Transport beauftragt ${tr}. H und K verwenden die USt-IdNr. ihres Sitzstaats, Z verwendet gegenüber H ${zIdNr}.`;
+    const why = ['Reihengeschäft: zwei Lieferungen, die Maschine gelangt direkt von H zu K. Die Warenbewegung wird nur einer Lieferung zugeordnet (§ 3 Abs. 6a S. 1 UStG).',
+      tr === 'H' ? 'H transportiert: bewegt ist seine Lieferung H → Z (§ 3 Abs. 6a S. 2 UStG).' : tr === 'K' ? 'K transportiert: bewegt ist die Lieferung an ihn, Z → K (§ 3 Abs. 6a S. 3 UStG).'
+        : idA ? `Z transportiert als Zwischenhändler mit der USt-IdNr. des Abgangsstaats ${LN(A)}: bewegt ist seine eigene Lieferung Z → K (§ 3 Abs. 6a S. 4, 5 UStG).` : 'Z transportiert als Zwischenhändler ohne USt-IdNr. des Abgangsstaats: bewegt ist die Lieferung an ihn, H → Z (§ 3 Abs. 6a S. 4 UStG).',
+      `Die bewegte Lieferung ist dort ausgeführt, wo die Beförderung beginnt: ${LN(A)} (§ 3 Abs. 6 S. 1 UStG).`,
+      mv === 1 ? `Die ruhende Lieferung Z → K folgt nach: Ort am Ende der Beförderung, ${LN(C)} (§ 3 Abs. 7 S. 2 Nr. 2 UStG).` : `Die ruhende Lieferung H → Z geht voraus: Ort am Beginn der Beförderung, ${LN(A)} (§ 3 Abs. 7 S. 2 Nr. 1 UStG).`];
+    if (mv === 1 && tr !== 'K' && new Set([A, B, C]).size === 3) why.push('Drei Staaten und die erste Lieferung ist die bewegte: Hier kommt die Vereinfachung für das innergemeinschaftliche Dreiecksgeschäft in Betracht (§ 25b UStG).');
+    return { A, B, C, tr, idA, mv, txt, why, p1: A, p2: mv === 2 ? A : C };
+  }
+  const countryOpts = (ok, xs) => ({ f: 's', ok: LN(ok), bad: xs.filter(Boolean).map(LN), fill: i => LN(EU[(i * 3) % EU.length]) });
+  const ORT = {
+    1() { const sc = sonst(false); return Object.assign({ tid: 'o1-' + sc.k + (sc.b2b ? '-b2b' : '-b2c'), eyebrow: 'Sonstige Leistungen', title: 'Wo ist die Leistung ausgeführt?', sub: sc.txt, why: [sc.rule] }, countryOpts(sc.place, [sc.P, sc.R, sc.S, sc.F, sc.To])); },
+    2() { const sc = lief(false); return Object.assign({ tid: 'o2-' + sc.k, eyebrow: 'Lieferungen', title: 'Wo ist die Lieferung ausgeführt?', sub: sc.txt, why: [sc.rule] }, countryOpts(sc.place, [sc.A, sc.B, sc.X])); },
+    3() {
+      const r = reihe(false), q = pick(['mv', 'mv', 'o1', 'o2']);
+      if (q === 'mv') return { tid: 'o3-bewegt-' + r.tr, eyebrow: 'Reihengeschäft', title: 'Welche Lieferung ist die bewegte?', sub: r.txt, f: 's', ok: r.mv === 1 ? 'H → Z' : 'Z → K', bad: [r.mv === 1 ? 'Z → K' : 'H → Z', 'beide Lieferungen', 'keine von beiden'], order: ['H → Z', 'Z → K', 'beide Lieferungen', 'keine von beiden'], why: r.why };
+      return Object.assign({ tid: 'o3-ort-' + q, eyebrow: 'Reihengeschäft', title: `Wo ist die Lieferung ${q === 'o1' ? 'H → Z' : 'Z → K'} ausgeführt?`, sub: r.txt, why: r.why }, countryOpts(q === 'o1' ? r.p1 : r.p2, [r.A, r.B, r.C]));
+    },
+    4() {
+      const t = pick(['s', 's', 'l', 'l', 'r']);
+      const out = (tid, title, sub, ok, why) => ({ tid: 'o4-' + tid, eyebrow: 'Folgen in Deutschland', title, sub, f: 's', ok, bad: T_ORDER.filter(x => x !== ok), order: T_ORDER, why });
+      if (t === 's') for (;;) {
+        const sc = sonst(true), p = [sc.rule];
+        if (sc.place !== 'DE') return out(sc.k + '-nb', 'Wie ist diese Leistung in Deutschland zu behandeln?', sc.txt, T_NB, p.concat(`Ort ${IN(sc.place)}: in Deutschland nicht steuerbar (§ 1 Abs. 1 Nr. 1 UStG).`));
+        if (sc.P === 'DE') return out(sc.k + '-de', 'Wie ist diese Leistung in Deutschland zu behandeln?', sc.txt, T_SL, p.concat('Ort im Inland, Leistender aus Deutschland: steuerpflichtig, er schuldet die Steuer selbst (§ 13a Abs. 1 Nr. 1 UStG).'));
+        if (sc.b2b && sc.k === 'messe') return out('messe', 'Wie ist diese Leistung in Deutschland zu behandeln?', sc.txt, T_SL, p.concat('Ort im Inland. Eintrittsberechtigungen für Messen sind vom Reverse Charge ausgenommen (§ 13b Abs. 6 Nr. 4 UStG): Der ausländische Veranstalter schuldet die Steuer selbst.'));
+        if (sc.b2b) { if (sc.R !== 'DE') continue; return out(sc.k + '-13b', 'Wie ist diese Leistung in Deutschland zu behandeln?', sc.txt, T_SE, p.concat(`Ort im Inland, der Leistende sitzt im Ausland, der Empfänger ist Unternehmer: Der Empfänger schuldet die Steuer (§ 13b Abs. ${sc.rule.includes('§ 3a Abs. 2') ? '1' : '2 Nr. 1'}, Abs. 5 UStG).`)); }
+        return out(sc.k + '-privat', 'Wie ist diese Leistung in Deutschland zu behandeln?', sc.txt, T_SL, p.concat('Ort im Inland, Empfänger ist eine Privatperson: Der ausländische Leistende schuldet die Steuer selbst und muss sie hier erklären (oder über das OSS-Verfahren).'));
+      }
+      if (t === 'l') {
+        const sc = lief(true), p = [sc.rule], T = 'Wie ist die Lieferung in Deutschland zu behandeln?', erw = ' Der deutsche Käufer versteuert dafür einen innergemeinschaftlichen Erwerb (§ 1a UStG).';
+        if (sc.place !== 'DE') return out(sc.k + '-nb', T, sc.txt, T_NB, p.concat(`Ort ${IN(sc.place)}: in Deutschland nicht steuerbar.${(sc.k === 'versand' || sc.k === 'abhol') && sc.B === 'DE' ? erw : ''}`));
+        if (sc.k === 'versand' || sc.k === 'abhol') return out(sc.k + '-sf', T, sc.txt, T_SF, p.concat(DRITT.includes(sc.B) ? 'Ort im Inland; Ausfuhr ins Drittland durch den ausländischen Abnehmer: steuerfrei (§ 4 Nr. 1 a, § 6 UStG).' : 'Ort im Inland; Lieferung an einen Unternehmer mit USt-IdNr. eines anderen EU-Staats: steuerfreie innergemeinschaftliche Lieferung (§ 4 Nr. 1 b, § 6a UStG).'));
+        if (sc.k === 'ausfuhr') return out('ausfuhr-sf', T, sc.txt, T_SF, p.concat('Ort im Inland, Ausfuhrlieferung: steuerfrei (§ 4 Nr. 1 a, § 6 UStG).'));
+        if (sc.k === 'werk') return out('werk-13b', T, sc.txt, T_SE, p.concat('Werklieferung eines im Ausland ansässigen Unternehmers an einen Unternehmer: Der Empfänger schuldet die Steuer (§ 13b Abs. 2 Nr. 1, Abs. 5 UStG).'));
+        if (sc.k === 'lager') return out('lager-sl', T, sc.txt, T_SL, p.concat(sc.A === 'DE' ? 'Ort im Inland, deutscher Händler: steuerpflichtig, er schuldet die Steuer.' : 'Ort im Inland. Eine bloße Lieferung fällt nicht unter § 13b Abs. 2 Nr. 1 (nur Werklieferungen und sonstige Leistungen): Der ausländische Händler schuldet die Steuer selbst.'));
+        return out(sc.k + '-sl', T, sc.txt, T_SL, p.concat(sc.k === 'einfuhr' ? 'Ort im Inland: Der Schweizer Lieferer schuldet die deutsche Umsatzsteuer und muss sich hier registrieren.' : sc.k === 'fernniedrig' ? 'Ort bleibt in Deutschland: steuerpflichtig, die Händlerin schuldet die Steuer.' : 'Ort im Inland: steuerpflichtig, der ausländische Händler schuldet die Steuer (über das OSS-Verfahren).'));
+      }
+      const r = reihe(true), q = rnd() < 0.5 ? 'H → Z' : 'Z → K', T = `Wie ist die Lieferung ${q} in Deutschland zu behandeln?`;
+      if (q === 'H → Z') return r.mv === 1 ? out('reihe-h-sf', T, r.txt, T_SF, r.why.concat('Bewegte Lieferung mit Ort in Deutschland an Z, der keine deutsche USt-IdNr. verwendet: steuerfreie innergemeinschaftliche Lieferung (§ 4 Nr. 1 b, § 6a UStG).'))
+        : out('reihe-h-sl', T, r.txt, T_SL, r.why.concat('Ruhende Lieferung vor der Warenbewegung, Ort in Deutschland: steuerpflichtig, H schuldet die Steuer. Steuerfrei kann nur die bewegte Lieferung sein.'));
+      return r.mv === 2 ? out('reihe-z-sf', T, r.txt, T_SF, r.why.concat(`Bewegte Lieferung beginnt in Deutschland; K verwendet seine USt-IdNr. ${AUS(r.C)}: steuerfreie innergemeinschaftliche Lieferung (§ 4 Nr. 1 b, § 6a UStG). Z muss sich dafür in Deutschland registrieren.`))
+        : out('reihe-z-nb', T, r.txt, T_NB, r.why.concat(`Ruhende Lieferung nach der Warenbewegung, Ort ${IN(r.C)}: in Deutschland nicht steuerbar.`));
+    },
+  };
+
   /* ================= 3 · Sortier-Sprint / 4 · §-Jagd: authored cards ================= */
   const PLAWS = Object.keys(DATA.para);
   const lawOf = n => n.split(' ').pop();
@@ -280,11 +410,12 @@
   const GAMES = {
     frist: { icon: '📅', name: 'Fristen-Kalender', sub: 'Abgabenordnung: Bekanntgabe, Einspruch, Verjährung, Säumnis', lv: ['Bekanntgabe', 'Einspruchsfrist', 'Festsetzungsfrist', 'Säumniszuschlag'], n: 8 },
     buch: { icon: '📒', name: 'Buchungs-Werkstatt', sub: 'Buchungssätze vom Wareneinkauf bis zum Jahresabschluss', lv: ['Grundbuchungen', 'Umsatzsteuer & Skonto', 'Anlagevermögen', 'Jahresabschluss'], n: 8 },
+    ort: { icon: '📍', name: 'Ort der Leistung', sub: 'Umsatzsteuer: Leistungsort, Lieferort, Reihengeschäft und was daraus folgt', lv: ['Sonstige Leistungen', 'Lieferungen', 'Reihengeschäft', 'Folgen in Deutschland'], n: 8 },
     sort: { icon: '🗂️', name: 'Sortier-Sprint', sub: '60 Sekunden einordnen, Serien geben Multiplikator', lv: DATA.sort.map(d => d.title), timed: true },
     para: { icon: '🔎', name: '§-Jagd', sub: 'Wo steht das? Fundstellen für die Prüfung mit Gesetzestext', lv: PLAWS, n: 10 },
     rech: { icon: '🧮', name: 'Rechenfälle', sub: 'Pauschalen, AfA, Unternehmenssteuern, Erbschaft', lv: ['Pauschalen & Grenzen', 'Abschreibung', 'Unternehmenssteuern', 'Erbschaft & Schenkung'], n: 8 },
   };
-  const GORDER = ['frist', 'buch', 'sort', 'para', 'rech'];
+  const GORDER = ['frist', 'buch', 'ort', 'sort', 'para', 'rech'];
   const LVMULT = [1, 1.2, 1.5, 2];
   const RANKS = [[0, 'Praktikant/in', '🌱'], [150, 'Azubi', '📎'], [400, 'Steuerfachangestellte/r', '🧾'], [900, 'Bilanzbuchhalter/in', '📊'], [1700, 'Steuerfachwirt/in', '📚'], [2800, 'StB-Anwärter/in', '🎓'], [4500, 'Steuerberater/in', '⚖️'], [7000, 'Partner/in', '🏛️']];
   const IV = [0, 10 * 60e3, 864e5, 3 * 864e5, 7 * 864e5, 21 * 864e5, 60 * 864e5, 120 * 864e5];
@@ -302,7 +433,7 @@
   const goodLevels = s => GORDER.reduce((a, g) => a + s.lv[g].filter(x => x >= 2).length, 0);
   const unlocked = (s, g, i) => i === 0 || s.lv[g][i - 1] >= 2;
   const topLv = (s, g) => { let i = 0; while (i < 3 && unlocked(s, g, i + 1)) i++; return i; };
-  function persist() { const s = st(); s.rank = RANKS[rankOf(s.xp)][1]; s.sum = starsSum(s); save(); }
+  function persist() { const s = st(); s.rank = RANKS[rankOf(s.xp)][1]; s.sum = starsSum(s); s.max = GORDER.length * 12; save(); }
 
   /* ---------- picking ---------- */
   function boxPick(cards, n) {
@@ -326,10 +457,12 @@
     const key = r.f === 'e' || !r.f ? eKey : r.f === 'd' ? dkey : r.f === 'm' ? (x => r2(x).toFixed(2)) : String;
     const show = r.f === 'd' ? fd : r.f === 'y' ? (y => '31.12.' + y) : r.f === 'm' ? (x => eur(x)) : r.f === 's' ? (x => esc(x)) : entryHTML;
     const opts = mkOpts(r.ok, r.keep ? r.bad || [] : shuf(r.bad || []), key, r.fill || (r.f === 'm' ? (i => r2(r.ok * [1.1, 0.9, 1.25, 0.8, 1.5][i % 5] + i)) : r.f === 'y' ? (i => r.ok + (i % 2 ? i : -i)) : r.f === 'd' ? (i => nextWork(addD(r.ok, [1, -1, 2, 3, -2, 7, -3, 8][i % 8] + 7 * Math.floor(i / 8)))) : null));
+    if (r.order) opts.sort((a, b) => r.order.indexOf(a.v) - r.order.indexOf(b.v));
     return { g, lv, tid: tid || r.tid, eyebrow: r.eyebrow, title: r.title != null ? r.title : r.q || '', sub: r.sub || '', cal: r.cal || '', ent: !r.f || r.f === 'e', opts: opts.map(o => ({ h: show(o.v), ok: o.ok })), why: Array.isArray(r.why) ? r.why : [esc(r.why)], cid: r.cid };
   }
   function makeTask(g, lv) { // lv 0-based
     if (g === 'frist') return finishTask(g, lv, FR[lv + 1]());
+    if (g === 'ort') return finishTask(g, lv, ORT[lv + 1]());
     if (g === 'buch' || g === 'rech') { const t = tplPick(g === 'buch' ? BU : RC, lv + 1, 1)[0], r = t.gen(); return finishTask(g, lv, Object.assign({ eyebrow: GAMES[g].lv[lv] }, r, { f: g === 'buch' ? 'e' : r.f, sub: r.q, title: g === 'buch' ? 'Wie wird gebucht?' : '' }), t.id); }
     if (g === 'para') return finishTask(g, lv, paraTask(boxPick(PCARDS[lv], 1)[0]));
     return finishTask(g, lv, sortTask(boxPick(SCARDS[lv], 1)[0]));
@@ -351,8 +484,8 @@
     if (kind === 'level' && GAMES[g].timed) return startSort(lv);
     let tasks;
     if (kind === 'level') tasks = roundTasks(g, lv);
-    else if (kind === 'daily') { rnd = seeded('stb' + today()); try { const s = st(); tasks = shuf(GORDER.map(x => [x, topLv(s, x)]).concat([[pick(['frist', 'buch', 'rech']), 0]])).map(([x, l]) => makeTask(x, l)); } finally { rnd = Math.random; } }
-    else if (kind === 'exam') tasks = shuf([...Array(20)].map((_, i) => { const x = GORDER[i % 5]; return makeTask(x, 1 + (i % 3)); }));
+    else if (kind === 'daily') { rnd = seeded('stb' + today()); try { const s = st(); tasks = shuf(GORDER.map(x => [x, topLv(s, x)])).map(([x, l]) => makeTask(x, l)); } finally { rnd = Math.random; } }
+    else if (kind === 'exam') tasks = shuf([...Array(20)].map((_, i) => { const x = GORDER[i % GORDER.length]; return makeTask(x, 1 + (i % 3)); }));
     else { // review: due missed authored cards first
       const s = st(), now = Date.now(), due = [...PCARDS.flat(), ...SCARDS.flat()].filter(c => s.box[c.id] && s.box[c.id].w > 0 && s.box[c.id].d <= now).slice(0, 10);
       tasks = shuf(due).map(c => c.norm ? finishTask('para', c.li, paraTask(c)) : finishTask('sort', c.di, sortTask(c)));
@@ -492,8 +625,8 @@
     if (S.mode === 'sort' && n >= 1 && n <= SP.d.bins.length) { e.preventDefault(); sortAnswer(SP.d.bins[n - 1][0]); }
     else if (S.mode === 'play') { if (P.ans == null && n >= 1 && n <= (P.tasks[P.i] || { opts: [] }).opts.length) { e.preventDefault(); answer(n - 1); } else if (P.ans != null && e.key === 'Enter') { e.preventDefault(); next(); } }
   };
-  window.stbMeta = () => { const s = st(); return `${RANKS[rankOf(s.xp)][2]} ${RANKS[rankOf(s.xp)][1]} · ★ ${starsSum(s)}/60`; };
+  window.stbMeta = () => { const s = st(); return `${RANKS[rankOf(s.xp)][2]} ${RANKS[rankOf(s.xp)][1]} · ★ ${starsSum(s)}/${GORDER.length * 12}`; };
   window.stbEnter = () => { stopTimer(); S.mode = 'hub'; };
   // test hooks (used by the scratch test scripts, harmless in the app)
-  window.STB_TEST = { P, SP, S, st, FR, BU, RC, PCARDS, SCARDS, finishTask, makeTask, roundTasks, hols, isOff, addM, shift, erbTax, hardship, setRnd: f => { rnd = f || Math.random; } };
+  window.STB_TEST = { P, SP, S, st, FR, BU, RC, ORT, sonst, lief, reihe, PCARDS, SCARDS, finishTask, makeTask, roundTasks, hols, isOff, addM, shift, erbTax, hardship, setRnd: f => { rnd = f || Math.random; } };
 })();
