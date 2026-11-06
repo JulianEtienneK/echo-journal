@@ -166,6 +166,36 @@ details.rules ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 6px
 @keyframes pop { from { transform: translate(-50%, 10px); opacity: 0; } }
 #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 30; }
 .sharebox { width: 100%; font: 400 13px var(--f-mono); padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); }
+
+/* bomb */
+.lives { display: flex; flex-wrap: wrap; gap: 6px; }
+.lchip { display: inline-flex; gap: 6px; align-items: center; padding: 6px 10px; border-radius: 99px; background: var(--surface); box-shadow: var(--shadow); font-size: 13px; font-weight: 700; }
+.lchip.cur { box-shadow: inset 0 0 0 2px currentColor, var(--shadow); }
+.lchip.out { opacity: .4; text-decoration: line-through; }
+.bcat { text-align: center; justify-items: center; gap: 4px; }
+.bcat .q { font-size: 25px; }
+.bombzone { display: grid; justify-items: center; gap: 8px; position: relative; padding: 4px 0; }
+.bomb { font-size: 80px; line-height: 1; }
+.bomb.hot { animation: wobble .3s infinite; }
+.bomb.hotter { animation: wobble .12s infinite; filter: drop-shadow(0 0 14px var(--rec)); }
+@keyframes wobble { 25% { transform: rotate(-9deg) scale(1.06); } 75% { transform: rotate(9deg) scale(1.06); } }
+.fuse { width: 100%; height: 12px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.fuse i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, var(--rec), var(--gold)); border-radius: 99px; }
+.bsec { font-size: 15px; color: var(--muted); }
+.bpass { position: absolute; inset: 0; display: grid; place-items: center; background: var(--bg); font-family: var(--f-display); font-size: 25px; font-weight: 700; text-align: center; line-height: 1.25; animation: pop .2s ease-out; }
+.bwho { font-family: var(--f-display); font-size: 28px; font-weight: 700; text-align: center; line-height: 1.1; }
+#bform { display: flex; gap: 8px; }
+#bform .field { flex: 1; min-width: 0; }
+.bsug { display: flex; flex-wrap: wrap; gap: 6px; }
+.bmsg { min-height: 22px; font-size: 14px; font-weight: 700; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.bmsg.bad { color: var(--rec); } .bmsg.ok { color: var(--calm); }
+.shake { animation: shake .3s; }
+@keyframes shake { 25% { transform: translateX(-7px); } 75% { transform: translateX(7px); } }
+.boomscr { text-align: center; display: grid; gap: 10px; justify-items: center; padding: 18px 0 6px; }
+.boomscr .em { font-size: 100px; line-height: 1; animation: boomIn .55s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes boomIn { from { transform: scale(.2) rotate(-30deg); opacity: 0; } }
+.flash { animation: flash .7s ease-out; }
+@keyframes flash { 0% { background: var(--rec); } }
 @media (max-width: 380px) { .opts:not(.duo2) { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -335,7 +365,7 @@ function fitTo(lls, minSpan = 60) { // zoom transform that shows all points with
 function shapeSVG(code) { const f = FEAT[code]; const c = d3.geoCentroid(f), p = d3.geoAzimuthalEqualArea().rotate([-c[0], -c[1]]).fitExtent([[40, 30], [PW - 40, PH - 30]], f); return `<svg viewBox="0 0 ${PW} ${PH}" role="img" aria-label="Umriss eines Landes"><path d="${d3.geoPath(p)(f)}"/></svg>`; }
 
 /* ---------- match state ---------- */
-const S = { view: 'home', level: 2, party: [], showLink: null };
+const S = { view: 'home', level: 2, party: [], showLink: null, blives: 2 };
 let M = null, LINK = null, timer = null, raf = null;
 function stopClock() { clearTimeout(timer); cancelAnimationFrame(raf); timer = null; }
 function newPlayer(name, i) { return { name, color: COLORS[i % COLORS.length], rec: [], jok: { '5050': true, tipp: true, x2: true } }; }
@@ -408,6 +438,7 @@ function viewHome() {
   <div class="card"><div class="row"><span style="font-size:30px">⚔️</span><div style="display:grid"><h3>Freunde herausfordern</h3><span class="small muted">Du spielst vor, schickst den Link in die Gruppe, jeder spielt dieselben Fragen. Die Rangliste wächst im Link mit.</span></div></div>
     <div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="lvl" data-v="${l}" aria-pressed="${S.level === l}">${lvlName(l)}</button>`).join('')}</div>
     <button class="btn primary big" data-act="duel">Neues Duell starten</button></div>
+  <button class="card mode" data-act="bomb"><div class="row spread"><div class="row"><span class="em">💣</span><div style="display:grid"><h3>Bombe</h3><span class="small muted">Ein Handy wandert reihum: passendes Land nennen, bevor es knallt. Leben, Timer, drei Stufen</span></div></div><span>→</span></div></button>
   <button class="card mode" data-act="party"><div class="row spread"><div class="row"><span class="em">🎉</span><div style="display:grid"><h3>Party-Modus</h3><span class="small muted">Ein Handy, 2 bis 8 Leute: reihum antworten, dann gemeinsam auflösen</span></div></div><span>→</span></div></button>
   ${recent.length ? `<div class="card"><h3>Deine Duelle</h3>${recent.map(g => { const top = g.p.slice().sort((a, b) => sum(b[1]) - sum(a[1]))[0]; return `<button class="mode" style="background:none;padding:0" data-act="open" data-v="${esc(gkey(g.s, g.l))}"><div class="row spread"><div style="display:grid"><b>${g.s.startsWith('tag-') ? 'Tagesduell ' + g.s.slice(10, 12) + '.' + g.s.slice(8, 10) + '.' : 'Duell · ' + lvlName(g.l)}</b><span class="small muted">${g.p.length} Spieler · vorne ${esc(top[0])} mit ${fmt(sum(top[1]))}</span></div><span class="small muted">${g.me ? fmt(sum((g.p.find(x => x[0] === g.me) || [0, []])[1])) : 'offen'} →</span></div></button>`; }).join('<hr style="border:0;border-top:1px solid var(--line);margin:0">')}</div>` : ''}
   <details class="rules"><summary>So wird gezählt</summary><ul>
@@ -418,8 +449,8 @@ function viewHome() {
     <li>🔥 Serie: Ab der dritten starken Runde in Folge (700+) gibt es 100 Bonus.</li>
     <li>🏁 Das Finale zählt doppelt.</li></ul></details>`;
 }
-function boardHTML(rows, meName) { // rows: [name, total, sub?, color?, delta?]
-  const s = rows.slice().sort((a, b) => b[1] - a[1]);
+function boardHTML(rows, meName, keep) { // rows: [name, total, sub?, color?, delta?]; keep: rows are already ranked
+  const s = keep ? rows : rows.slice().sort((a, b) => b[1] - a[1]);
   return `<div class="board">${s.map((r, i) => `<div class="brow${meName && r[0] === meName ? ' me' : ''}"><span class="rk">${['🥇', '🥈', '🥉'][i] || i + 1}</span><span class="nm">${r[3] ? `<i class="dot" style="background:${r[3]}"></i>` : ''}<span><b>${esc(r[0])}</b>${r[2] ? `<span class="sub">${esc(r[2])}</span>` : ''}</span></span><span class="tot">${fmt(r[1])}</span><span class="delta ${r[4] > 0 ? 'up' : r[4] < 0 ? 'down' : ''}">${r[4] > 0 ? '▲' + r[4] : r[4] < 0 ? '▼' + -r[4] : ''}</span></div>`).join('')}</div>`;
 }
 function viewLink() {
@@ -556,6 +587,8 @@ function viewEnd() {
   <div class="row wrap"><button class="btn grow" data-act="duel">Neues Duell</button><button class="btn grow" data-act="home">Startseite</button></div>`;
 }
 function render() {
+  if (S.view === 'bsetup') { app.innerHTML = viewBSetup(); return after(); }
+  if (S.view === 'bomb' && B) { app.innerHTML = viewBomb(); return bAfter(); }
   if (!M || S.view !== 'match') app.innerHTML = S.view === 'setup' ? viewSetup() : S.view === 'link' && LINK ? viewLink() : viewHome();
   else app.innerHTML = M.phase === 'q' ? viewQ() : M.phase === 'fb' ? viewFb() : M.phase === 'hand' ? viewHand() : M.phase === 'reveal' ? viewReveal() : viewEnd();
   after();
@@ -582,6 +615,168 @@ function maybeConfetti() {
   const t0 = performance.now(); const step = t => { ctx.clearRect(0, 0, cv.width, cv.height); for (const p of parts) { p.x += p.vx; p.y += p.vy; p.vy += 0.04; p.a += 0.1; ctx.fillStyle = p.c; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); ctx.restore(); } if (t - t0 < 3200) requestAnimationFrame(step); else cv.remove(); }; requestAnimationFrame(step);
 }
 
+
+/* ---------- Bombe: one phone goes round, name a fitting country before it blows up in your hands ---------- */
+const NORM = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss').replace(/[^a-z]/g, '');
+const ALIASES = { US: ['USA', 'Amerika', 'Vereinigte Staaten von Amerika'], GB: ['Großbritannien', 'England', 'UK', 'Britannien'], NL: ['Holland'], CZ: ['Tschechei', 'Tschechische Republik'], CI: ['Elfenbeinküste', 'Cote dIvoire'], AE: ['VAE', 'Emirate', 'Arabische Emirate'],
+  CD: ['Kongo', 'DR Kongo', 'Demokratische Republik Kongo', 'Kongo Kinshasa'], CG: ['Republik Kongo', 'Kongo Brazzaville'], MM: ['Burma', 'Birma'], SZ: ['Eswatini'], MK: ['Mazedonien'], TL: ['Timor-Leste', 'Ost-Timor'], VA: ['Vatikan'], BA: ['Bosnien'], TT: ['Trinidad'], BY: ['Weißrussland'],
+  MD: ['Moldau', 'Moldova', 'Republik Moldau'], KR: ['Korea', 'Republik Korea'], DO: ['Dominikanische Rep'], CF: ['ZAR'], PG: ['Papua Neuguinea'], ST: ['Sao Tome'], VC: ['St. Vincent', 'Saint Vincent'], KN: ['St. Kitts', 'Saint Kitts'], LC: ['Saint Lucia'], AG: ['Antigua'], KG: ['Kirgistan', 'Kirgisien'], CV: ['Kapverden', 'Cabo Verde'], PS: ['Palästinensische Gebiete'], SB: ['Salomonen-Inseln', 'Salomoninseln'], FM: ['Föderierte Staaten von Mikronesien'] };
+const KEYS = { land: new Map(), cap: new Map() };
+(() => { const put = (kind, name, code) => { const k = NORM(name); if (k.length < 2) return; const m = KEYS[kind]; if (!m.has(k)) m.set(k, []); if (!m.get(k).includes(code)) m.get(k).push(code); };
+  for (const c of COUNTRIES) { put('land', c.n, c.c); put('land', c.n.replace(/\s*\(.*\)\s*/g, ''), c.c); for (const a of ALIASES[c.c] || []) put('land', a, c.c); for (const x of [c.k, c.cap]) { put('cap', x, c.c); put('cap', String(x).split(',')[0], c.c); } } })();
+function lev(a, b) { if (Math.abs(a.length - b.length) > 2) return 9; let prev = Array.from({ length: b.length + 1 }, (_, j) => j); for (let i = 1; i <= a.length; i++) { const cur = [i]; for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = cur; } return prev[b.length]; }
+function lookup(kind, text) { // exact name or alias, else a forgiving match for typos (1 letter, 2 in long names)
+  const k = NORM(text); if (k.length < 2) return []; const m = KEYS[kind]; if (m.has(k)) return m.get(k).slice();
+  let best = [], bd = 9; for (const [key, codes] of m) { if (key.length < 5) continue; const d = lev(k, key); if (d > (key.length >= 9 ? 2 : 1)) continue; if (d < bd) { bd = d; best = codes.slice(); } else if (d === bd) best = [...new Set(best.concat(codes))]; }
+  return best;
+}
+// curated lists where the source data is unreliable (Stand 2026: Bulgarien seit 1.1.2026 im Euro)
+const EURO = ['AT', 'BE', 'BG', 'HR', 'CY', 'EE', 'FI', 'FR', 'DE', 'GR', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PT', 'SK', 'SI', 'ES', 'AD', 'MC', 'SM', 'VA', 'XK', 'ME'];
+const SPANISCH = ['ES', 'MX', 'GT', 'HN', 'SV', 'NI', 'CR', 'PA', 'CU', 'DO', 'CO', 'VE', 'EC', 'PE', 'BO', 'CL', 'AR', 'UY', 'PY', 'GQ'];
+const PORTUGIESISCH = ['PT', 'BR', 'AO', 'MZ', 'CV', 'GW', 'ST', 'TL', 'GQ'], DEUTSCH = ['DE', 'AT', 'CH', 'LI', 'LU', 'BE'];
+const IN_SUB = { Caribbean: 'in der Karibik', 'Southern Africa': 'im südlichen Afrika' };
+const CATS = (() => {
+  const all = COUNTRIES.map(c => c.c), out = [], add = (id, label, kind, codes, tier) => { if (codes.length >= 3) out.push({ id, label, kind, set: new Set(codes), n: codes.length, tier }); };
+  const REG = { Europe: 'in Europa', Africa: 'in Afrika', Asia: 'in Asien', Americas: 'in Amerika (Nord, Mittel oder Süd)', Oceania: 'in Ozeanien' };
+  for (const [r, txt] of Object.entries(REG)) { const cs = all.filter(c => BY[c].r === r); add('r-' + r, 'ein Land ' + txt, 'land', cs, cs.length >= 20 ? 1 : 2); }
+  for (const [sub, de] of Object.entries(SUB_DE)) { const cs = all.filter(c => BY[c].s === sub); if (cs.length >= 4) add('s-' + sub, 'ein Land ' + (IN_SUB[sub] || 'in ' + de), 'land', cs, cs.length >= 10 ? 2 : 3); }
+  for (const L of 'ABCDEFGHIJKLMNOPRSTUVZ') { const cs = all.filter(c => NORM(BY[c].n)[0] === L.toLowerCase()); add('l-' + L, `ein Land mit ${L} am Anfang`, 'land', cs, cs.length >= 10 ? 1 : cs.length >= 6 ? 2 : 3); }
+  add('e-ien', 'ein Land, das auf „-ien“ endet', 'land', all.filter(c => NORM(BY[c].n).endsWith('ien')), 1);
+  add('e-stan', 'ein Land, das auf „-stan“ endet', 'land', all.filter(c => NORM(BY[c].n).endsWith('stan')), 2);
+  add('e-land', 'ein Land, das auf „-land“ endet', 'land', all.filter(c => NORM(BY[c].n).endsWith('land')), 2);
+  add('a-gross', 'ein Land, das größer ist als Deutschland', 'land', all.filter(c => BY[c].a > BY.DE.a), 1);
+  add('a-mini', 'ein Land, das kleiner ist als Luxemburg', 'land', all.filter(c => BY[c].a < BY.LU.a), 3);
+  add('h-sued', 'ein Land mit Hauptstadt südlich des Äquators', 'land', all.filter(c => capLL(c)[1] < 0), 2);
+  add('w-eur', 'ein Land, in dem man mit Euro bezahlt', 'land', EURO, 1);
+  add('w-spa', 'ein Land mit Spanisch als Amtssprache', 'land', SPANISCH, 2);
+  add('w-por', 'ein Land mit Portugiesisch als Amtssprache', 'land', PORTUGIESISCH, 3);
+  add('w-deu', 'ein Land mit Deutsch als Amtssprache', 'land', DEUTSCH, 3);
+  for (const h of all) { const nb = NEIGH[h] || []; if (nb.length >= 4) add('n-' + h, `ein Nachbarland von ${BY[h].n}`, 'land', nb, nb.length >= 7 ? 2 : 3); }
+  add('len4', 'ein Land mit genau vier Buchstaben', 'land', all.filter(c => /^\p{L}{4}$/u.test(BY[c].n)), 3);
+  for (const [r, txt] of Object.entries(REG)) add('c-' + r, 'eine Hauptstadt ' + txt, 'cap', all.filter(c => BY[c].r === r), r === 'Europe' ? 2 : 3);
+  for (const L of 'ABCDKLMPST') add('cl-' + L, `eine Hauptstadt mit ${L} am Anfang`, 'cap', all.filter(c => NORM(BY[c].k)[0] === L.toLowerCase()), 3);
+  return out;
+})();
+const BTIME = { 1: 15, 2: 10, 3: 7 };
+let B = null, bTimer = null, bRaf = null, bPassT = null, AC = null;
+function bStop() { clearTimeout(bTimer); clearTimeout(bPassT); cancelAnimationFrame(bRaf); bTimer = bPassT = null; }
+function bSound(type) {
+  if (!B || !B.sound) return;
+  try {
+    AC ||= new (window.AudioContext || window.webkitAudioContext)(); const t = AC.currentTime;
+    if (type === 'boom') { const buf = AC.createBuffer(1, AC.sampleRate * 0.7, AC.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2.2); const src = AC.createBufferSource(), g = AC.createGain(); src.buffer = buf; g.gain.value = 0.8; src.connect(g).connect(AC.destination); src.start(); return; }
+    const o = AC.createOscillator(), g = AC.createGain(), ok = type === 'ok'; o.type = ok ? 'sine' : 'square'; o.frequency.value = ok ? 880 : type === 'tick2' ? 1250 : 720;
+    g.gain.setValueAtTime(ok ? 0.16 : 0.045, t); g.gain.exponentialRampToValueAtTime(0.0001, t + (ok ? 0.2 : 0.05)); o.connect(g).connect(AC.destination); o.start(t); o.stop(t + 0.22);
+  } catch {}
+}
+const alive = () => B.players.filter(p => p.lives > 0);
+const nextAlive = i => { let j = i; do { j = (j + 1) % B.players.length; } while (B.players[j].lives <= 0); return j; };
+function bNewCat() {
+  const minN = { 1: 10, 2: 6, 3: 3 }[B.level];
+  let pool = CATS.filter(c => c.tier <= B.level && c.n >= minN && !B.seen.has(c.id)); if (!pool.length) { B.seen.clear(); pool = CATS.filter(c => c.tier <= B.level && c.n >= minN); }
+  const w = pool.map(c => (B.level === 3 ? [0, 1, 2, 3][c.tier] : B.level === 2 ? [0, 1, 2][c.tier] : 1) * (c.id.startsWith('n-') ? 0.2 : 1)); let r = Math.random() * sum(w), i = 0; while (r > w[i] && i < w.length - 1) r -= w[i++];
+  B.cat = pool[i]; B.seen.add(B.cat.id); B.used = []; B.tcur = B.tbase;
+}
+function bStartGame(names, lives, level) { bStop(); B = { players: names.map((n, i) => ({ name: n, color: COLORS[i % COLORS.length], lives, ans: 0, close: 0, boom: 0, skip: true })), lives, level, tbase: BTIME[level], turn: 0, seen: new Set(), phase: 'ready', sound: B ? B.sound : true, msg: '' }; bNewCat(); S.view = 'bomb'; render(); scrollTo(0, 0); }
+function bArm() {
+  const ms = B.tcur * 1000, t0 = performance.now(); B.deadline = t0 + ms; let lastTick = 0;
+  const tick = now => { if (!B || B.phase !== 'turn') return; const left = Math.max(0, B.deadline - now), f = document.getElementById('bfuse'), sec = document.getElementById('bsec'), bomb = document.getElementById('bomb');
+    if (f) f.style.width = (left / ms * 100).toFixed(1) + '%'; if (sec) sec.textContent = (left / 1000).toFixed(1).replace('.', ',') + ' s';
+    if (bomb) { bomb.classList.toggle('hot', left < ms * 0.5 && left >= 2500); bomb.classList.toggle('hotter', left < 2500); }
+    const iv = left < 2500 ? 250 : left < 5000 ? 500 : 1000; if (now - lastTick >= iv) { lastTick = now; bSound(left < 2500 ? 'tick2' : 'tick'); if (left < 2500) buzz(15); }
+    if (left > 0) bRaf = requestAnimationFrame(tick); };
+  bRaf = requestAnimationFrame(tick); bTimer = setTimeout(bBoom, ms);
+}
+function bUpdate() { // refresh the parts of the turn screen around the input, so the keyboard stays open
+  const pl = B.players[B.turn], left = [...B.cat.set].filter(c => !B.used.includes(c)).length, set = (id, h) => { const el = document.getElementById(id); if (el) el.innerHTML = h; };
+  set('blives', livesHTML()); set('bwho', `<span style="color:${pl.color}">${esc(pl.name)}</span> ist dran`);
+  set('bleft', B.level === 1 ? `noch ${left} möglich` : B.used.length ? `${B.used.length} genannt` : '');
+  set('bused', B.used.map(c => `<span class="chip">${esc(B.cat.kind === 'cap' ? BY[c].k : BY[c].n)}</span>`).join(''));
+  const sk = document.getElementById('bskipbtn'); if (sk) { sk.disabled = !pl.skip; sk.textContent = pl.skip ? '⏭️ Weiterschieben (1×)' : '⏭️ schon geschoben'; }
+  set('bsug', ''); set('bmsg', '');
+}
+function bMsg(txt, cls, extra = '') { const el = document.getElementById('bmsg'); if (el) { el.className = 'bmsg ' + cls; el.innerHTML = esc(txt) + extra; } }
+function bSubmit(text) {
+  if (!B || B.phase !== 'turn' || bPassT) return; const inp = document.getElementById('bin'), kind = B.cat.kind;
+  const codes = lookup(kind, text), shake = () => { if (inp) { inp.classList.remove('shake'); void inp.offsetWidth; inp.classList.add('shake'); } };
+  if (!codes.length) { shake(); bMsg(kind === 'cap' ? 'Keine Hauptstadt erkannt' : 'Kein Land erkannt', 'bad'); return; }
+  const fit = codes.find(c => B.cat.set.has(c) && !B.used.includes(c));
+  if (fit) return bAccept(fit);
+  const nm = c => kind === 'cap' ? BY[c].k : BY[c].n;
+  if (codes.some(c => B.used.includes(c))) { shake(); bMsg(`${nm(codes.find(c => B.used.includes(c)))} wurde schon genannt`, 'bad'); return; }
+  shake(); B.pending = codes[0];
+  bMsg(`${nm(codes[0])} passt nicht`, 'bad', ` <button class="chip" data-act="bforce">Zählt doch, sagt die Gruppe</button>`);
+}
+function bAccept(code, forced) {
+  const pl = B.players[B.turn], left = B.deadline - performance.now(); bStop();
+  B.used.push(code); if (forced) B.cat.set.add(code); pl.ans++; if (left < 1500) pl.close++; B.tcur = Math.max(B.tbase * 0.6, B.tcur - 0.4); bSound('ok'); buzz(20);
+  const remaining = [...B.cat.set].filter(c => !B.used.includes(c)).length, nm = B.cat.kind === 'cap' ? BY[code].k : BY[code].n;
+  if (!remaining) { B.phase = 'empty'; B.turn = nextAlive(B.turn); render(); return; }
+  const nx = nextAlive(B.turn); bPass(`✓ ${esc(nm)}${left < 1500 ? ' <small class="muted">(knapp!)</small>' : ''}<br><span style="color:${B.players[nx].color}">weiter an ${esc(B.players[nx].name)}</span>`, nx);
+}
+function bPass(html, nx) {
+  B.turn = nx; const el = document.getElementById('bpass'), inp = document.getElementById('bin');
+  if (el) { el.innerHTML = html; el.hidden = false; } if (inp) inp.value = '';
+  bPassT = setTimeout(() => { bPassT = null; if (!B || B.phase !== 'turn') return; if (el) el.hidden = true; bUpdate(); bArm(); document.getElementById('bin')?.focus(); }, 1100);
+}
+function bSkip() { const pl = B.players[B.turn]; if (!pl.skip || bPassT || B.phase !== 'turn') return; pl.skip = false; bStop(); const nx = nextAlive(B.turn); bPass(`⏭️ ${esc(pl.name)} schiebt weiter<br><span style="color:${B.players[nx].color}">an ${esc(B.players[nx].name)}</span>`, nx); }
+function bBoom() {
+  if (!B || B.phase !== 'turn') return; bStop(); const pl = B.players[B.turn]; pl.lives--; pl.boom++;
+  B.phase = 'boom'; B.hints = [...B.cat.set].filter(c => !B.used.includes(c)).sort(() => Math.random() - 0.5).slice(0, 3);
+  bSound('boom'); buzz([220, 80, 320]); render(); document.body.classList.remove('flash'); void document.body.offsetWidth; document.body.classList.add('flash');
+}
+function bNext() {
+  if (alive().length <= 1) { B.phase = 'end'; render(); scrollTo(0, 0); echoXP(2500); setTimeout(() => confettiBurst(), 300); return; }
+  if (B.phase === 'boom') B.turn = nextAlive(B.turn);
+  bNewCat(); B.phase = 'ready'; render(); scrollTo(0, 0);
+}
+const livesHTML = () => B.players.map((p, i) => `<span class="lchip${p.lives <= 0 ? ' out' : ''}${i === B.turn && B.phase !== 'end' ? ' cur' : ''}" style="color:${p.color}"><span style="color:var(--ink)">${esc(p.name)}</span>${p.lives > 0 ? '❤️'.repeat(p.lives) : '💀'}</span>`).join('');
+function viewBSetup() {
+  const names = S.party.length ? S.party : (S.party = [DB.name || '', '']);
+  return `<div class="topbar"><button class="link" data-act="home">← Atlas-Duell</button><span></span></div>
+  <div class="hero"><span class="eyebrow">Bombe</span><h2>Wer traut sich?</h2><p class="muted small">Ein Handy wandert reihum. Wer dran ist, nennt ein passendes Land, bevor seine Zeit abläuft, und gibt weiter. Schon genannte Länder zählen nicht. Knallt es bei dir, verlierst du ein Leben. Wer am Ende übrig ist, gewinnt.</p></div>
+  <div class="names">${names.map((n, i) => `<div class="nrow"><i class="dot" style="background:${COLORS[i]}"></i><input class="field" data-pi="${i}" maxlength="16" placeholder="Spieler ${i + 1}" value="${esc(n)}">${names.length > 2 ? `<button data-act="pdel" data-v="${i}" aria-label="Entfernen">×</button>` : ''}</div>`).join('')}</div>
+  ${names.length < 8 ? `<button class="btn" data-act="padd">+ Spieler</button>` : ''}
+  <div class="card" style="gap:10px"><span class="eyebrow">Leben</span><div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="blives" data-v="${l}" aria-pressed="${S.blives === l}">${'❤️'.repeat(l)}</button>`).join('')}</div>
+    <span class="eyebrow">Schwierigkeit</span><div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="lvl" data-v="${l}" aria-pressed="${S.level === l}">${lvlName(l)} · ${BTIME[l]} s</button>`).join('')}</div>
+    <span class="small muted">${{ 1: 'Große Kategorien wie Kontinente oder Anfangsbuchstaben, Vorschläge beim Tippen, angezeigt wird, wie viele noch passen.', 2: 'Dazu Regionen, Nachbarländer, Sprachen und Hauptstädte in Europa; Vorschläge beim Tippen.', 3: 'Alles, auch Kleinstaaten und Hauptstädte nach Anfangsbuchstabe. Keine Vorschläge, Tippfehler bis zu einem Buchstaben verzeiht das Spiel.' }[S.level]}</span></div>
+  <button class="btn primary big" data-act="bgo">💣 Bombe scharf machen</button>`;
+}
+function viewBomb() {
+  const pl = B.players[B.turn];
+  const top = `<div class="topbar"><button class="link" data-act="quit">✕ Beenden</button><button class="link" data-act="bsound">${B.sound ? '🔊' : '🔇'}</button></div><div class="lives" id="blives">${livesHTML()}</div>`;
+  if (B.phase === 'ready') return `${top}<div class="handoff"><span class="eyebrow">Neue Kategorie · Handy an</span><div class="who" style="color:${pl.color}">${esc(pl.name)}</div><span class="small muted">Die Kategorie erscheint, sobald die Lunte brennt. Zeit pro Zug: ${fmt(B.tbase)} s, mit jedem Treffer etwas weniger.</span><button class="btn primary big" data-act="bstart" style="max-width:360px">💣 Zünden</button></div>`;
+  if (B.phase === 'turn') return `${top}
+    <div class="card bcat"><span class="eyebrow">Nenne</span><div class="q" id="bcat">${esc(B.cat.label)}</div><span class="small muted" id="bleft"></span></div>
+    <div class="bombzone"><div class="bomb" id="bomb">💣</div><div class="fuse"><i id="bfuse"></i></div><div class="bsec mono" id="bsec"></div><div class="bpass" id="bpass" hidden></div></div>
+    <div class="bwho" id="bwho"></div>
+    <form id="bform" autocomplete="off"><input id="bin" class="field" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send" placeholder="${B.cat.kind === 'cap' ? 'Hauptstadt' : 'Land'} eintippen …" aria-label="Antwort"><button class="btn primary" type="submit">OK</button></form>
+    <div class="bsug" id="bsug"></div><div class="bmsg" id="bmsg"></div>
+    <button class="btn" data-act="bskip" id="bskipbtn"></button><div class="chips" id="bused"></div>`;
+  if (B.phase === 'boom' || B.phase === 'empty') {
+    const lost = B.phase === 'boom' ? B.players[B.players.indexOf(B.players.find((p, i) => i === B.turn))] : null;
+    return `${top}<div class="boomscr"><span class="em">${B.phase === 'boom' ? '💥' : '🎆'}</span>${B.phase === 'boom'
+      ? `<h1>Boom!</h1><p><b style="color:${lost.color}">${esc(lost.name)}</b> ${lost.lives > 0 ? `verliert ein Leben, noch ${'❤️'.repeat(lost.lives)}` : 'ist raus 💀'}</p>${B.hints.length ? `<p class="small muted">Hätte gepasst: ${B.hints.map(c => esc(B.cat.kind === 'cap' ? BY[c].k : BY[c].n)).join(', ')}</p>` : ''}`
+      : `<h1>Leergespielt!</h1><p>Alle ${B.used.length} Antworten zu „${esc(B.cat.label)}“ genannt. Keiner verliert ein Leben.</p>`}
+      <p class="small muted">Kategorie war: ${esc(B.cat.label)} · ${B.used.length} genannt</p></div><button class="btn primary big" data-act="bnext">${alive().length <= 1 ? 'Zur Siegerehrung' : 'Nächste Kategorie'}</button>`;
+  }
+  const win = alive()[0], ps = B.players.slice().sort((a, b) => b.lives - a.lives || b.ans - a.ans);
+  const best = (key, em, title, unit) => { const s = B.players.slice().sort((a, b) => b[key] - a[key]); return s[0][key] > 0 && (s.length < 2 || s[0][key] > s[1][key]) ? `<div class="award"><span class="em">${em}</span><span class="eyebrow">${title}</span><b>${esc(s[0].name)}</b><span class="small muted mono">${s[0][key]} ${unit}</span></div>` : ''; };
+  return `<div class="topbar"><button class="link" data-act="home">← Atlas-Duell</button><span class="tag gold">${lvlName(B.level)}</span></div>
+    <div class="boomscr"><span class="em">🏆</span><h1 style="color:${win ? win.color : 'inherit'}">${win ? esc(win.name) + ' überlebt' : 'Alle hochgegangen'}</h1></div>
+    ${boardHTML(ps.map(p => [p.name, p.ans, (p.lives > 0 ? '❤️'.repeat(p.lives) : '💀') + ` · ${p.boom}× Boom`, p.color]), null, true)}<p class="small muted" style="margin-top:-6px">Zahl = genannte Länder</p>
+    <div class="awards">${best('ans', '🎇', 'Feuerwerker', 'Treffer')}${best('close', '🧊', 'Nerven aus Stahl', 'knappe Rettungen')}${best('boom', '💣', 'Pechvogel', 'Explosionen')}</div>
+    <div class="row wrap"><button class="btn primary grow" data-act="bagain">Revanche</button><button class="btn grow" data-act="home">Startseite</button></div>`;
+}
+function bAfter() {
+  if (B.phase !== 'turn') return;
+  bUpdate(); const inp = document.getElementById('bin'); inp?.focus();
+  inp?.addEventListener('input', () => { if (B.level === 3) return; const k = NORM(inp.value), box = document.getElementById('bsug'); if (!box) return; if (k.length < 3) { box.innerHTML = ''; return; }
+    const kind = B.cat.kind, names = [...new Set(COUNTRIES.map(c => kind === 'cap' ? c.k : c.n).filter(n => NORM(n).startsWith(k)))].slice(0, 4);
+    box.innerHTML = names.map(n => `<button class="chip" data-act="bsug" data-v="${esc(n)}">${esc(n)}</button>`).join(''); });
+}
+function confettiBurst() { const keep = M; M = { phase: 'end', mode: 'party' }; try { maybeConfetti(); } finally { M = keep; } }
+
 /* ---------- actions ---------- */
 const readName = () => { const el = document.getElementById('myname'); if (el) { DB.name = cleanName(el.value); saveDB(); } return DB.name; };
 function needName() { const n = readName(); if (!n) { toast('Erst einen Namen eintragen'); document.getElementById('myname')?.focus(); return null; } return n; }
@@ -591,7 +786,7 @@ app.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return; const a = b.dataset.act, v = b.dataset.v;
   if (a === 'zin' || a === 'zout') { if (Z) Z.svg.transition().duration(220).call(Z.zoom.scaleBy, a === 'zin' ? 2 : 0.5); return; }
   if (a === 'lvl') { S.level = +v; render(); return; }
-  if (a === 'home') { stopClock(); M = null; S.view = 'home'; S.showLink = null; history.replaceState(null, '', location.pathname); LINK = null; render(); scrollTo(0, 0); return; }
+  if (a === 'home') { stopClock(); bStop(); B = null; M = null; S.view = 'home'; S.showLink = null; history.replaceState(null, '', location.pathname); LINK = null; render(); scrollTo(0, 0); return; }
   if (a === 'daily') { const n = needName(); if (!n) return; const seed = 'tag-' + dk(new Date()), g = DB.games[gkey(seed, 2)]; if (g && g.me) { LINK = { s: seed, l: 2, p: g.p }; S.view = 'link'; render(); return; } S.view = 'match'; startMatch('daily', seed, 2, [n]); return; }
   if (a === 'duel') { const n = needName(); if (!n) return; S.view = 'match'; S.showLink = null; startMatch('duel', newSeed(), S.level, [n]); return; }
   if (a === 'join') { const n = needName(); if (!n) return; if (LINK.p.some(p => p[0].toLowerCase() === n.toLowerCase())) { toast('Der Name ist in dieser Rangliste schon vergeben'); return; } mergeGame(LINK.s, LINK.l, LINK.p); S.view = 'match'; startMatch(LINK.s.startsWith('tag-') ? 'daily' : 'duel', LINK.s, LINK.l, [n]); return; }
@@ -599,11 +794,23 @@ app.addEventListener('click', e => {
   if (a === 'share-g') { const g = DB.games[v]; if (!g) return; const me = g.p.find(x => x[0] === g.me), rounds = makeGame(g.s, g.l), label = g.s.startsWith('tag-') ? `Tagesduell ${g.s.slice(10, 12)}.${g.s.slice(8, 10)}.` : 'Duell · ' + lvlName(g.l); const lead = g.p.slice().sort((x, y) => sum(y[1]) - sum(x[1]))[0];
     share(`⚔️ Atlas-Duell · ${label}\n${me ? `${me[0]}: ${fmt(sum(me[1]))} Punkte\n${me[1].map((p, i) => sq(p, rounds[i])).join('')}\n` : ''}${g.p.length > 1 ? `Vorne: ${lead[0]} (${fmt(sum(lead[1]))}). ` : ''}Schlägst du das?`, linkFor(g)); return; }
   if (a === 'party') { S.view = 'setup'; render(); return; }
+  if (a === 'bomb') { S.view = 'bsetup'; render(); scrollTo(0, 0); return; }
+  if (a === 'blives') { S.blives = +v; render(); return; }
+  if (a === 'bgo') { const names = S.party.map(cleanName).filter(Boolean); if (names.length < 2) { toast('Mindestens zwei Namen'); return; } if (new Set(names.map(x => x.toLowerCase())).size !== names.length) { toast('Jeder Name nur einmal'); return; } S.party = names; bStartGame(names, S.blives, S.level); return; }
+  if (B && S.view === 'bomb') {
+    if (a === 'bstart') { try { AC ||= new (window.AudioContext || window.webkitAudioContext)(); AC.resume && AC.resume(); } catch {} B.phase = 'turn'; render(); bArm(); return; }
+    if (a === 'bskip') return bSkip();
+    if (a === 'bsug') { const inp = document.getElementById('bin'); if (inp) inp.value = v; return bSubmit(v); }
+    if (a === 'bforce') { if (B.pending && !B.used.includes(B.pending)) bAccept(B.pending, true); return; }
+    if (a === 'bnext') return bNext();
+    if (a === 'bagain') return bStartGame(B.players.map(p => p.name), B.lives, B.level);
+    if (a === 'bsound') { B.sound = !B.sound; e.target.textContent = B.sound ? '🔊' : '🔇'; return; }
+  }
   if (a === 'padd') { S.party.push(''); render(); document.querySelector(`[data-pi="${S.party.length - 1}"]`)?.focus(); return; }
   if (a === 'pdel') { S.party.splice(+v, 1); render(); return; }
   if (a === 'pgo') { const names = S.party.map(cleanName).filter(Boolean); if (names.length < 2) { toast('Mindestens zwei Namen'); return; } if (new Set(names.map(x => x.toLowerCase())).size !== names.length) { toast('Jeder Name nur einmal'); return; } S.party = names; S.view = 'match'; startMatch('party', newSeed(), S.level, names); return; }
   if (a === 'again') { const names = M.players.map(p => p.name); startMatch('party', newSeed(), M.level, names); return; }
-  if (a === 'quit') { if (!confirmQuit()) return; stopClock(); M = null; S.view = LINK ? 'link' : 'home'; render(); return; }
+  if (a === 'quit') { if (!confirmQuit()) return; stopClock(); bStop(); B = null; M = null; S.view = LINK ? 'link' : 'home'; render(); return; }
   if (!M) return;
   if (a === 'go') return beginTurn();
   if (a === 'ans') return submit(v);
@@ -612,6 +819,7 @@ app.addEventListener('click', e => {
   if (a === 'joker') return useJoker(v);
   if (a === 'next') return nextRound();
 });
+app.addEventListener('submit', e => { if (e.target.id === 'bform') { e.preventDefault(); bSubmit(document.getElementById('bin').value); } });
 let quitArmed = 0;
 function confirmQuit() { if (Date.now() - quitArmed < 2500) return true; quitArmed = Date.now(); toast('Nochmal tippen zum Beenden'); return false; }
 document.addEventListener('keydown', e => {
@@ -625,7 +833,7 @@ addEventListener('hashchange', () => { const l = parseLink(location.hash); if (l
 LINK = parseLink(location.hash);
 if (LINK) { const g = mergeGame(LINK.s, LINK.l, LINK.p); LINK.p = g.p; S.view = 'link'; }
 render();
-window.DUELL_TEST = { WPROJ, makeGame, basePts, record, parseLink, linkFor, maskFact, landDist, get M() { return M; }, S, DB, BY, NEIGH, capLL, KM };
+window.DUELL_TEST = { get B() { return B; }, CATS, lookup, NORM, WPROJ, makeGame, basePts, record, parseLink, linkFor, maskFact, landDist, get M() { return M; }, S, DB, BY, NEIGH, capLL, KM };
 </script>
 </body>
 </html>
