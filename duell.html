@@ -38,6 +38,7 @@
   --shadow: 0 1px 0 rgba(255,255,255,.03); color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; }
 body { background: var(--bg); color: var(--ink); font: 400 16px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
 button { font: inherit; color: inherit; cursor: pointer; }
@@ -196,6 +197,30 @@ details.rules ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 6px
 @keyframes boomIn { from { transform: scale(.2) rotate(-30deg); opacity: 0; } }
 .flash { animation: flash .7s ease-out; }
 @keyframes flash { 0% { background: var(--rec); } }
+
+/* online */
+.roomcode { font-family: var(--f-mono); font-size: 44px; font-weight: 500; letter-spacing: .18em; text-align: center; color: var(--calm); }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--surface-2); border-radius: 14px; padding: 4px; }
+.seg button { border: 0; border-radius: 11px; padding: 10px; font-weight: 700; background: transparent; }
+.seg button[aria-pressed="true"] { background: var(--surface); box-shadow: var(--shadow); }
+.ptyping { min-height: 46px; display: grid; place-items: center; font-family: var(--f-mono); font-size: 20px; color: var(--muted); background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); padding: 8px; }
+.yourturn { animation: pulseTurn 1s ease-in-out infinite; }
+@keyframes pulseTurn { 50% { opacity: .55; } }
+.odot { width: 8px; height: 8px; border-radius: 50%; background: var(--calm); display: inline-block; }
+.odot.off { background: var(--rec); }
+.hintbig { background: var(--gold-soft); border-radius: 14px; padding: 12px 14px; font-size: 17px; text-align: center; }
+.hintbig b { font-family: var(--f-mono); font-size: 22px; letter-spacing: .08em; }
+.helpcard { border: 2px dashed var(--gold); }
+#hform { display: flex; gap: 8px; }
+#hform .field { flex: 1; min-width: 0; text-transform: uppercase; letter-spacing: .2em; font-family: var(--f-mono); }
+.glass { width: 140px; height: 190px; }
+.glass .milk { transition: y .12s ease-out, height .12s ease-out; }
+.shakebtn { width: 100%; min-height: 120px; border-radius: var(--r); border: 2px dashed var(--line); background: var(--surface); font-size: 18px; font-weight: 700; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.shakebtn:active { transform: scale(.98); }
+.sbar { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 10fr) 44px; gap: 8px; align-items: center; font-size: 13px; }
+.sbar .tr { height: 10px; border-radius: 99px; background: var(--surface-2); overflow: hidden; } .sbar .tr i { display: block; height: 100%; border-radius: 99px; }
+.wob { animation: wob .18s; } @keyframes wob { 50% { transform: rotate(-12deg) scale(1.08); } }
+.countdown { font-family: var(--f-display); font-size: 72px; font-weight: 700; line-height: 1; }
 @media (max-width: 380px) { .opts:not(.duo2) { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -338,7 +363,7 @@ async function share(text, url) {
 /* ---------- map ---------- */
 const PW = 600, PH = 400, WPROJ = d3.geoNaturalEarth1().fitExtent([[4, 4], [PW - 4, PH - 4]], { type: 'Sphere' }), WPATH = d3.geoPath(WPROJ);
 const SPHERE = WPATH({ type: 'Sphere' }), LANDS = FEATS.map(f => [CODE_BY_ID.get(String(f.id)) || '', WPATH(f)]).filter(x => x[1]);
-const COLORS = ['#1B8173', '#D4542A', '#A87D14', '#2F6FB0', '#B0407A', '#5E8C2F', '#7A5AC8', '#8A5A3B'];
+const COLORS = ['#1B8173', '#D4542A', '#A87D14', '#2F6FB0', '#B0407A', '#5E8C2F', '#7A5AC8', '#8A5A3B', '#0E7490', '#64748B'];
 const PINPATH = 'M0,0 C-4,-7 -9,-11 -9,-17 A9,9 0 1 1 9,-17 C9,-11 4,-7 0,0Z';
 const pinSVG = (ll, color, label, cls = '', delay = 0) => { const p = WPROJ(ll); if (!p) return ''; return `<g class="pin" data-x="${p[0].toFixed(2)}" data-y="${p[1].toFixed(2)}" transform="translate(${p[0].toFixed(2)},${p[1].toFixed(2)})"><g class="${cls}" style="animation-delay:${delay}s"><path d="${PINPATH}" fill="${color}"/><circle cy="-17" r="3.4"/>${label ? `<text class="plabel" x="12" y="-14" fill="${color}">${esc(label)}</text>` : ''}</g></g>`; };
 const targetSVG = ll => { const p = WPROJ(ll); return `<g class="tmark" data-x="${p[0].toFixed(2)}" data-y="${p[1].toFixed(2)}" transform="translate(${p[0].toFixed(2)},${p[1].toFixed(2)})"><circle r="9"/><path d="M0,-5 L1.5,-1.5 5,-1.5 2.3,0.8 3.2,4.6 0,2.4 -3.2,4.6 -2.3,0.8 -5,-1.5 -1.5,-1.5Z"/></g>`; };
@@ -438,7 +463,7 @@ function viewHome() {
   <div class="card"><div class="row"><span style="font-size:30px">⚔️</span><div style="display:grid"><h3>Freunde herausfordern</h3><span class="small muted">Du spielst vor, schickst den Link in die Gruppe, jeder spielt dieselben Fragen. Die Rangliste wächst im Link mit.</span></div></div>
     <div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="lvl" data-v="${l}" aria-pressed="${S.level === l}">${lvlName(l)}</button>`).join('')}</div>
     <button class="btn primary big" data-act="duel">Neues Duell starten</button></div>
-  <button class="card mode" data-act="bomb"><div class="row spread"><div class="row"><span class="em">💣</span><div style="display:grid"><h3>Bombe</h3><span class="small muted">Ein Handy wandert reihum: passendes Land nennen, bevor es knallt. Leben, Timer, drei Stufen</span></div></div><span>→</span></div></button>
+  <button class="card mode" data-act="bomb"><div class="row spread"><div class="row"><span class="em">💣</span><div style="display:grid"><h3>Bombe</h3><span class="small muted">Reihum ein passendes Land nennen, bevor es knallt. Online an mehreren Handys oder an einem. Leben, Timer, drei Stufen</span></div></div><span>→</span></div></button>
   <button class="card mode" data-act="party"><div class="row spread"><div class="row"><span class="em">🎉</span><div style="display:grid"><h3>Party-Modus</h3><span class="small muted">Ein Handy, 2 bis 8 Leute: reihum antworten, dann gemeinsam auflösen</span></div></div><span>→</span></div></button>
   ${recent.length ? `<div class="card"><h3>Deine Duelle</h3>${recent.map(g => { const top = g.p.slice().sort((a, b) => sum(b[1]) - sum(a[1]))[0]; return `<button class="mode" style="background:none;padding:0" data-act="open" data-v="${esc(gkey(g.s, g.l))}"><div class="row spread"><div style="display:grid"><b>${g.s.startsWith('tag-') ? 'Tagesduell ' + g.s.slice(10, 12) + '.' + g.s.slice(8, 10) + '.' : 'Duell · ' + lvlName(g.l)}</b><span class="small muted">${g.p.length} Spieler · vorne ${esc(top[0])} mit ${fmt(sum(top[1]))}</span></div><span class="small muted">${g.me ? fmt(sum((g.p.find(x => x[0] === g.me) || [0, []])[1])) : 'offen'} →</span></div></button>`; }).join('<hr style="border:0;border-top:1px solid var(--line);margin:0">')}</div>` : ''}
   <details class="rules"><summary>So wird gezählt</summary><ul>
@@ -588,6 +613,7 @@ function viewEnd() {
 }
 function render() {
   if (S.view === 'bsetup') { app.innerHTML = viewBSetup(); return after(); }
+  if (S.view === 'online') { app.innerHTML = viewOnline(); return onlineAfter(); }
   if (S.view === 'bomb' && B) { app.innerHTML = viewBomb(); return bAfter(); }
   if (!M || S.view !== 'match') app.innerHTML = S.view === 'setup' ? viewSetup() : S.view === 'link' && LINK ? viewLink() : viewHome();
   else app.innerHTML = M.phase === 'q' ? viewQ() : M.phase === 'fb' ? viewFb() : M.phase === 'hand' ? viewHand() : M.phase === 'reveal' ? viewReveal() : viewEnd();
@@ -732,11 +758,13 @@ function bNext() {
 }
 const livesHTML = () => B.players.map((p, i) => `<span class="lchip${p.lives <= 0 ? ' out' : ''}${i === B.turn && B.phase !== 'end' ? ' cur' : ''}" style="color:${p.color}"><span style="color:var(--ink)">${esc(p.name)}</span>${p.lives > 0 ? '❤️'.repeat(p.lives) : '💀'}</span>`).join('');
 function viewBSetup() {
-  const names = S.party.length ? S.party : (S.party = [DB.name || '', '']);
+  if (S.party.length < 3) S.party = [S.party[0] || DB.name || '', S.party[1] || '', S.party[2] || ''];
+  const names = S.party;
   return `<div class="topbar"><button class="link" data-act="home">← Atlas-Duell</button><span></span></div>
+  <div class="seg"><button data-act="online">Jeder am eigenen Handy</button><button aria-pressed="true">Ein Handy</button></div>
   <div class="hero"><span class="eyebrow">Bombe</span><h2>Wer traut sich?</h2><p class="muted small">Ein Handy wandert reihum. Wer dran ist, nennt ein passendes Land, bevor seine Zeit abläuft, und gibt weiter. Schon genannte Länder zählen nicht. Knallt es bei dir, verlierst du ein Leben. Wer am Ende übrig ist, gewinnt.</p></div>
-  <div class="names">${names.map((n, i) => `<div class="nrow"><i class="dot" style="background:${COLORS[i]}"></i><input class="field" data-pi="${i}" maxlength="16" placeholder="Spieler ${i + 1}" value="${esc(n)}">${names.length > 2 ? `<button data-act="pdel" data-v="${i}" aria-label="Entfernen">×</button>` : ''}</div>`).join('')}</div>
-  ${names.length < 8 ? `<button class="btn" data-act="padd">+ Spieler</button>` : ''}
+  <div class="names">${names.map((n, i) => `<div class="nrow"><i class="dot" style="background:${COLORS[i]}"></i><input class="field" data-pi="${i}" maxlength="16" placeholder="Spieler ${i + 1}" value="${esc(n)}">${names.length > 3 ? `<button data-act="pdel" data-v="${i}" aria-label="Entfernen">×</button>` : ''}</div>`).join('')}</div>
+  ${names.length < 10 ? `<button class="btn" data-act="padd">+ Spieler</button>` : ''}
   <div class="card" style="gap:10px"><span class="eyebrow">Leben</span><div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="blives" data-v="${l}" aria-pressed="${S.blives === l}">${'❤️'.repeat(l)}</button>`).join('')}</div>
     <span class="eyebrow">Schwierigkeit</span><div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="lvl" data-v="${l}" aria-pressed="${S.level === l}">${lvlName(l)} · ${BTIME[l]} s</button>`).join('')}</div>
     <span class="small muted">${{ 1: 'Große Kategorien wie Kontinente oder Anfangsbuchstaben, Vorschläge beim Tippen, angezeigt wird, wie viele noch passen.', 2: 'Dazu Regionen, Nachbarländer, Sprachen und Hauptstädte in Europa; Vorschläge beim Tippen.', 3: 'Alles, auch Kleinstaaten und Hauptstädte nach Anfangsbuchstabe. Keine Vorschläge, Tippfehler bis zu einem Buchstaben verzeiht das Spiel.' }[S.level]}</span></div>
@@ -777,6 +805,255 @@ function bAfter() {
 }
 function confettiBurst() { const keep = M; M = { phase: 'end', mode: 'party' }; try { maybeConfetti(); } finally { M = keep; } }
 
+
+/* ---------- Bombe online: every phone plays, the host's phone is the referee (PeerJS, WebRTC) ---------- */
+let NET = null, OBS = null, OB_T = null, OB_H = null, OB_RAF = null, WAKE = null;
+const MIN_P = 3, MAX_P = 10, HELPS = 2, SHAKE_MS = 8000;
+let OB_S = null;
+const ROOM_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+const peerOpts = () => { const q = new URLSearchParams(location.search).get('peer'); if (q && /^(localhost|127\.0\.0\.1):\d{2,5}$/.test(q)) { const [host, port] = q.split(':'); return { host, port: +port, path: '/', secure: false, debug: 0 }; } return { debug: 0 }; };
+function loadPeer() { return window.Peer ? Promise.resolve() : new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'vendor/peerjs.min.js'; sc.onload = res; sc.onerror = () => rej(new Error('PeerJS fehlt')); document.head.appendChild(sc); }); }
+async function wake() { try { if ('wakeLock' in navigator && !WAKE) { WAKE = await navigator.wakeLock.request('screen'); WAKE.addEventListener('release', () => { WAKE = null; }); } } catch {} }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && NET) wake(); });
+function netClose() { shakeStop(); clearTimeout(OB_T); cancelAnimationFrame(OB_RAF); try { NET && NET.peer && NET.peer.destroy(); } catch {} NET = null; OBS = null; try { WAKE && WAKE.release(); } catch {} WAKE = null; }
+const send = (conn, msg) => { try { if (conn && conn.open) conn.send(msg); } catch {} };
+
+/* host side */
+async function obHost(name) {
+  await loadPeer(); netClose();
+  const code = [...Array(4)].map(() => ROOM_ABC[Math.floor(Math.random() * ROOM_ABC.length)]).join('');
+  NET = { role: 'host', code, conns: new Map(), me: 0, st: null, status: 'Raum wird eröffnet …' }; render();
+  const peer = new Peer('atlasduell-' + code.toLowerCase(), peerOpts()); NET.peer = peer;
+  peer.on('open', () => { OBS = { phase: 'lobby', players: [{ name, color: COLORS[0], lives: S.blives, ans: 0, close: 0, boom: 0, skip: true, online: true, pid: 'host' }], level: S.level, lives: S.blives, turn: 0, seq: 0, used: [], seen: new Set(), total: new Map(), games: 0, milk: true }; NET.status = ''; obBroadcast(); wake(); });
+  peer.on('connection', conn => { conn.on('data', d => obRecv(conn, d)); conn.on('close', () => obGone(conn)); conn.on('error', () => obGone(conn)); });
+  peer.on('error', err => { if (err.type === 'unavailable-id') { obHost(name); return; } NET && (NET.status = 'Verbindungsproblem: ' + (err.type || err.message)); render(); });
+  peer.on('disconnected', () => { try { peer.reconnect(); } catch {} });
+}
+function obSnap() {
+  const o = OBS; return { code: NET.code, phase: o.phase, players: o.players.map(p => ({ name: p.name, color: p.color, lives: p.lives, ans: p.ans, close: p.close, boom: p.boom, skip: p.skip, online: p.online, shakes: p.shakes || 0 })),
+    turn: o.turn, level: o.level, lives: o.lives, tbase: BTIME[o.level], cat: o.cat ? { label: o.cat.label, kind: o.cat.kind, left: o.cat.set.filter(c => !o.used.includes(c)).length } : null,
+    used: o.used, left: o.until ? Math.max(0, o.until - performance.now()) : 0, full: o.phase === 'turn' ? o.tcur * 1000 : 0, last: o.last || null, msg: o.msg || null, hints: o.hints || [], seq: ++o.seq,
+    helpOpen: !!o.helpOpen, hint: o.hint || null, hmsg: o.hmsg || null, helps: o.players.map(p => p.help || 0), milk: !!o.milk, shake: ['shake', 'shakeres', 'shakecd'].includes(o.phase) ? { counts: o.shakeCounts || [], res: o.shakeRes || null } : null, results: o.results || null, totals: [...(o.total || new Map())].sort((a, b) => b[1] - a[1]), games: o.games || 0 };
+}
+function obBroadcast() { const snap = obSnap(); for (const [, c] of NET.conns) send(c.conn, { t: 'state', s: snap, me: c.idx }); obApply(snap, 0); }
+function obSet(phase, ms, then) { clearTimeout(OB_T); clearTimeout(OB_H); if (phase !== 'shake') clearInterval(OB_S); if (phase !== 'turn') OBS.helpOpen = false; OBS.phase = phase; OBS.until = ms ? performance.now() + ms : 0; if (ms && then) OB_T = setTimeout(then, ms); obBroadcast(); }
+const onAlive = () => OBS.players.filter(p => p.lives > 0 && p.online);
+function obNext(i) { const n = OBS.players.length; for (let k = 1; k <= n; k++) { const j = (i + k) % n, p = OBS.players[j]; if (p.lives > 0 && p.online) return j; } return i; }
+function obNewCat() { const keep = B; B = { level: OBS.level, seen: OBS.seen, tbase: BTIME[OBS.level] }; bNewCat(); OBS.cat = { ...B.cat, set: [...B.cat.set] }; OBS.tcur = BTIME[OBS.level]; OBS.used = []; B = keep; }
+function obStart() {
+  if (OBS.players.filter(p => p.online).length < MIN_P) { toast(`Mindestens ${MIN_P} Spieler im Raum`); return; }
+  for (const p of OBS.players) Object.assign(p, { lives: p.online ? OBS.lives : 0, ans: 0, close: 0, boom: 0, skip: true, help: HELPS, gave: [], chances: 0, milk: 0, shakes: 0 }); OBS.cats = 0;
+  OBS.seen = new Set(); OBS.out = OBS.players.map((p, i) => p.online ? null : i).filter(x => x != null); OBS.results = null; OBS.turn = OBS.players.findIndex(p => p.online); OBS.last = null; OBS.msg = null; OBS.hint = null; OBS.hmsg = null; obNewCat(); obSet('ready', 3000, obTurn);
+}
+function obTurn() {
+  OBS.msg = null; OBS.hint = null; OBS.hmsg = null; obSet('turn', OBS.tcur * 1000, obBoom);
+  const at = Math.max(1500, Math.min(4000, OBS.tcur * 1000 - 2500)); // help opens after about four seconds of being stuck
+  OB_H = setTimeout(() => { if (OBS.phase !== 'turn' || OBS.hint) return; OBS.helpOpen = true; OBS.players.forEach((p, i) => { if (p.online && i !== OBS.turn && p.help > 0) p.chances++; }); obBroadcast(); }, at);
+}
+function obHelp(idx, text) { // another player gives the stuck one the first one or two letters of a fitting answer
+  const p = OBS.players[idx]; if (OBS.phase !== 'turn' || !OBS.helpOpen || OBS.hint || idx === OBS.turn || !p || !p.online || !(p.help > 0)) return;
+  const pre = NORM(text).slice(0, 2), say = t => { OBS.hmsg = { to: idx, text: t, n: (OBS.hmsg ? OBS.hmsg.n || 0 : 0) + 1 }; obBroadcast(); };
+  if (!pre) return say('Ein oder zwei Buchstaben eintippen');
+  const nm = c => OBS.cat.kind === 'cap' ? BY[c].k : BY[c].n;
+  if (!OBS.cat.set.some(c => !OBS.used.includes(c) && NORM(nm(c)).startsWith(pre))) return say(`Mit „${pre.toUpperCase()}“ beginnt keine passende Antwort mehr`);
+  p.help--; p.gave.push(OBS.turn); OBS.hint = { by: idx, to: OBS.turn, text: pre.toUpperCase() }; OBS.hmsg = null; obBroadcast();
+}
+function obNextCat() { // every third category: a milkshake break
+  OBS.cats = (OBS.cats || 0) + 1;
+  if (OBS.milk && OBS.cats % 3 === 0 && onAlive().length >= 2) return obShake();
+  obNewCat(); obSet('ready', 3000, obTurn);
+}
+function obShake() {
+  OBS.shakeCounts = OBS.players.map(() => 0); OBS.shakeRes = null;
+  obSet('shakecd', 3000, () => { obSet('shake', SHAKE_MS, obShakeEnd); OB_S = setInterval(obBroadcast, 500); });
+}
+function obShakeEnd() {
+  clearInterval(OB_S); const on = OBS.players.map((p, i) => ({ i, n: OBS.shakeCounts[i] || 0, p })).filter(x => x.p.online), top = Math.max(0, ...on.map(x => x.n));
+  const winners = top > 0 ? on.filter(x => x.n === top).map(x => x.i) : [], alive = on.filter(x => x.p.lives > 0), low = alive.length ? alive.reduce((a, b) => b.n < a.n ? b : a) : null;
+  for (const x of on) x.p.shakes = (x.p.shakes || 0) + x.n; for (const i of winners) OBS.players[i].milk = (OBS.players[i].milk || 0) + 2;
+  OBS.shakeRes = { winners, low: low ? low.i : null, top };
+  obSet('shakeres', 4500, () => { if (low) OBS.turn = low.i; else OBS.turn = obNext(OBS.turn); obNewCat(); obSet('ready', 3000, obTurn); });
+}
+function obEnd() { // points for this game, added to the room's running total
+  const alive = onAlive(), win = alive.length === 1 ? OBS.players.indexOf(alive[0]) : -1, order = [];
+  if (win >= 0) order.push(win); for (const i of [...OBS.out].reverse()) if (!order.includes(i)) order.push(i); OBS.players.forEach((p, i) => { if (!order.includes(i)) order.push(i); });
+  const PLACE = [5, 3, 1];
+  OBS.results = OBS.players.map((p, i) => { const place = order.indexOf(i) + 1, placePts = PLACE[place - 1] || 0, bonus = win >= 0 ? 2 * p.gave.filter(x => x === win).length : 0, geiz = p.gave.length === 0 && p.chances > 0 ? -2 : 0;
+    return { name: p.name, color: p.color, ans: p.ans, place, placePts, bonus, geiz, milk: p.milk || 0, helps: p.gave.length, pts: p.ans + placePts + bonus + geiz + (p.milk || 0) }; });
+  for (const r of OBS.results) OBS.total.set(r.name, (OBS.total.get(r.name) || 0) + r.pts);
+  OBS.games++; obSet('end');
+}
+function obAnswer(idx, text) {
+  if (OBS.phase !== 'turn' || idx !== OBS.turn) return; const kind = OBS.cat.kind, codes = lookup(kind, text), nm = c => kind === 'cap' ? BY[c].k : BY[c].n;
+  const say = (t, force) => { OBS.msg = { to: idx, text: t, cls: 'bad', force: !!force, n: (OBS.msg ? OBS.msg.n || 0 : 0) + 1 }; OBS.pending = force ? codes[0] : null; obBroadcast(); };
+  if (!codes.length) return say(kind === 'cap' ? `„${String(text).slice(0, 30)}“: keine Hauptstadt erkannt` : `„${String(text).slice(0, 30)}“: kein Land erkannt`);
+  const fit = codes.find(c => OBS.cat.set.includes(c) && !OBS.used.includes(c)); if (fit) return obAccept(fit);
+  if (codes.some(c => OBS.used.includes(c))) return say(`${nm(codes.find(c => OBS.used.includes(c)))} wurde schon genannt`);
+  say(`${nm(codes[0])} passt nicht`, true);
+}
+function obAccept(code, forced) {
+  const idx = OBS.turn, pl = OBS.players[idx], left = OBS.until - performance.now();
+  OBS.used.push(code); if (forced && !OBS.cat.set.includes(code)) OBS.cat.set.push(code); pl.ans++; if (left < 1500) pl.close++; OBS.tcur = Math.max(BTIME[OBS.level] * 0.6, OBS.tcur - 0.4); OBS.msg = null; OBS.pending = null;
+  const nm = OBS.cat.kind === 'cap' ? BY[code].k : BY[code].n, remaining = OBS.cat.set.filter(c => !OBS.used.includes(c)).length;
+  OBS.last = { kind: 'ok', name: nm, by: idx, close: left < 1500 }; OBS.turn = obNext(idx);
+  if (!remaining) return obSet('empty', 3500, obNextCat);
+  obSet('pass', 1200, obTurn);
+}
+function obSkip(idx) { const pl = OBS.players[idx]; if (OBS.phase !== 'turn' || idx !== OBS.turn || !pl.skip) return; pl.skip = false; OBS.last = { kind: 'skip', by: idx }; OBS.msg = null; OBS.turn = obNext(idx); obSet('pass', 1200, obTurn); }
+function obBoom() {
+  const pl = OBS.players[OBS.turn]; pl.lives--; pl.boom++; if (pl.lives <= 0 && !OBS.out.includes(OBS.turn)) OBS.out.push(OBS.turn); OBS.last = { kind: 'boom', by: OBS.turn }; OBS.msg = null;
+  OBS.hints = OBS.cat.set.filter(c => !OBS.used.includes(c)).sort(() => Math.random() - 0.5).slice(0, 3).map(c => OBS.cat.kind === 'cap' ? BY[c].k : BY[c].n);
+  if (onAlive().length <= 1) return obSet('boom', 3500, obEnd);
+  obSet('boom', 3500, () => { OBS.turn = obNext(OBS.turn); obNextCat(); });
+}
+function obRecv(conn, d) {
+  if (!d || typeof d !== 'object' || !OBS) return; const entry = NET.conns.get(conn.peer);
+  if (d.t === 'hello') {
+    const name = cleanName(d.name); if (!name) return send(conn, { t: 'reject', why: 'Bitte einen Namen eintragen.' });
+    let idx = OBS.players.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+    if (idx >= 0 && OBS.players[idx].online) return send(conn, { t: 'reject', why: `Der Name „${name}“ ist schon im Raum.` });
+    if (idx < 0) { if (OBS.phase !== 'lobby' && OBS.phase !== 'end') return send(conn, { t: 'reject', why: 'Das Spiel läuft schon. Nach der Runde kannst du einsteigen.' }); if (OBS.players.length >= MAX_P) return send(conn, { t: 'reject', why: `Der Raum ist voll (${MAX_P}).` }); OBS.players.push({ name, color: COLORS[OBS.players.length % COLORS.length], lives: OBS.phase === 'lobby' ? OBS.lives : 0, ans: 0, close: 0, boom: 0, skip: true, online: true, help: HELPS, gave: [], chances: 0 }); idx = OBS.players.length - 1; }
+    else OBS.players[idx].online = true;
+    NET.conns.set(conn.peer, { conn, idx }); obBroadcast(); return;
+  }
+  if (!entry) return; const idx = entry.idx;
+  if (d.t === 'answer') obAnswer(idx, String(d.text || '').slice(0, 60));
+  else if (d.t === 'skip') obSkip(idx);
+  else if (d.t === 'help') obHelp(idx, String(d.text || '').slice(0, 4));
+  else if (d.t === 'shake' && OBS.phase === 'shake') OBS.shakeCounts[idx] = Math.max(OBS.shakeCounts[idx] || 0, Math.min(400, Math.round(+d.n) || 0));
+  else if (d.t === 'typing' && OBS.phase === 'turn' && idx === OBS.turn) { const txt = String(d.text || '').slice(0, 40); for (const [, c] of NET.conns) if (c.idx !== idx) send(c.conn, { t: 'typing', text: txt }); obTyping(txt); }
+}
+function obGone(conn) {
+  if (!NET || NET.role !== 'host' || !OBS) return; const e = NET.conns.get(conn.peer); if (!e) return; NET.conns.delete(conn.peer);
+  const p = OBS.players[e.idx]; p.online = false;
+  if (OBS.phase === 'lobby' || OBS.phase === 'end') { obBroadcast(); return; }
+  if (OBS.out && !OBS.out.includes(e.idx)) OBS.out.push(e.idx);
+  if (['turn', 'pass', 'ready', 'shakecd', 'shake', 'shakeres'].includes(OBS.phase) && onAlive().length <= 1) return obEnd();
+  if (OBS.phase === 'turn' && OBS.turn === e.idx) { OBS.last = { kind: 'gone', by: e.idx }; OBS.turn = obNext(e.idx); return obSet('pass', 1200, obTurn); }
+  obBroadcast();
+}
+/* client side */
+async function obJoin(code, name) {
+  await loadPeer(); netClose();
+  NET = { role: 'client', code, me: -1, st: null, status: 'Verbinde mit Raum ' + code + ' …' }; render();
+  const peer = new Peer(undefined, peerOpts()); NET.peer = peer;
+  peer.on('open', () => { const conn = peer.connect('atlasduell-' + code.toLowerCase(), { reliable: true }); NET.conn = conn;
+    conn.on('open', () => { send(conn, { t: 'hello', name }); NET.status = 'Verbunden, warte auf den Gastgeber …'; render(); wake(); });
+    conn.on('data', d => { if (!d || typeof d !== 'object' || !NET) return; if (d.t === 'state' && d.s) { NET.me = d.me; obApply(d.s, d.me); } else if (d.t === 'typing') obTyping(d.text); else if (d.t === 'reject') { NET.status = d.why; NET.rejected = true; render(); } });
+    conn.on('close', () => { if (NET && NET.role === 'client') { NET.status = 'Verbindung zum Gastgeber verloren.'; NET.lost = true; NET.st = null; render(); } }); });
+  peer.on('error', err => { if (!NET) return; NET.status = err.type === 'peer-unavailable' ? `Raum ${code} nicht gefunden. Code richtig? Ist das Spiel beim Gastgeber noch offen?` : 'Verbindungsproblem: ' + (err.type || err.message); NET.lost = true; render(); });
+}
+function act(msg) { if (!NET || (NET.role === 'host' && !OBS)) return; if (NET.role === 'host') { if (msg.t === 'answer') obAnswer(0, msg.text); else if (msg.t === 'skip') obSkip(0); else if (msg.t === 'help') obHelp(0, msg.text); else if (msg.t === 'shake' && OBS.phase === 'shake') OBS.shakeCounts[0] = Math.max(OBS.shakeCounts[0] || 0, Math.min(400, msg.n | 0)); else if (msg.t === 'typing') { if (OBS.phase === 'turn' && OBS.turn === 0) for (const [, c] of NET.conns) send(c.conn, { t: 'typing', text: msg.text }); } } else send(NET.conn, msg); }
+/* every phone renders from the snapshot */
+function obApply(st, me) {
+  const prev = NET.st; NET.st = st; NET.stAt = performance.now(); NET.me = me;
+  const myTurnNow = st.phase === 'turn' && st.turn === me, wasMyTurn = prev && prev.phase === 'turn' && prev.turn === me;
+  if (myTurnNow && !wasMyTurn) { buzz([40, 60, 40]); bSoundNet('ok'); }
+  if (st.hint && (!prev || !prev.hint) && st.hint.to === me) buzz([20, 40, 20]);
+  if (st.helpOpen && (!prev || !prev.helpOpen) && st.turn !== me && st.helps[me] > 0) buzz(15);
+  if (st.phase === 'boom' && (!prev || prev.phase !== 'boom')) { bSoundNet('boom'); buzz(st.last && st.last.by === me ? [250, 80, 350] : 60); document.body.classList.remove('flash'); void document.body.offsetWidth; document.body.classList.add('flash'); }
+  if (st.phase === 'end' && (!prev || prev.phase !== 'end')) { const w = st.players.filter(p => p.lives > 0); if (w.length === 1 && st.players.indexOf(w[0]) === me) setTimeout(confettiBurst, 300); echoXP(2500); }
+  if (st.phase === 'shake') shakeStart(); else shakeStop();
+  if (S.view !== 'online') return;
+  if (st.phase === 'shake' && document.getElementById('shakescr')) { shakeBoard(); obClock(); return; }
+  // keep the turn screen (and its input) alive between turns, so the keyboard stays open
+  if ((st.phase === 'turn' || st.phase === 'pass') && document.getElementById('obturn') && NET.catShown === st.cat.label) obPatch(); else render();
+  obClock();
+}
+const SHK = { n: 0, last: 0, on: false, sent: 0, iv: null };
+function motionPermission() { try { if (window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') DeviceMotionEvent.requestPermission().catch(() => {}); } catch {} }
+function onMotion(e) { const a = e.accelerationIncludingGravity || e.acceleration; if (!a) return; const m = Math.hypot(a.x || 0, a.y || 0, a.z || 0), now = performance.now(); if (Math.abs(m - 9.81) > 11 && now - SHK.last > 110) { SHK.last = now; shakeCount(); } }
+function shakeCount() { SHK.n++; const el = document.getElementById('shn'); if (el) el.textContent = SHK.n; const milk = document.getElementById('milk'), f = Math.min(1, SHK.n / 70); if (milk) { milk.setAttribute('y', (178 - 150 * f).toFixed(1)); milk.setAttribute('height', (150 * f).toFixed(1)); } const em = document.getElementById('shem'); if (em) { em.classList.remove('wob'); void em.offsetWidth; em.classList.add('wob'); } if (SHK.n % 10 === 0) buzz(10); }
+function shakeStart() { if (SHK.on) return; SHK.on = true; SHK.n = 0; SHK.sent = 0; addEventListener('devicemotion', onMotion); SHK.iv = setInterval(() => { if (SHK.n !== SHK.sent) { SHK.sent = SHK.n; act({ t: 'shake', n: SHK.n }); } }, 250); }
+function shakeStop() { if (!SHK.on) return; SHK.on = false; removeEventListener('devicemotion', onMotion); clearInterval(SHK.iv); if (SHK.n !== SHK.sent) act({ t: 'shake', n: SHK.n }); }
+function bSoundNet(type) { const keep = B; B = { sound: S.osound !== false }; try { bSound(type); } finally { B = keep; } }
+function obTyping(text) { const el = document.getElementById('obtyping'); if (el) el.textContent = text || '…'; }
+function obClock() {
+  cancelAnimationFrame(OB_RAF); const st = NET && NET.st; if (!st || !['turn', 'ready', 'boom', 'empty', 'pass', 'shakecd', 'shake', 'shakeres'].includes(st.phase)) return;
+  const total = st.left, t0 = NET.stAt, full = Math.max(st.full || st.left || 1, 1); let lastTick = 0;
+  const tick = now => { if (!NET || NET.st !== st) return; const left = Math.max(0, total - (now - t0));
+    if (st.phase === 'turn') { const f = document.getElementById('bfuse'), sec = document.getElementById('bsec'), bomb = document.getElementById('bomb');
+      if (f) f.style.width = (left / full * 100).toFixed(1) + '%'; if (sec) sec.textContent = (left / 1000).toFixed(1).replace('.', ',') + ' s';
+      if (bomb) { bomb.classList.toggle('hot', left < full * 0.5 && left >= 2500); bomb.classList.toggle('hotter', left < 2500); }
+      if (st.turn === NET.me) { const iv = left < 2500 ? 250 : left < 5000 ? 500 : 1000; if (now - lastTick >= iv) { lastTick = now; bSoundNet(left < 2500 ? 'tick2' : 'tick'); } } }
+    else { const cd = document.getElementById('obcd'); if (cd) cd.textContent = Math.ceil(left / 1000); }
+    if (left > 0) OB_RAF = requestAnimationFrame(tick); };
+  OB_RAF = requestAnimationFrame(tick);
+}
+const onLives = st => st.players.map((p, i) => `<span class="lchip${p.lives <= 0 ? ' out' : ''}${i === st.turn && ['turn', 'pass'].includes(st.phase) ? ' cur' : ''}" style="color:${p.color}"><i class="odot${p.online ? '' : ' off'}"></i><span style="color:var(--ink)">${esc(p.name)}${i === NET.me ? ' (du)' : ''}</span>${st.phase === 'lobby' ? '' : p.lives > 0 ? '❤️'.repeat(p.lives) : '💀'}</span>`).join('');
+function obPatch() { // update the live parts of the turn screen
+  const st = NET.st, me = NET.me, pl = st.players[st.turn], mine = st.turn === me && st.phase === 'turn', set = (id, h) => { const el = document.getElementById(id); if (el) el.innerHTML = h; };
+  set('blives', onLives(st)); set('bleft', st.level === 1 ? `noch ${st.cat.left} möglich` : st.used.length ? `${st.used.length} genannt` : '');
+  set('bused', st.used.map(c => `<span class="chip">${esc(st.cat.kind === 'cap' ? BY[c].k : BY[c].n)}</span>`).join(''));
+  set('bwho', mine ? '<span class="yourturn" style="color:var(--rec)">Du bist dran!</span>' : `<span style="color:${pl.color}">${esc(pl.name)}</span> ist dran`);
+  const pass = document.getElementById('bpass'), L = st.last;
+  if (pass) { if (st.phase === 'pass' && L) { const by = st.players[L.by], nx = st.players[st.turn]; pass.innerHTML = (L.kind === 'ok' ? `✓ ${esc(L.name)}${L.close ? ' <small class="muted">(knapp!)</small>' : ''}` : L.kind === 'skip' ? `⏭️ ${esc(by.name)} schiebt weiter` : `📴 ${esc(by.name)} ist weg`) + `<br><span style="color:${nx.color}">${st.turn === me ? 'jetzt du!' : 'weiter an ' + esc(nx.name)}</span>`; pass.hidden = false; } else pass.hidden = true; }
+  const form = document.getElementById('bform'), inp = document.getElementById('bin'), typ = document.getElementById('obtyping'), sk = document.getElementById('bskipbtn');
+  if (form) form.hidden = !mine; if (typ) { typ.hidden = mine; if (!mine && st.phase === 'pass') typ.textContent = '…'; }
+  if (sk) { sk.hidden = !mine; sk.disabled = !st.players[me] || !st.players[me].skip; sk.textContent = st.players[me] && st.players[me].skip ? '⏭️ Weiterschieben (1×)' : '⏭️ schon geschoben'; }
+  if (inp && st.phase === 'pass') inp.value = '';
+  if (mine && inp && document.activeElement !== inp) inp.focus();
+  const m = st.msg, box = document.getElementById('bmsg');
+  if (box) { if (m && (m.to === me || NET.role === 'host')) { box.className = 'bmsg bad'; box.innerHTML = (m.to === me ? '' : `${esc(st.players[m.to].name)}: `) + esc(m.text) + (m.force && NET.role === 'host' ? ' <button class="chip" data-act="oforce">Zählt doch</button>' : ''); if (m.to === me && inp && NET.msgN !== m.n) { NET.msgN = m.n; inp.classList.remove('shake'); void inp.offsetWidth; inp.classList.add('shake'); } } else { box.className = 'bmsg'; box.innerHTML = ''; } }
+  if (!mine) set('bsug', '');
+  const hint = document.getElementById('obhint'), help = document.getElementById('obhelp'), meP = st.players[me];
+  if (hint) { if (st.hint) { const by = st.players[st.hint.by]; hint.hidden = false; hint.innerHTML = `💡 ${st.hint.to === me ? 'Tipp für dich' : 'Tipp für ' + esc(st.players[st.hint.to].name)} von <span style="color:${by.color}">${esc(by.name)}</span>: <b>${esc(st.hint.text)}…</b>`; } else hint.hidden = true; }
+  if (help) { const show = st.phase === 'turn' && st.helpOpen && !st.hint && st.turn !== me && meP && meP.online && st.helps[me] > 0; help.hidden = !show;
+    if (show) set('hlabel', `🤝 <b style="color:${pl.color}">${esc(pl.name)}</b> hängt fest. Gib ein oder zwei Anfangsbuchstaben einer passenden Antwort vor (noch ${st.helps[me]}×).`);
+    const hm = st.hmsg && st.hmsg.to === me ? st.hmsg.text : ''; set('hmsg', esc(hm)); }
+}
+function shakeBoard() { const st = NET.st, box = document.getElementById('shboard'); if (!box || !st.shake) return; const c = st.shake.counts, mx = Math.max(10, ...c);
+  box.innerHTML = st.players.map((p, i) => p.online ? `<div class="sbar"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b style="color:${p.color}">${esc(p.name)}</b>${i === NET.me ? ' (du)' : ''}</span><span class="tr"><i style="width:${(c[i] || 0) / mx * 100}%;background:${p.color}"></i></span><span class="mono">${i === NET.me ? Math.max(SHK.n, c[i] || 0) : c[i] || 0}</span></div>` : '').join(''); }
+const GLASS = `<svg class="glass" viewBox="0 0 140 190" aria-hidden="true"><defs><clipPath id="gl"><path d="M22 12 L118 12 L106 178 L34 178 Z"/></clipPath></defs><g clip-path="url(#gl)"><rect x="0" y="0" width="140" height="190" fill="var(--surface-2)"/><rect id="milk" class="milk" x="0" y="178" width="140" height="0" fill="#F7F4EC"/></g><path d="M22 12 L118 12 L106 178 L34 178 Z" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round" opacity=".7"/></svg>`;
+function viewOnline() {
+  const top = `<div class="topbar"><button class="link" data-act="ohome">← Atlas-Duell</button><button class="link" data-act="osound">${S.osound === false ? '🔇' : '🔊'}</button></div>`;
+  if (!NET || !NET.st) {
+    if (NET && !NET.lost && !NET.rejected) return `${top}<div class="handoff"><span class="eyebrow">${NET.role === 'host' ? 'Online-Raum' : 'Beitreten'}</span><div class="who" style="font-size:30px">${esc(NET.status || 'Verbinde …')}</div></div>`;
+    return `${top}<div class="seg"><button aria-pressed="true">Jeder am eigenen Handy</button><button data-act="onephone">Ein Handy</button></div><div class="hero"><span class="eyebrow">Bombe online</span><h2>Jeder an seinem Handy</h2><p class="muted small">Einer eröffnet den Raum und teilt den Code. Alle sehen dieselbe Bombe; tippen kann nur, wer dran ist. Das Handy des Gastgebers ist der Schiedsrichter, also bei ihm die Seite offen lassen.</p></div>
+      ${NET && NET.status ? `<div class="hintbar">${esc(NET.status)}</div>` : ''}
+      <label class="card" style="gap:6px"><span class="eyebrow">Dein Name</span><input class="field" id="myname" maxlength="16" placeholder="Name" value="${esc(DB.name)}"></label>
+      <div class="card"><h3>Raum beitreten</h3><div class="row"><input class="field" id="roomin" maxlength="4" placeholder="CODE" value="${esc(S.joinCode || '')}" style="text-transform:uppercase;letter-spacing:.2em;font-family:var(--f-mono)" autocapitalize="characters"><button class="btn primary" data-act="ojoin">Beitreten</button></div></div>
+      <div class="card"><h3>Selbst eröffnen</h3><span class="small muted">Du bekommst einen Code und einen Link für die Gruppe.</span><button class="btn big" data-act="ohost">Raum eröffnen</button></div>`;
+  }
+  const st = NET.st, me = NET.me, host = NET.role === 'host', link = location.origin + location.pathname + '#r=' + st.code;
+  const lives = `<div class="lives" id="blives">${onLives(st)}</div>`;
+  if (st.phase === 'lobby') return `${top}<div class="card" style="text-align:center;justify-items:center"><span class="eyebrow">Raumcode</span><div class="roomcode">${esc(st.code)}</div><button class="btn" data-act="oshare">Link in die Gruppe schicken</button>${S.showLink ? `<input class="sharebox" readonly value="${esc(S.showLink)}">` : ''}</div>
+    <div class="card"><h3>Im Raum (${st.players.filter(p => p.online).length}/${MAX_P})</h3>${lives}</div>
+    ${st.games ? `<div class="card"><h3>Gesamtwertung · ${st.games} ${st.games === 1 ? 'Runde' : 'Runden'}</h3>${boardHTML(st.totals.map(([n, v]) => [n, v, '', (st.players.find(p => p.name === n) || {}).color]))}</div>` : ''}
+    <details class="rules"><summary>Regeln und Punkte</summary><ul><li>Reihum ein passendes Land nennen, bevor die eigene Zeit abläuft. Schon Genanntes zählt nicht. Knallt es bei dir, ist ein Leben weg.</li><li>🤝 Hängt jemand rund vier Sekunden fest, können die anderen helfen: ein oder zwei Anfangsbuchstaben einer passenden Antwort. Jeder hat ${HELPS} Tipps pro Runde, pro Zug gibt es einen.</li><li>Punkte pro Runde: jede richtige Antwort +1, Platz 1/2/3: +5/+3/+1.</li><li>Hast du der Person geholfen, die am Ende gewinnt: +2 je Tipp. Wer in einer Runde nie hilft, obwohl er konnte: −2 (Geizhals).</li><li>🥛 Nach jeder dritten Kategorie: Milchshake-Pause. Acht Sekunden Handy schütteln (oder tippen), wer am meisten Schaum schlägt, bekommt +2, wer am wenigsten schüttelt, bekommt als Nächstes die Bombe.</li><li>Alles wird über die Runden in der Gesamtwertung gesammelt.</li></ul></details>
+    ${host ? `<div class="card" style="gap:10px"><span class="eyebrow">Leben</span><div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="olives" data-v="${l}" aria-pressed="${st.lives === l}">${'❤️'.repeat(l)}</button>`).join('')}</div><span class="eyebrow">Schwierigkeit</span><div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="olvl" data-v="${l}" aria-pressed="${st.level === l}">${lvlName(l)} · ${BTIME[l]} s</button>`).join('')}</div><span class="eyebrow">Extras</span><div class="chips"><button class="chip" data-act="omilk" aria-pressed="${st.milk}">🥛 Milchshake-Pausen</button></div></div>
+      <button class="btn primary big" data-act="ostart" ${st.players.filter(p => p.online).length < MIN_P ? 'disabled' : ''}>💣 ${st.players.filter(p => p.online).length < MIN_P ? `Warte auf mindestens ${MIN_P} Spieler` : 'Spiel starten'}</button>` : `<div class="card"><p class="muted">Warte, bis ${esc(st.players[0].name)} startet · ${lvlName(st.level)} · ${'❤️'.repeat(st.lives)}</p></div>`}`;
+  const pl = st.players[st.turn];
+  if (st.phase === 'ready') { NET.catShown = null; return `${top}${lives}<div class="handoff"><span class="eyebrow">Neue Kategorie · es beginnt</span><div class="who" style="color:${pl.color}">${st.turn === me ? 'Du' : esc(pl.name)}</div><div class="countdown mono" id="obcd">3</div></div>`; }
+  if (st.phase === 'turn' || st.phase === 'pass') { NET.catShown = st.cat.label; setTimeout(obPatch, 0);
+    return `${top}${lives}<div id="obturn" class="card bcat"><span class="eyebrow">Nenne</span><div class="q">${esc(st.cat.label)}</div><span class="small muted" id="bleft"></span></div>
+    <div class="bombzone"><div class="bomb" id="bomb">💣</div><div class="fuse"><i id="bfuse"></i></div><div class="bsec mono" id="bsec"></div><div class="bpass" id="bpass" hidden></div></div>
+    <div class="bwho" id="bwho"></div><div class="hintbig" id="obhint" hidden></div><div class="ptyping" id="obtyping" hidden>…</div>
+    <div class="card helpcard" id="obhelp" hidden><span id="hlabel" class="small"></span><form id="hform" autocomplete="off"><input id="hin" class="field" maxlength="2" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="z. B. SA" aria-label="Anfangsbuchstaben"><button class="btn" type="submit">Tipp geben</button></form><span id="hmsg" class="small" style="color:var(--rec)"></span></div>
+    <form id="bform" autocomplete="off" hidden><input id="bin" class="field" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send" placeholder="${st.cat.kind === 'cap' ? 'Hauptstadt' : 'Land'} eintippen …" aria-label="Antwort"><button class="btn primary" type="submit">OK</button></form>
+    <div class="bsug" id="bsug"></div><div class="bmsg" id="bmsg"></div><button class="btn" data-act="oskip" id="bskipbtn" hidden></button><div class="chips" id="bused"></div>`; }
+  if (st.phase === 'shakecd') return `${top}${lives}<div class="handoff"><span style="font-size:80px">🥛</span><h1>Milchshake-Pause!</h1><p class="muted">Gleich ${SHAKE_MS / 1000} Sekunden lang das Handy schütteln, so wild es geht. Am meisten Schaum: +2 Punkte. Am wenigsten: kriegt als Nächstes die Bombe.</p><div class="countdown mono" id="obcd">3</div></div>`;
+  if (st.phase === 'shake') { setTimeout(shakeBoard, 0); return `${top}<div id="shakescr" class="boomscr" style="padding-top:4px"><span class="eyebrow">Schütteln! Noch <b id="obcd">8</b> s</span><span id="shem" style="font-size:44px">🥛</span>${GLASS}<div class="big-num" id="shn">${SHK.n}</div></div>
+    <button class="shakebtn" id="shaketap" data-act="shaketap">Kein Sensor? Hier wie wild tippen</button><div class="card" id="shboard"></div>`; }
+  if (st.phase === 'shakeres') { const r = st.shake.res, c = st.shake.counts, rows = st.players.map((p, i) => [p.name + (i === me ? ' (du)' : ''), c[i] || 0, i === (r && r.low) ? '🐄 kriegt als Nächstes die Bombe' : r && r.winners.includes(i) ? '🥛 Schaumkrone +2' : '', p.color]).filter((x, i) => st.players[i].online);
+    return `${top}<div class="boomscr"><span class="em">🥛</span><h1>${r && r.winners.length ? r.winners.map(i => esc(st.players[i].name)).join(' & ') + ' ' + (r.winners.length > 1 ? 'haben' : 'hat') + ' den meisten Schaum' : 'Keiner hat geschüttelt'}</h1></div>${boardHTML(rows)}<span class="small muted" style="text-align:center">Weiter in <b id="obcd">5</b> s</span>`; }
+  if (st.phase === 'boom' || st.phase === 'empty') { const L = st.last, lost = L && st.players[L.by];
+    return `${top}${lives}<div class="boomscr"><span class="em">${st.phase === 'boom' ? '💥' : '🎆'}</span>${st.phase === 'boom' ? `<h1>Boom!</h1><p><b style="color:${lost.color}">${L.by === me ? 'Dich' : esc(lost.name)}</b> ${L.by === me ? 'hat es erwischt' : 'hat es erwischt'}${lost.lives > 0 ? `, noch ${'❤️'.repeat(lost.lives)}` : ' 💀 raus'}</p>${st.hints.length ? `<p class="small muted">Hätte gepasst: ${st.hints.map(esc).join(', ')}</p>` : ''}` : `<h1>Leergespielt!</h1><p>Alle ${st.used.length} Antworten genannt, keiner verliert ein Leben.</p>`}<p class="small muted">Kategorie war: ${esc(st.cat.label)}</p><span class="small muted">Weiter in <b id="obcd">4</b> s</span></div>`; }
+  const ps = st.players.map((p, i) => ({ ...p, i })).sort((a, b) => b.lives - a.lives || b.ans - a.ans), win = st.players.filter(p => p.lives > 0);
+  const best = (key, em, title, unit) => { const s2 = st.players.slice().sort((a, b) => b[key] - a[key]); return s2[0][key] > 0 && (s2.length < 2 || s2[0][key] > s2[1][key]) ? `<div class="award"><span class="em">${em}</span><span class="eyebrow">${title}</span><b>${esc(s2[0].name)}</b><span class="small muted mono">${s2[0][key]} ${unit}</span></div>` : ''; };
+  return `${top}<div class="boomscr"><span class="em">🏆</span><h1>${win.length === 1 ? (st.players.indexOf(win[0]) === me ? 'Du überlebst!' : esc(win[0].name) + ' überlebt') : 'Spiel vorbei'}</h1></div>
+    ${st.results ? `<div class="card"><h3>Punkte dieser Runde</h3>${boardHTML(st.results.slice().sort((a, b) => a.place - b.place).map(r => [r.name + (st.players.findIndex(p => p.name === r.name) === me ? ' (du)' : ''), r.pts, [`${r.ans} Treffer`, r.placePts ? `Platz ${r.place} +${r.placePts}` : `Platz ${r.place}`, r.bonus ? `Hilfe +${r.bonus}` : '', r.milk ? `Milchshake +${r.milk}` : '', r.geiz ? 'Geizhals −2' : '', r.helps ? `${r.helps}× geholfen` : ''].filter(Boolean).join(' · '), r.color]), null, true)}</div>
+      <div class="card"><h3>Gesamtwertung · ${st.games} ${st.games === 1 ? 'Runde' : 'Runden'}</h3>${boardHTML(st.totals.map(([n, v]) => [n, v, '', (st.players.find(p => p.name === n) || {}).color]))}</div>` : ''}
+    <div class="awards">${best('ans', '🎇', 'Feuerwerker', 'Treffer')}${best('close', '🧊', 'Nerven aus Stahl', 'knappe Rettungen')}${best('boom', '💣', 'Pechvogel', 'Explosionen')}${best('shakes', '🥛', 'Milchbart', 'mal geschüttelt')}</div>
+    ${host ? '<button class="btn primary big" data-act="oagain">Revanche</button><button class="btn" data-act="olobby">Zurück in die Lobby</button>' : `<p class="muted small">${esc(st.players[0].name)} kann eine Revanche starten.</p>`}`;
+}
+function onlineAfter() {
+  const inp = document.getElementById('bin');
+  if (inp) { let tt = 0; inp.addEventListener('input', () => { const now = Date.now(); if (now - tt > 120) { tt = now; act({ t: 'typing', text: inp.value }); } const st = NET && NET.st; if (!st || st.level === 3 || !st.cat) return; const k = NORM(inp.value), box = document.getElementById('bsug'); if (!box) return; if (k.length < 3) { box.innerHTML = ''; return; }
+    const names = [...new Set(COUNTRIES.map(c => st.cat.kind === 'cap' ? c.k : c.n).filter(n => NORM(n).startsWith(k)))].slice(0, 4); box.innerHTML = names.map(n => `<button class="chip" data-act="osug" data-v="${esc(n)}">${esc(n)}</button>`).join(''); }); }
+  obClock();
+}
+
 /* ---------- actions ---------- */
 const readName = () => { const el = document.getElementById('myname'); if (el) { DB.name = cleanName(el.value); saveDB(); } return DB.name; };
 function needName() { const n = readName(); if (!n) { toast('Erst einen Namen eintragen'); document.getElementById('myname')?.focus(); return null; } return n; }
@@ -794,11 +1071,31 @@ app.addEventListener('click', e => {
   if (a === 'share-g') { const g = DB.games[v]; if (!g) return; const me = g.p.find(x => x[0] === g.me), rounds = makeGame(g.s, g.l), label = g.s.startsWith('tag-') ? `Tagesduell ${g.s.slice(10, 12)}.${g.s.slice(8, 10)}.` : 'Duell · ' + lvlName(g.l); const lead = g.p.slice().sort((x, y) => sum(y[1]) - sum(x[1]))[0];
     share(`⚔️ Atlas-Duell · ${label}\n${me ? `${me[0]}: ${fmt(sum(me[1]))} Punkte\n${me[1].map((p, i) => sq(p, rounds[i])).join('')}\n` : ''}${g.p.length > 1 ? `Vorne: ${lead[0]} (${fmt(sum(lead[1]))}). ` : ''}Schlägst du das?`, linkFor(g)); return; }
   if (a === 'party') { S.view = 'setup'; render(); return; }
-  if (a === 'bomb') { S.view = 'bsetup'; render(); scrollTo(0, 0); return; }
+  if (a === 'bomb') { S.view = 'online'; render(); scrollTo(0, 0); return; }
+  if (a === 'online') { S.view = 'online'; render(); scrollTo(0, 0); return; }
+  if (a === 'shaketap') { if (SHK.on) shakeCount(); return; }
+  if (a === 'onephone') { netClose(); S.view = 'bsetup'; render(); scrollTo(0, 0); return; }
+  if (a === 'ohome') { netClose(); S.view = 'home'; S.joinCode = null; S.showLink = null; history.replaceState(null, '', location.pathname); render(); scrollTo(0, 0); return; }
+  if (a === 'osound') { S.osound = S.osound === false; render(); return; }
+  if (a === 'ohost') { const n = needName(); if (!n) return; try { AC ||= new (window.AudioContext || window.webkitAudioContext)(); AC.resume && AC.resume(); } catch {} motionPermission(); obHost(n).catch(err => { toast(err.message); }); return; }
+  if (a === 'ojoin') { const n = needName(); if (!n) return; try { AC ||= new (window.AudioContext || window.webkitAudioContext)(); AC.resume && AC.resume(); } catch {} motionPermission(); const code = (document.getElementById('roomin').value || '').toUpperCase().replace(/[^A-Z]/g, ''); if (code.length !== 4) { toast('Der Code hat vier Buchstaben'); return; } S.joinCode = code; obJoin(code, n).catch(err => toast(err.message)); return; }
+  if (NET && S.view === 'online') {
+    if (a === 'oshare') { const url = location.origin + location.pathname + '#r=' + NET.st.code; share(`💣 Atlas-Bombe: Komm in meinen Raum ${NET.st.code}`, url); return; }
+    if (a === 'oskip') return act({ t: 'skip' });
+    if (a === 'osug') { const inp = document.getElementById('bin'); if (inp) inp.value = v; return act({ t: 'answer', text: v }); }
+    if (NET.role === 'host' && OBS) {
+      if (a === 'olives') { OBS.lives = +v; S.blives = +v; for (const p of OBS.players) p.lives = OBS.lives; obBroadcast(); return; }
+      if (a === 'olvl') { OBS.level = +v; S.level = +v; obBroadcast(); return; }
+      if (a === 'omilk') { OBS.milk = !OBS.milk; obBroadcast(); return; }
+      if (a === 'ostart' || a === 'oagain') return obStart();
+      if (a === 'olobby') { if (OBS.players.filter(p => p.online).length < 1) return; OBS.players = OBS.players.filter(p => p.online); NET.conns.forEach(c => { c.idx = OBS.players.findIndex(p => p.name === NET.st.players[c.idx].name); }); for (const p of OBS.players) p.lives = OBS.lives; clearTimeout(OB_T); OBS.phase = 'lobby'; OBS.until = 0; obBroadcast(); return; }
+      if (a === 'oforce') { if (OBS.pending && OBS.phase === 'turn' && !OBS.used.includes(OBS.pending)) obAccept(OBS.pending, true); return; }
+    }
+  }
   if (a === 'blives') { S.blives = +v; render(); return; }
-  if (a === 'bgo') { const names = S.party.map(cleanName).filter(Boolean); if (names.length < 2) { toast('Mindestens zwei Namen'); return; } if (new Set(names.map(x => x.toLowerCase())).size !== names.length) { toast('Jeder Name nur einmal'); return; } S.party = names; bStartGame(names, S.blives, S.level); return; }
+  if (a === 'bgo') { const names = S.party.map(cleanName).filter(Boolean); if (names.length < 3) { toast('Mindestens drei Namen'); return; } if (names.length > 10) { toast('Höchstens zehn Spieler'); return; } if (new Set(names.map(x => x.toLowerCase())).size !== names.length) { toast('Jeder Name nur einmal'); return; } S.party = names; bStartGame(names, S.blives, S.level); return; }
   if (B && S.view === 'bomb') {
-    if (a === 'bstart') { try { AC ||= new (window.AudioContext || window.webkitAudioContext)(); AC.resume && AC.resume(); } catch {} B.phase = 'turn'; render(); bArm(); return; }
+    if (a === 'bstart') { try { AC ||= new (window.AudioContext || window.webkitAudioContext)(); AC.resume && AC.resume(); } catch {} motionPermission(); B.phase = 'turn'; render(); bArm(); return; }
     if (a === 'bskip') return bSkip();
     if (a === 'bsug') { const inp = document.getElementById('bin'); if (inp) inp.value = v; return bSubmit(v); }
     if (a === 'bforce') { if (B.pending && !B.used.includes(B.pending)) bAccept(B.pending, true); return; }
@@ -819,7 +1116,7 @@ app.addEventListener('click', e => {
   if (a === 'joker') return useJoker(v);
   if (a === 'next') return nextRound();
 });
-app.addEventListener('submit', e => { if (e.target.id === 'bform') { e.preventDefault(); bSubmit(document.getElementById('bin').value); } });
+app.addEventListener('submit', e => { if (e.target.id === 'hform') { e.preventDefault(); const h = document.getElementById('hin'); if (h && h.value.trim()) { act({ t: 'help', text: h.value }); h.value = ''; } return; } if (e.target.id === 'bform') { e.preventDefault(); const v = document.getElementById('bin').value; if (S.view === 'online') { if (v.trim()) act({ t: 'answer', text: v }); } else bSubmit(v); } });
 let quitArmed = 0;
 function confirmQuit() { if (Date.now() - quitArmed < 2500) return true; quitArmed = Date.now(); toast('Nochmal tippen zum Beenden'); return false; }
 document.addEventListener('keydown', e => {
@@ -830,10 +1127,12 @@ document.addEventListener('keydown', e => {
 });
 addEventListener('hashchange', () => { const l = parseLink(location.hash); if (l && (!M || M.phase === 'end')) { LINK = l; M = null; S.view = 'link'; mergeGame(l.s, l.l, l.p); render(); } });
 // start
-LINK = parseLink(location.hash);
+const ROOM = /^#r=([A-Za-z]{4})$/.exec(location.hash || '');
+if (ROOM) { S.view = 'online'; S.joinCode = ROOM[1].toUpperCase(); }
+LINK = ROOM ? null : parseLink(location.hash);
 if (LINK) { const g = mergeGame(LINK.s, LINK.l, LINK.p); LINK.p = g.p; S.view = 'link'; }
 render();
-window.DUELL_TEST = { get B() { return B; }, CATS, lookup, NORM, WPROJ, makeGame, basePts, record, parseLink, linkFor, maskFact, landDist, get M() { return M; }, S, DB, BY, NEIGH, capLL, KM };
+window.DUELL_TEST = { SHK, shakeCount, get NET() { return NET; }, get OBS() { return OBS; }, get B() { return B; }, CATS, lookup, NORM, WPROJ, makeGame, basePts, record, parseLink, linkFor, maskFact, landDist, get M() { return M; }, S, DB, BY, NEIGH, capLL, KM };
 </script>
 </body>
 </html>
