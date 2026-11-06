@@ -270,17 +270,26 @@ function landDist(code, ll) { // 0 inside the country, else distance to its near
 /* ---------- seeded game ---------- */
 function rng(str) { let h = 1779033703 ^ str.length; for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; } let a = h >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const LEVELS = { 1: ['Leicht', c => c.t <= 2], 2: ['Mittel', c => c.t <= 3], 3: ['Schwer', () => true] };
-const TYPES = { pinCap: ['📍', 'Hauptstadt finden'], pinLand: ['🗺️', 'Land finden'], flag: ['🚩', 'Flagge'], shape: ['🧩', 'Umriss'], bigger: ['⚖️', 'Größer?'], dist: ['📏', 'Entfernung'], fact: ['💡', 'Fun Fact'], nord: ['🧭', 'Nördlicher?'], nachbar: ['🤝', 'Nachbarland'] };
-const LIMIT = { pinCap: 30, pinLand: 30, dist: 25, flag: 15, shape: 15, fact: 20, nachbar: 15, bigger: 10, nord: 10 };
-const MC = ['flag', 'shape', 'fact', 'nachbar', 'bigger', 'nord'];
+const TYPES = { pinCap: ['📍', 'Hauptstadt finden'], pinLand: ['🗺️', 'Land finden'], flag: ['🚩', 'Flagge'], shape: ['🧩', 'Umriss'], bigger: ['⚖️', 'Größer?'], dist: ['📏', 'Entfernung'], fact: ['💡', 'Fun Fact'], nord: ['🧭', 'Nördlicher?'], nachbar: ['🤝', 'Nachbarland'], capQ: ['🏛️', 'Hauptstadt'], flagRev: ['🎌', 'Welche Flagge?'], odd: ['🕵️', 'Wer passt nicht?'] };
+const LIMIT = { pinCap: 30, pinLand: 30, dist: 25, flag: 15, shape: 15, fact: 20, nachbar: 15, bigger: 10, nord: 10, capQ: 15, flagRev: 15, odd: 15 };
+const MC = ['flag', 'shape', 'fact', 'nachbar', 'bigger', 'nord', 'capQ', 'flagRev', 'odd'];
+// Generator v2 (new round types, continent filter) for seeds "2<region>-…" and for daily duels from 7.11.2026; older links keep v1
+const REGS = { w: [null, 'Welt'], e: ['Europe', 'Europa'], f: ['Africa', 'Afrika'], a: ['Asia', 'Asien'], m: ['Americas', 'Amerika'] };
+const REG_DE = { Europe: 'Europa', Africa: 'Afrika', Asia: 'Asien', Americas: 'Amerika', Oceania: 'Ozeanien' };
+const isV2 = s => /^2[wefam]-/.test(s) || ((/^tag-(\d{4}-\d{2}-\d{2})$/.exec(s) || [])[1] || '') >= '2026-11-07';
+const regOf = s => (/^2([wefam])-/.exec(s) || [])[1] || 'w';
+const NOCAP = new Set(['IL', 'PS', 'BO', 'ZA', 'SZ', 'LK']); // disputed or several capitals: no capital quiz
+const AMBIG = new Set(['TR', 'CY', 'RU', 'KZ', 'GE', 'AM', 'AZ', 'EG', 'TL', 'ID']); // spans two continents or often placed elsewhere
 function makeGame(seed, level) {
   const r = rng(seed + '|' + level), pick = a => a[Math.floor(r() * a.length)];
   const shuf = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-  const pool = COUNTRIES.filter(LEVELS[level][1]), used = new Set();
+  const v2 = isV2(seed), reg = REGS[regOf(seed)][0];
+  let pool = COUNTRIES.filter(LEVELS[level][1]); const used = new Set();
+  if (reg) { const rp = COUNTRIES.filter(c => c.r === reg); pool = rp.filter(LEVELS[level][1]); if (pool.length < 20) pool = rp.filter(c => c.t <= 3); if (pool.length < 20) pool = rp; }
   const take = list => { const free = list.filter(c => !used.has(c.c)); const c = pick(free.length ? free : list); used.add(c.c); return c; };
   const near = (c, list) => { const s = list.filter(x => x.s === c.s && x.c !== c.c); if (s.length >= 3) return s; const rg = list.filter(x => x.r === c.r && x.c !== c.c); return rg.length >= 3 ? rg : list.filter(x => x.c !== c.c); };
   const four = (c, list) => shuf([c.c, ...shuf(near(c, list)).slice(0, 3).map(x => x.c)]);
-  const types = shuf(['pinLand', 'flag', 'shape', 'bigger', 'dist', 'fact', 'nord', 'nachbar', 'pinCap']).concat('pinCap');
+  const types = v2 ? shuf(['pinLand', 'flag', 'shape', 'bigger', 'dist', 'fact', 'nord', 'nachbar', 'pinCap', 'capQ', 'flagRev', 'odd']).slice(0, 9).concat('pinCap') : shuf(['pinLand', 'flag', 'shape', 'bigger', 'dist', 'fact', 'nord', 'nachbar', 'pinCap']).concat('pinCap');
   return types.map((type, i) => {
     const R = { type, final: i === types.length - 1 };
     if (type === 'pinCap') R.c = take(pool).c;
@@ -302,11 +311,22 @@ function makeGame(seed, level) {
       const a = take(pool); let cand = pool.filter(x => !used.has(x.c) && x.r !== a.r && Math.abs(capLL(x.c)[1] - capLL(a.c)[1]) >= 1.5 && Math.abs(capLL(x.c)[1] - capLL(a.c)[1]) <= 9);
       if (!cand.length) cand = pool.filter(x => !used.has(x.c) && Math.abs(capLL(x.c)[1] - capLL(a.c)[1]) >= 1);
       const b = take(cand), pair = shuf([a.c, b.c]); R.opts = pair; R.ans = capLL(pair[0])[1] > capLL(pair[1])[1] ? pair[0] : pair[1]; R.c = R.ans;
+    } else if (type === 'capQ') {
+      const cp = pool.filter(x => !NOCAP.has(x.c)), c = take(cp); R.c = c.c; R.dir = r() < 0.5 ? 0 : 1; R.opts = four(c, cp);
+    } else if (type === 'flagRev') {
+      const fp = pool.filter(x => FLAGS[x.c]), c = take(fp); R.c = c.c; R.opts = four(c, fp);
+    } else if (type === 'odd') { // three neighbours from one continent and the nearest country from another
+      const base = pool.filter(x => !AMBIG.has(x.c)), regs = [...new Set(base.map(x => x.r))].filter(g => base.filter(x => x.r === g).length >= 3).sort(), rg = pick(regs);
+      const inR = base.filter(x => x.r === rg), a = take(inR), d = x => KM(midLL(x.c), midLL(a.c));
+      const two = inR.filter(x => x.c !== a.c && !used.has(x.c)).sort((p, q) => d(p) - d(q)).slice(0, 2); two.forEach(x => used.add(x.c));
+      const three = [a, ...two], cen = [sum(three.map(x => midLL(x.c)[0])) / 3, sum(three.map(x => midLL(x.c)[1])) / 3];
+      const outs = COUNTRIES.filter(x => x.r !== rg && !AMBIG.has(x.c) && x.t <= 3 && !used.has(x.c)).sort((p, q) => KM(midLL(p.c), cen) - KM(midLL(q.c), cen)).slice(0, 3), odd = pick(outs);
+      used.add(odd.c); R.rg = rg; R.ans = odd.c; R.c = odd.c; R.opts = shuf([odd.c, ...three.map(x => x.c)]);
     }
     return R;
   });
 }
-const answerOf = R => R.type === 'flag' || R.type === 'shape' || R.type === 'fact' ? R.c : R.ans;
+const answerOf = R => ['flag', 'shape', 'fact', 'capQ', 'flagRev'].includes(R.type) ? R.c : R.ans;
 function maskFact(code) { // hide the country and capital: every word starting with the first four letters of their name parts
   const c = BY[code], stems = new Set();
   const ALIAS = { US: ['usa', 'amerik'], GB: ['brit', 'engl', 'schott'], NL: ['holl', 'nieder'], CH: ['schweiz', 'eidgen'], KR: ['kore'], KP: ['kore'], CZ: ['tsche'], AE: ['emir', 'dubai'], DE: ['deutsch'], AT: ['österr'] };
@@ -390,7 +410,7 @@ function fitTo(lls, minSpan = 60) { // zoom transform that shows all points with
 function shapeSVG(code) { const f = FEAT[code]; const c = d3.geoCentroid(f), p = d3.geoAzimuthalEqualArea().rotate([-c[0], -c[1]]).fitExtent([[40, 30], [PW - 40, PH - 30]], f); return `<svg viewBox="0 0 ${PW} ${PH}" role="img" aria-label="Umriss eines Landes"><path d="${d3.geoPath(p)(f)}"/></svg>`; }
 
 /* ---------- match state ---------- */
-const S = { view: 'home', level: 2, party: [], showLink: null, blives: 2 };
+const S = { view: 'home', level: 2, party: [], showLink: null, blives: 2, region: REGS[DB.region] ? DB.region : 'w' };
 let M = null, LINK = null, timer = null, raf = null;
 function stopClock() { clearTimeout(timer); cancelAnimationFrame(raf); timer = null; }
 function newPlayer(name, i) { return { name, color: COLORS[i % COLORS.length], rec: [], jok: { '5050': true, tipp: true, x2: true } }; }
@@ -445,11 +465,14 @@ function useJoker(j) {
   pl.jok[j] = true; // consumed on submit (record), so a timeout still counts it
   render();
 }
-const jokerFits = (j, R) => j === 'x2' ? !R.final : j === '5050' ? ['flag', 'shape', 'fact', 'nachbar'].includes(R.type) : ['pinCap', 'pinLand', 'dist'].includes(R.type);
+const jokerFits = (j, R) => j === 'x2' ? !R.final : j === '5050' ? ['flag', 'shape', 'fact', 'nachbar', 'capQ', 'flagRev', 'odd'].includes(R.type) : ['pinCap', 'pinLand', 'dist'].includes(R.type);
 function drawPin(ll) { if (!Z) return; Z.g.selectAll('.pin').remove(); Z.g.node().insertAdjacentHTML('beforeend', pinSVG(ll, P().color, '', 'drop')); const k = d3.zoomTransform(Z.svg.node()).k; Z.g.selectAll('.pin').attr('transform', function () { return `translate(${this.dataset.x},${this.dataset.y}) scale(${1 / k})`; }); const b = document.getElementById('pinok'); if (b) b.disabled = false; }
 
 /* ---------- views ---------- */
 const lvlName = l => LEVELS[l][0];
+const dayLabel = s => s.slice(12, 14) + '.' + s.slice(9, 11) + '.';
+const gameLabel = (s, l) => s.startsWith('tag-') ? 'Tagesduell ' + dayLabel(s) : 'Duell · ' + lvlName(l) + (regOf(s) !== 'w' ? ' · ' + REGS[regOf(s)][1] : '');
+const regionChips = () => `<div class="chips">${Object.entries(REGS).map(([k, [, nm]]) => `<button class="chip" data-act="reg" data-v="${k}" aria-pressed="${S.region === k}">${nm}</button>`).join('')}</div>`;
 const totalOf = pl => sum(pl.rec.map(r => r && r.p));
 const tname = R => TYPES[R.type][0] + ' ' + TYPES[R.type][1];
 function viewHome() {
@@ -462,14 +485,17 @@ function viewHome() {
   <button class="card mode" data-act="daily"><div class="row spread"><div class="row"><span class="em">📅</span><div style="display:grid"><h3>Tagesduell</h3><span class="small muted">${dDone ? `Heute: ${fmt(sum(daily.p.find(x => x[0] === daily.me)[1]))} Punkte · ${daily.p.length} Spieler` : 'Heute dieselben zehn Fragen für alle'}</span></div></div><span class="tag gold">${DB.dstreak && (DB.dlast === d || dDone) ? '🔥 ' + DB.dstreak : dDone ? 'erledigt' : 'neu'}</span></div></button>
   <div class="card"><div class="row"><span style="font-size:30px">⚔️</span><div style="display:grid"><h3>Freunde herausfordern</h3><span class="small muted">Du spielst vor, schickst den Link in die Gruppe, jeder spielt dieselben Fragen. Die Rangliste wächst im Link mit.</span></div></div>
     <div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="lvl" data-v="${l}" aria-pressed="${S.level === l}">${lvlName(l)}</button>`).join('')}</div>
+    ${regionChips()}
     <button class="btn primary big" data-act="duel">Neues Duell starten</button></div>
-  <button class="card mode" data-act="bomb"><div class="row spread"><div class="row"><span class="em">💣</span><div style="display:grid"><h3>Bombe</h3><span class="small muted">Reihum ein passendes Land nennen, bevor es knallt. Online an mehreren Handys oder an einem. Leben, Timer, drei Stufen</span></div></div><span>→</span></div></button>
+  <button class="card mode" data-act="bomb"><div class="row spread"><div class="row"><span class="em">💣</span><div style="display:grid"><h3>Bombe</h3><span class="small muted">Reihum etwas Passendes nennen, bevor es knallt. Online oder an einem Handy. ${CATS.length} Kategorien, Länderkette, Gedächtnis, Turbo</span></div></div><span>→</span></div></button>
   <button class="card mode" data-act="party"><div class="row spread"><div class="row"><span class="em">🎉</span><div style="display:grid"><h3>Party-Modus</h3><span class="small muted">Ein Handy, 2 bis 8 Leute: reihum antworten, dann gemeinsam auflösen</span></div></div><span>→</span></div></button>
-  ${recent.length ? `<div class="card"><h3>Deine Duelle</h3>${recent.map(g => { const top = g.p.slice().sort((a, b) => sum(b[1]) - sum(a[1]))[0]; return `<button class="mode" style="background:none;padding:0" data-act="open" data-v="${esc(gkey(g.s, g.l))}"><div class="row spread"><div style="display:grid"><b>${g.s.startsWith('tag-') ? 'Tagesduell ' + g.s.slice(10, 12) + '.' + g.s.slice(8, 10) + '.' : 'Duell · ' + lvlName(g.l)}</b><span class="small muted">${g.p.length} Spieler · vorne ${esc(top[0])} mit ${fmt(sum(top[1]))}</span></div><span class="small muted">${g.me ? fmt(sum((g.p.find(x => x[0] === g.me) || [0, []])[1])) : 'offen'} →</span></div></button>`; }).join('<hr style="border:0;border-top:1px solid var(--line);margin:0">')}</div>` : ''}
+  ${recent.length ? `<div class="card"><h3>Deine Duelle</h3>${recent.map(g => { const top = g.p.slice().sort((a, b) => sum(b[1]) - sum(a[1]))[0]; return `<button class="mode" style="background:none;padding:0" data-act="open" data-v="${esc(gkey(g.s, g.l))}"><div class="row spread"><div style="display:grid"><b>${esc(gameLabel(g.s, g.l))}</b><span class="small muted">${g.p.length} Spieler · vorne ${esc(top[0])} mit ${fmt(sum(top[1]))}</span></div><span class="small muted">${g.me ? fmt(sum((g.p.find(x => x[0] === g.me) || [0, []])[1])) : 'offen'} →</span></div></button>`; }).join('<hr style="border:0;border-top:1px solid var(--line);margin:0">')}</div>` : ''}
   <details class="rules"><summary>So wird gezählt</summary><ul>
     <li>📍 Karte: Pin setzen und bestätigen. Je näher, desto mehr Punkte, bis 1.000. Mit zwei Fingern oder +/− zoomen.</li>
     <li>🚩 Quizrunden: richtig und schnell gibt bis 1.000, falsch 0.</li>
     <li>📏 Schätzen: je näher an der echten Luftlinie, desto mehr.</li>
+    <li>🏛️ 🎌 🕵️ Neu: Hauptstadt-Quiz, die richtige Flagge finden, und welches Land nicht auf den Kontinent gehört.</li>
+    <li>🌍 Fürs Duell und die Party lässt sich ein Kontinent wählen; das Tagesduell spielt die ganze Welt.</li>
     <li>🃏 Drei Joker pro Spiel, jeder einmal: 50:50, Tipp (Region oder Bereich) und ×2 für eine Runde.</li>
     <li>🔥 Serie: Ab der dritten starken Runde in Folge (700+) gibt es 100 Bonus.</li>
     <li>🏁 Das Finale zählt doppelt.</li></ul></details>`;
@@ -480,7 +506,7 @@ function boardHTML(rows, meName, keep) { // rows: [name, total, sub?, color?, de
 }
 function viewLink() {
   const g = DB.games[gkey(LINK.s, LINK.l)] || { p: LINK.p }, ps = g.p, first = ps[0], played = g.me;
-  const label = LINK.s.startsWith('tag-') ? `Tagesduell vom ${LINK.s.slice(10, 12)}.${LINK.s.slice(8, 10)}.` : 'Duell · ' + lvlName(LINK.l);
+  const label = LINK.s.startsWith('tag-') ? 'Tagesduell vom ' + dayLabel(LINK.s) : gameLabel(LINK.s, LINK.l);
   return `<div class="topbar"><button class="link" data-act="home">← Atlas-Duell</button><span class="tag gold">${esc(label)}</span></div>
   <div class="hero"><span class="eyebrow">Herausforderung</span><h1>${first ? `${esc(first[0])} fordert dich heraus` : 'Ein Duell wartet'}</h1><p class="muted">${ps.length ? `${ps.length} ${ps.length === 1 ? 'Person hat' : 'Leute haben'} schon gespielt. Dieselben zehn Fragen, wer holt mehr?` : 'Dieselben zehn Fragen für alle.'}</p></div>
   ${ps.length ? boardHTML(ps.map(p => [p[0], sum(p[1])]), played) : ''}
@@ -495,6 +521,7 @@ function viewSetup() {
   <div class="names">${names.map((n, i) => `<div class="nrow"><i class="dot" style="background:${COLORS[i]}"></i><input class="field" data-pi="${i}" maxlength="16" placeholder="Spieler ${i + 1}" value="${esc(n)}">${names.length > 2 ? `<button data-act="pdel" data-v="${i}" aria-label="Entfernen">×</button>` : ''}</div>`).join('')}</div>
   ${names.length < 8 ? `<button class="btn" data-act="padd">+ Spieler</button>` : ''}
   <div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="lvl" data-v="${l}" aria-pressed="${S.level === l}">${lvlName(l)}</button>`).join('')}</div>
+  ${regionChips()}
   <button class="btn primary big" data-act="pgo">Los geht's</button>`;
 }
 function topRound() {
@@ -518,6 +545,12 @@ function viewQ() {
   else if (R.type === 'nachbar') { title = `Welches Land grenzt an ${esc(c.n)}?`; sub = 'Gemeint ist eine Landgrenze.'; body = `<div class="opts">${R.opts.map(x => opt(x, esc(BY[x].n), `<img src="${flag(x)}" alt="">`)).join('')}</div>`; }
   else if (R.type === 'bigger') { title = 'Welches Land ist größer?'; sub = 'Nach Fläche'; body = `<div class="opts duo2">${R.opts.map(x => `<button class="opt duo" data-act="ans" data-v="${x}"><img src="${flag(x)}" alt=""><span>${esc(BY[x].n)}</span></button>`).join('')}</div>`; }
   else if (R.type === 'nord') { title = 'Welche Hauptstadt liegt weiter nördlich?'; body = `<div class="opts duo2">${R.opts.map(x => `<button class="opt duo" data-act="ans" data-v="${x}"><img src="${flag(x)}" alt=""><span>${esc(BY[x].k)}<br><small class="muted">${esc(BY[x].n)}</small></span></button>`).join('')}</div>`; }
+  else if (R.type === 'capQ') {
+    if (R.dir === 0) { title = `Was ist die Hauptstadt von ${esc(c.n)}?`; body = `<div class="flagbig" style="padding:14px"><img src="${flag(R.c)}" alt="" style="width:min(150px,45%)"></div><div class="opts">${R.opts.map(x => opt(x, esc(BY[x].k))).join('')}</div>`; }
+    else { title = `${esc(c.k)} ist die Hauptstadt von …`; body = `<div class="opts">${R.opts.map(x => opt(x, esc(BY[x].n), `<img src="${flag(x)}" alt="">`)).join('')}</div>`; }
+  }
+  else if (R.type === 'flagRev') { title = `Welche Flagge gehört zu ${esc(c.n)}?`; body = `<div class="opts duo2">${R.opts.map((x, i) => `<button class="opt duo${cur.hide.includes(x) ? ' gone' : ''}" data-act="ans" data-v="${x}" aria-label="Flagge ${i + 1}" ${cur.hide.includes(x) ? 'disabled' : ''}><img src="${flag(x)}" alt="Flagge ${i + 1}"></button>`).join('')}</div>`; }
+  else if (R.type === 'odd') { title = `Welches Land liegt nicht in ${REG_DE[R.rg]}?`; body = `<div class="opts">${R.opts.map(x => opt(x, esc(BY[x].n), `<img src="${flag(x)}" alt="">`)).join('')}</div>`; }
   else if (R.type === 'dist') {
     const a = BY[R.a], b = BY[R.b]; title = `Wie weit ist es von ${esc(a.k)} nach ${esc(b.k)}?`; sub = `${esc(a.n)} → ${esc(b.n)}, Luftlinie`;
     const v = cur.sv != null ? cur.sv : 500;
@@ -531,7 +564,7 @@ function answerLine(R, rec) {
   if (R.type === 'pinCap') return fmt(KM(rec.v, capLL(R.c))) + ' km daneben';
   if (R.type === 'pinLand') { const d = landDist(R.c, rec.v)[0]; return d ? fmt(d) + ' km daneben' : 'im Land'; }
   if (R.type === 'dist') return '≈ ' + fmt(rec.v) + ' km';
-  const nm = R.type === 'nord' ? BY[rec.v].k : BY[rec.v].n; return (rec.v === answerOf(R) ? '✓ ' : '✗ ') + nm;
+  const nm = R.type === 'nord' || (R.type === 'capQ' && R.dir === 0) ? BY[rec.v].k : BY[rec.v].n; return (rec.v === answerOf(R) ? '✓ ' : '✗ ') + nm;
 }
 function solution(R) {
   const c = BY[R.c];
@@ -539,6 +572,8 @@ function solution(R) {
   if (R.type === 'dist') return `<div class="answer"><div style="display:grid"><b>${fmt(R.km)} km</b><span class="small muted">${esc(BY[R.a].k)} → ${esc(BY[R.b].k)}, Luftlinie</span></div></div>`;
   if (R.type === 'bigger') return `<div class="answer"><div style="display:grid;gap:2px">${R.opts.map(x => `<span><b style="font-size:16px">${esc(BY[x].n)}</b> <span class="mono small">${fmt(BY[x].a)} km²</span>${x === R.ans ? ' ✓' : ''}</span>`).join('')}</div></div>`;
   if (R.type === 'nord') return `<div class="answer"><div style="display:grid;gap:2px">${R.opts.map(x => `<span><b style="font-size:16px">${esc(BY[x].k)}</b> <span class="mono small">${capLL(x)[1].toFixed(1).replace('.', ',')}° N</span>${x === R.ans ? ' ✓' : ''}</span>`).join('')}</div></div>`;
+  if (R.type === 'capQ') return `<div class="answer"><img src="${flag(R.c)}" alt=""><div style="display:grid"><b>${esc(c.k)}</b><span class="small muted">Hauptstadt von ${esc(c.n)}</span></div></div>`;
+  if (R.type === 'odd') return `<div class="answer"><div style="display:grid;gap:2px">${R.opts.map(x => `<span><b style="font-size:16px">${esc(BY[x].n)}</b> <span class="small muted">${REG_DE[BY[x].r] || ''}</span>${x === R.ans ? ' ✓' : ''}</span>`).join('')}</div></div>`;
   if (R.type === 'nachbar') { const a = BY[R.ans]; return `<div class="answer"><img src="${flag(R.ans)}" alt=""><div style="display:grid"><b>${esc(a.n)}</b><span class="small muted">Alle Nachbarn von ${esc(c.n)}: ${(NEIGH[R.c] || []).map(x => esc(BY[x].n)).join(', ')}</span></div></div>`; }
   return `<div class="answer"><img src="${flag(R.c)}" alt=""><div style="display:grid"><b>${esc(c.n)}</b>${R.type === 'fact' ? `<span class="small">${esc(c.fact)}</span>` : `<span class="small muted">${esc(SUB_DE[c.s] || c.s)} · Hauptstadt ${esc(c.k)}</span>`}</div></div>`;
 }
@@ -578,7 +613,7 @@ function viewReveal() {
   <button class="btn primary big" data-act="next">${M.i >= M.rounds.length - 1 ? 'Siegerehrung' : 'Nächste Runde'}</button>`;
 }
 function awards(players, rounds) { // titles for the best in each discipline; only clear winners
-  const groups = [['🧭', 'Kartenprofi', ['pinCap', 'pinLand']], ['🚩', 'Flaggen-Ass', ['flag', 'shape']], ['📏', 'Augenmaß', ['dist', 'bigger', 'nord']], ['🧠', 'Weltwissen', ['fact', 'nachbar']]];
+  const groups = [['🧭', 'Kartenprofi', ['pinCap', 'pinLand']], ['🚩', 'Flaggen-Ass', ['flag', 'shape', 'flagRev']], ['📏', 'Augenmaß', ['dist', 'bigger', 'nord']], ['🧠', 'Weltwissen', ['fact', 'nachbar', 'capQ', 'odd']]];
   const out = [];
   for (const [em, name, ts] of groups) { const sc = players.map(p => [p, sum(rounds.map((R, i) => ts.includes(R.type) ? p.pts[i] : 0))]).sort((a, b) => b[1] - a[1]); if (sc.length > 1 && sc[0][1] > sc[1][1] && sc[0][1] > 0) out.push([em, name, sc[0][0].name, fmt(sc[0][1]) + ' P']); }
   const hits = players.map(p => [p, p.pts.filter((x, i) => (rounds[i].final ? x / 2 : x) >= 900).length]).sort((a, b) => b[1] - a[1]);
@@ -596,14 +631,14 @@ function viewEnd() {
   if (M.mode === 'party') {
     const ps = M.players.map(p => ({ name: p.name, color: p.color, pts: p.rec.map(r => r.p), ms: sum(p.rec.map(r => r.ms)) / p.rec.length })), sorted = ps.slice().sort((a, b) => sum(b.pts) - sum(a.pts));
     const pod = [sorted[1], sorted[0], sorted[2]];
-    return `<div class="topbar"><button class="link" data-act="home">← Atlas-Duell</button><span class="tag gold">${lvlName(M.level)}</span></div>
+    return `<div class="topbar"><button class="link" data-act="home">← Atlas-Duell</button><span class="tag gold">${esc(gameLabel(M.seed, M.level).replace('Duell · ', ''))}</span></div>
     <div class="hero" style="text-align:center"><span class="eyebrow">Siegerehrung</span><h1>${esc(sorted[0].name)} gewinnt</h1></div>
     <div class="podium">${pod.map((p, i) => p ? `<div class="col p${[2, 1, 3][i]}"><span class="nm" style="color:${p.color}">${esc(p.name)}</span><span class="mono small">${fmt(sum(p.pts))}</span><div class="blk">${[2, 1, 3][i]}</div></div>` : '<div></div>').join('')}</div>
     ${boardHTML(ps.map(p => [p.name, sum(p.pts), '', p.color]))}${awards(ps, M.rounds)}${winnersMap(ps, M.rounds)}
     <div class="row wrap"><button class="btn primary grow" data-act="again">Revanche</button><button class="btn grow" data-act="home">Startseite</button></div>`;
   }
   const g = DB.games[gkey(M.seed, M.level)], me = M.players[0], tot = totalOf(me), ps = g.p.map((x, i) => ({ name: x[0], pts: x[1], color: COLORS[i % COLORS.length] }));
-  const rank = ps.filter(p => sum(p.pts) > tot).length + 1, label = M.mode === 'daily' ? 'Tagesduell' : 'Duell · ' + lvlName(M.level);
+  const rank = ps.filter(p => sum(p.pts) > tot).length + 1, label = M.mode === 'daily' ? 'Tagesduell' : gameLabel(M.seed, M.level);
   return `<div class="topbar"><button class="link" data-act="home">← Atlas-Duell</button><span class="tag gold">${esc(label)}</span></div>
   <div class="card" style="text-align:center;justify-items:center"><span class="eyebrow">${ps.length > 1 ? `Platz ${rank} von ${ps.length}` : 'Dein Ergebnis'}</span><div class="big-num" data-count="${tot}">0</div><span class="muted">Punkte</span><div class="emojirow">${me.rec.map((r, i) => sq(r.p, M.rounds[i])).join('')}</div></div>
   <button class="btn primary big" data-act="share-g" data-v="${esc(gkey(M.seed, M.level))}">${ps.length > 1 ? 'Neue Rangliste in die Gruppe schicken' : 'Freunde herausfordern'}</button>${S.showLink ? `<input class="sharebox" readonly value="${esc(S.showLink)}">` : ''}
@@ -656,33 +691,148 @@ function lookup(kind, text) { // exact name or alias, else a forgiving match for
   let best = [], bd = 9; for (const [key, codes] of m) { if (key.length < 5) continue; const d = lev(k, key); if (d > (key.length >= 9 ? 2 : 1)) continue; if (d < bd) { bd = d; best = codes.slice(); } else if (d === bd) best = [...new Set(best.concat(codes))]; }
   return best;
 }
-// curated lists where the source data is unreliable (Stand 2026: Bulgarien seit 1.1.2026 im Euro)
-const EURO = ['AT', 'BE', 'BG', 'HR', 'CY', 'EE', 'FI', 'FR', 'DE', 'GR', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PT', 'SK', 'SI', 'ES', 'AD', 'MC', 'SM', 'VA', 'XK', 'ME'];
+// curated lists where the source data is unreliable or out of date (Stand November 2026)
+const EURO = ['AT', 'BE', 'BG', 'HR', 'CY', 'EE', 'FI', 'FR', 'DE', 'GR', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PT', 'SK', 'SI', 'ES', 'AD', 'MC', 'SM', 'VA', 'XK', 'ME']; // Bulgarien seit 1.1.2026
 const SPANISCH = ['ES', 'MX', 'GT', 'HN', 'SV', 'NI', 'CR', 'PA', 'CU', 'DO', 'CO', 'VE', 'EC', 'PE', 'BO', 'CL', 'AR', 'UY', 'PY', 'GQ'];
 const PORTUGIESISCH = ['PT', 'BR', 'AO', 'MZ', 'CV', 'GW', 'ST', 'TL', 'GQ'], DEUTSCH = ['DE', 'AT', 'CH', 'LI', 'LU', 'BE'];
+// Amtssprache de jure oder de facto; Mali, Burkina Faso und Niger haben Französisch 2023 bis 2025 zur reinen Arbeitssprache gemacht
+const ENGLISCH = ['CA', 'US', 'AU', 'IN', 'ZA', 'NZ', 'GB', 'IE', 'NG', 'PK', 'KE', 'PH', 'GH', 'JM', 'SG', 'TZ', 'NA', 'ZM', 'SS', 'BW', 'CM', 'PG', 'ZW', 'UG', 'GY', 'RW', 'FJ', 'BS', 'TT', 'MT', 'MW', 'LR', 'SL', 'LS', 'SB', 'BZ', 'SZ', 'VU', 'GM', 'WS', 'KI', 'DM', 'TO', 'FM', 'LC', 'PW', 'SC', 'AG', 'BB', 'VC', 'GD', 'KN', 'MH', 'TV', 'NR', 'BI'];
+const FRANZ = ['CA', 'FR', 'CH', 'BE', 'MG', 'SN', 'LU', 'MC', 'CD', 'TD', 'CM', 'CG', 'CI', 'HT', 'RW', 'CF', 'GA', 'GN', 'BJ', 'TG', 'GQ', 'BI', 'DJ', 'VU', 'KM', 'SC'];
+const ARAB = ['SA', 'EG', 'DZ', 'LY', 'MA', 'IQ', 'SY', 'TN', 'JO', 'AE', 'QA', 'LB', 'PS', 'SD', 'TD', 'MR', 'SO', 'YE', 'OM', 'KW', 'BH', 'DJ', 'KM'];
+const EU = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'];
+const NATO = ['AL', 'BE', 'BG', 'CA', 'HR', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IS', 'IT', 'LV', 'LT', 'LU', 'ME', 'NL', 'MK', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'TR', 'GB', 'US'];
+const G7 = ['US', 'CA', 'GB', 'FR', 'DE', 'IT', 'JP'], SOWJET = ['RU', 'UA', 'BY', 'MD', 'EE', 'LV', 'LT', 'GE', 'AM', 'AZ', 'KZ', 'UZ', 'TM', 'KG', 'TJ'];
+const MONARCHIE = ['AD', 'BE', 'DK', 'LI', 'LU', 'MC', 'NL', 'NO', 'ES', 'SE', 'GB', 'VA', 'BH', 'BT', 'BN', 'KH', 'JP', 'JO', 'KW', 'MY', 'OM', 'QA', 'SA', 'TH', 'AE', 'LS', 'MA', 'SZ', 'TO', 'AG', 'AU', 'BS', 'BZ', 'CA', 'GD', 'JM', 'NZ', 'PG', 'KN', 'LC', 'VC', 'SB', 'TV'];
+const WM_SIEGER = ['BR', 'DE', 'IT', 'AR', 'FR', 'UY', 'GB', 'ES']; // England zählt als GB; 2026 Spanien
+const WM_HOST = ['UY', 'IT', 'FR', 'BR', 'CH', 'SE', 'CL', 'GB', 'MX', 'DE', 'AR', 'ES', 'US', 'KR', 'JP', 'ZA', 'RU', 'QA', 'CA'];
+const BINNEN = ['AD', 'AM', 'AT', 'AZ', 'BY', 'CZ', 'HU', 'LI', 'LU', 'MK', 'MD', 'SM', 'RS', 'SK', 'CH', 'VA', 'XK', 'AF', 'BT', 'KZ', 'KG', 'LA', 'MN', 'NP', 'TJ', 'TM', 'UZ', 'BW', 'BF', 'BI', 'CF', 'TD', 'ET', 'LS', 'MW', 'ML', 'NE', 'RW', 'SS', 'SZ', 'UG', 'ZM', 'ZW', 'BO', 'PY'];
+const INSEL = ['IS', 'IE', 'GB', 'MT', 'CY', 'JP', 'PH', 'ID', 'SG', 'LK', 'MV', 'TW', 'BH', 'TL', 'PG', 'NZ', 'FJ', 'SB', 'VU', 'WS', 'TO', 'KI', 'TV', 'NR', 'PW', 'FM', 'MH', 'MG', 'MU', 'SC', 'KM', 'CV', 'ST', 'CU', 'JM', 'HT', 'DO', 'BS', 'BB', 'TT', 'GD', 'LC', 'VC', 'KN', 'AG', 'DM'];
+const AEQU = ['EC', 'CO', 'BR', 'ST', 'GA', 'CG', 'CD', 'UG', 'KE', 'SO', 'MV', 'ID', 'KI'], ANDEN = ['VE', 'CO', 'EC', 'PE', 'BO', 'CL', 'AR'], ALPEN = ['FR', 'MC', 'IT', 'CH', 'LI', 'DE', 'AT', 'SI'];
+const DONAU = ['DE', 'AT', 'SK', 'HU', 'HR', 'RS', 'BG', 'RO', 'MD', 'UA'], OSTSEE = ['DE', 'DK', 'SE', 'FI', 'RU', 'EE', 'LV', 'LT', 'PL'], NORDSEE = ['GB', 'NO', 'DK', 'DE', 'NL', 'BE', 'FR'], SCHWARZ = ['TR', 'BG', 'RO', 'UA', 'RU', 'GE'];
+const MITTELMEER = ['ES', 'FR', 'MC', 'IT', 'MT', 'SI', 'HR', 'BA', 'ME', 'AL', 'GR', 'TR', 'CY', 'SY', 'LB', 'IL', 'PS', 'EG', 'LY', 'TN', 'DZ', 'MA'];
+const GLEICH = ['LU', 'SG', 'MC', 'VA', 'SM', 'DJ', 'KW', 'GT', 'PA', 'MX', 'AD', 'SV', 'BR', 'TN', 'DZ', 'ST'];
+// word lists: id, label, tier, pack, placeholder, open list (unknown entries can be waved through by the group), entries "Name|Alias|Alias;…"
+const WORDS = [
+  ['bl', 'ein deutsches Bundesland', 1, 'dach', 'Bundesland', 0, 'Baden-Württemberg|BaWü|BW;Bayern;Berlin;Brandenburg;Bremen;Hamburg;Hessen;Mecklenburg-Vorpommern|Meck-Pomm|MV|Mecklenburg;Niedersachsen;Nordrhein-Westfalen|NRW;Rheinland-Pfalz|RLP;Saarland;Sachsen;Sachsen-Anhalt;Schleswig-Holstein|SH;Thüringen'],
+  ['lh', 'eine Landeshauptstadt in Deutschland', 1, 'dach', 'Stadt', 0, 'Stuttgart;München;Berlin;Potsdam;Bremen;Hamburg;Wiesbaden;Schwerin;Hannover;Düsseldorf;Mainz;Saarbrücken;Dresden;Magdeburg;Kiel;Erfurt'],
+  ['fl', 'ein Fluss in Deutschland', 1, 'dach', 'Fluss', 1, 'Rhein;Donau;Elbe;Main;Weser;Ems;Oder;Neiße|Neisse|Lausitzer Neiße;Mosel;Saale;Spree;Havel;Neckar;Isar;Inn;Lech;Iller;Lahn;Ruhr;Lippe;Fulda;Werra;Aller;Leine;Mulde;Altmühl;Regen;Naab;Saar;Nahe;Sieg;Wupper;Erft;Kinzig;Tauber;Jagst;Kocher;Ilm;Unstrut;Weiße Elster|Elster;Schwarze Elster|Elster;Pleiße;Peene;Warnow;Trave;Eider;Hunte;Ilmenau;Oste;Wümme;Enz;Rems;Fils;Murg;Wutach;Amper;Würm;Loisach;Ammer;Salzach;Ilz;Vils;Regnitz;Pegnitz;Wörnitz;Wertach;Eder;Diemel;Lenne;Emscher;Niers;Rur;Ahr;Kyll;Sauer;Our;Blies;Glan;Nidda;Schwalm;Uecker;Dahme;Elde;Stör;Schwentine;Nuthe'],
+  ['at', 'ein österreichisches Bundesland', 2, 'dach', 'Bundesland', 0, 'Burgenland;Kärnten;Niederösterreich|NÖ;Oberösterreich|OÖ;Salzburg;Steiermark;Tirol;Vorarlberg;Wien'],
+  ['ch', 'ein Schweizer Kanton', 2, 'dach', 'Kanton', 0, 'Aargau;Appenzell Ausserrhoden|Appenzell|Appenzell Außerrhoden;Appenzell Innerrhoden|Appenzell;Basel-Landschaft|Basel|Baselland|Basel-Land;Basel-Stadt|Basel;Bern;Freiburg|Fribourg;Genf|Genève|Geneva;Glarus;Graubünden;Jura;Luzern;Neuenburg|Neuchâtel;Nidwalden;Obwalden;Schaffhausen;Schwyz;Solothurn;St. Gallen|Sankt Gallen;Tessin|Ticino;Thurgau;Uri;Waadt|Vaud;Wallis|Valais;Zug;Zürich'],
+  ['us', 'ein US-Bundesstaat', 1, 'bunt', 'Bundesstaat', 0, 'Alabama;Alaska;Arizona;Arkansas;Kalifornien|California;Colorado;Connecticut;Delaware;Florida;Georgia;Hawaii;Idaho;Illinois;Indiana;Iowa;Kansas;Kentucky;Louisiana;Maine;Maryland;Massachusetts;Michigan;Minnesota;Mississippi;Missouri;Montana;Nebraska;Nevada;New Hampshire;New Jersey;New Mexico|Neumexiko|Neu-Mexiko;New York;North Carolina|Nord-Carolina|Nordkarolina|Nord-Karolina;North Dakota|Norddakota|Nord-Dakota;Ohio;Oklahoma;Oregon;Pennsylvania|Pennsylvanien;Rhode Island;South Carolina|Süd-Carolina|Südkarolina|Süd-Karolina;South Dakota|Süddakota|Süd-Dakota;Tennessee;Texas;Utah;Vermont;Virginia|Virginien;Washington;West Virginia|West-Virginia|Westvirginia;Wisconsin;Wyoming'],
+  ['geld', 'eine Währung von heute (jeder Name zählt einmal)', 1, 'bunt', 'Währung', 1, 'Euro;Dollar|US-Dollar;Pfund|Pfund Sterling;Yen;Yuan|Renminbi;Rubel;Rupie;Franken|Schweizer Franken|Franc;Krone;Złoty|Zloty;Forint;Lira;Real;Peso;Rand;Won;Dirham;Riyal;Rial;Dinar;Baht;Dong;Leu|Lei;Lari;Dram;Manat;Tenge;Som;Sum;Hrywnja|Griwna|Hryvnia;Schekel|Shekel;Naira;Cedi;Schilling|Shilling;Birr;Kwacha;Kwanza;Metical;Ariary;Rupiah;Ringgit;Kyat;Kip;Riel;Taka;Afghani;Pula;Loti;Lilangeni;Dalasi;Leone;Ouguiya;Nakfa;Ngultrum;Rufiyaa;Tugrik;Somoni;Quetzal;Lempira;Córdoba;Colón;Balboa;Bolívar;Sol;Boliviano;Guaraní;Gourde;Vatu;Tala;Paʻanga|Paanga;Kina;Denar;Konvertible Mark;Dobra;Escudo;CFA-Franc'],
+  ['meer', 'ein Meer, Ozean oder Golf', 1, 'bunt', 'Meer', 1, 'Atlantik|Atlantischer Ozean;Pazifik|Pazifischer Ozean|Stiller Ozean;Indischer Ozean|Indik;Arktischer Ozean|Nordpolarmeer;Südlicher Ozean|Südpolarmeer|Antarktischer Ozean;Nordsee;Ostsee|Baltisches Meer;Mittelmeer;Schwarzes Meer;Rotes Meer;Kaspisches Meer;Karibisches Meer|Karibik;Adria|Adriatisches Meer;Ägäis|Ägäisches Meer;Tyrrhenisches Meer;Ionisches Meer;Ligurisches Meer;Balearenmeer;Marmarameer;Asowsches Meer;Arabisches Meer;Südchinesisches Meer;Ostchinesisches Meer;Gelbes Meer;Japanisches Meer;Philippinensee;Beringmeer;Ochotskisches Meer;Barentssee;Karasee;Laptewsee;Ostsibirische See;Tschuktschensee;Beaufortsee;Grönlandsee;Europäisches Nordmeer|Nordmeer|Norwegische See;Labradorsee;Irische See;Keltische See;Sargassosee;Tasmansee;Korallenmeer;Andamanensee;Javasee;Bandasee;Arafurasee;Timorsee;Celebessee;Sulusee;Weißes Meer;Golf von Mexiko|Golf von Amerika;Persischer Golf|Arabischer Golf;Golf von Bengalen;Golf von Aden;Bottnischer Meerbusen;Finnischer Meerbusen;Golf von Biskaya|Biskaya;Ärmelkanal'],
+  ['insel', 'eine Insel im Mittelmeer', 2, 'bunt', 'Insel', 1, 'Sizilien;Sardinien;Korsika;Zypern;Kreta;Mallorca|Malle;Menorca;Ibiza;Formentera;Malta;Gozo;Comino;Rhodos;Korfu;Elba;Capri;Ischia;Procida;Lesbos;Chios;Samos;Kos;Naxos;Paros;Santorini|Thira;Mykonos;Milos;Ios;Kefalonia;Zakynthos;Lefkada;Ithaka;Euböa;Thassos;Limnos;Karpathos;Ägina|Aegina;Hydra;Salamis;Djerba;Krk;Hvar;Brač;Korčula;Cres;Rab;Pag;Vis;Mljet;Lošinj;Lampedusa;Pantelleria;Stromboli;Lipari;Vulcano;Salina;Giglio;Gökçeada'],
+  ['8000', 'ein Achttausender (Berg über 8.000 m)', 3, 'bunt', 'Berg', 0, 'Mount Everest|Everest|Sagarmatha|Chomolungma;K2|Chogori;Kangchendzönga|Kangchenjunga|Kanchenjunga;Lhotse;Makalu;Cho Oyu;Dhaulagiri;Manaslu;Nanga Parbat;Annapurna;Gasherbrum I|Gasherbrum 1|Hidden Peak|Gasherbrum;Broad Peak;Gasherbrum II|Gasherbrum 2|Gasherbrum;Shishapangma|Xixabangma|Shisha Pangma'],
+];
+const NORMW = s => String(s || '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/ß/g, 'ss').replace(/[^a-z0-9]/g, '');
+const PACKS = [['welt', '🌍', 'Länder & Regionen'], ['abc', '🔤', 'Buchstaben & Namen'], ['cap', '🏛️', 'Hauptstädte'], ['bund', '🤝', 'Bündnisse & Sprachen'], ['dach', '🏔️', 'D-A-CH'], ['bunt', '🎲', 'Bunte Mischung']];
 const IN_SUB = { Caribbean: 'in der Karibik', 'Southern Africa': 'im südlichen Afrika' };
 const CATS = (() => {
-  const all = COUNTRIES.map(c => c.c), out = [], add = (id, label, kind, codes, tier) => { if (codes.length >= 3) out.push({ id, label, kind, set: new Set(codes), n: codes.length, tier }); };
+  const all = COUNTRIES.map(c => c.c), out = [], add = (id, label, kind, codes, tier, pack) => { codes = codes.filter(c => BY[c]); if (codes.length >= 3) out.push({ id, label, kind, set: new Set(codes), n: codes.length, tier, pack }); };
+  const nm = c => BY[c].n.replace(/\s*\(.*\)\s*/g, ''), K = c => NORM(nm(c));
   const REG = { Europe: 'in Europa', Africa: 'in Afrika', Asia: 'in Asien', Americas: 'in Amerika (Nord, Mittel oder Süd)', Oceania: 'in Ozeanien' };
-  for (const [r, txt] of Object.entries(REG)) { const cs = all.filter(c => BY[c].r === r); add('r-' + r, 'ein Land ' + txt, 'land', cs, cs.length >= 20 ? 1 : 2); }
-  for (const [sub, de] of Object.entries(SUB_DE)) { const cs = all.filter(c => BY[c].s === sub); if (cs.length >= 4) add('s-' + sub, 'ein Land ' + (IN_SUB[sub] || 'in ' + de), 'land', cs, cs.length >= 10 ? 2 : 3); }
-  for (const L of 'ABCDEFGHIJKLMNOPRSTUVZ') { const cs = all.filter(c => NORM(BY[c].n)[0] === L.toLowerCase()); add('l-' + L, `ein Land mit ${L} am Anfang`, 'land', cs, cs.length >= 10 ? 1 : cs.length >= 6 ? 2 : 3); }
-  add('e-ien', 'ein Land, das auf „-ien“ endet', 'land', all.filter(c => NORM(BY[c].n).endsWith('ien')), 1);
-  add('e-stan', 'ein Land, das auf „-stan“ endet', 'land', all.filter(c => NORM(BY[c].n).endsWith('stan')), 2);
-  add('e-land', 'ein Land, das auf „-land“ endet', 'land', all.filter(c => NORM(BY[c].n).endsWith('land')), 2);
-  add('a-gross', 'ein Land, das größer ist als Deutschland', 'land', all.filter(c => BY[c].a > BY.DE.a), 1);
-  add('a-mini', 'ein Land, das kleiner ist als Luxemburg', 'land', all.filter(c => BY[c].a < BY.LU.a), 3);
-  add('h-sued', 'ein Land mit Hauptstadt südlich des Äquators', 'land', all.filter(c => capLL(c)[1] < 0), 2);
-  add('w-eur', 'ein Land, in dem man mit Euro bezahlt', 'land', EURO, 1);
-  add('w-spa', 'ein Land mit Spanisch als Amtssprache', 'land', SPANISCH, 2);
-  add('w-por', 'ein Land mit Portugiesisch als Amtssprache', 'land', PORTUGIESISCH, 3);
-  add('w-deu', 'ein Land mit Deutsch als Amtssprache', 'land', DEUTSCH, 3);
-  for (const h of all) { const nb = NEIGH[h] || []; if (nb.length >= 4) add('n-' + h, `ein Nachbarland von ${BY[h].n}`, 'land', nb, nb.length >= 7 ? 2 : 3); }
-  add('len4', 'ein Land mit genau vier Buchstaben', 'land', all.filter(c => /^\p{L}{4}$/u.test(BY[c].n)), 3);
-  for (const [r, txt] of Object.entries(REG)) add('c-' + r, 'eine Hauptstadt ' + txt, 'cap', all.filter(c => BY[c].r === r), r === 'Europe' ? 2 : 3);
-  for (const L of 'ABCDKLMPST') add('cl-' + L, `eine Hauptstadt mit ${L} am Anfang`, 'cap', all.filter(c => NORM(BY[c].k)[0] === L.toLowerCase()), 3);
+  // 🌍 countries and regions
+  for (const [r, txt] of Object.entries(REG)) { const cs = all.filter(c => BY[c].r === r); add('r-' + r, 'ein Land ' + txt, 'land', cs, cs.length >= 20 ? 1 : 2, 'welt'); }
+  for (const [sub, de] of Object.entries(SUB_DE)) { const cs = all.filter(c => BY[c].s === sub); if (cs.length >= 4) add('s-' + sub, 'ein Land ' + (IN_SUB[sub] || 'in ' + de), 'land', cs, cs.length >= 10 ? 2 : 3, 'welt'); }
+  for (const h of all) { const nb = NEIGH[h] || []; if (nb.length >= 4) add('n-' + h, `ein Nachbarland von ${BY[h].n}`, 'land', nb, nb.length >= 7 ? 2 : 3, 'welt'); }
+  add('a-gross', 'ein Land, das größer ist als Deutschland', 'land', all.filter(c => BY[c].a > BY.DE.a), 1, 'welt');
+  add('a-mini', 'ein Land, das kleiner ist als Luxemburg', 'land', all.filter(c => BY[c].a < BY.LU.a), 3, 'welt');
+  add('h-sued', 'ein Land mit Hauptstadt südlich des Äquators', 'land', all.filter(c => capLL(c)[1] < 0), 2, 'welt');
+  add('g-binnen', 'ein Land ohne Meerzugang', 'land', BINNEN, 1, 'welt');
+  add('g-insel', 'ein Inselstaat (das Land liegt nur auf Inseln)', 'land', INSEL, 1, 'welt');
+  add('g-mittel', 'ein Land am Mittelmeer', 'land', MITTELMEER, 1, 'welt');
+  add('g-ostsee', 'ein Land an der Ostsee', 'land', OSTSEE, 2, 'welt');
+  add('g-aequ', 'ein Land, durch das der Äquator läuft', 'land', AEQU, 2, 'welt');
+  add('g-alpen', 'ein Land mit Anteil an den Alpen', 'land', ALPEN, 3, 'welt');
+  add('g-donau', 'ein Land, durch das oder an dem die Donau fließt', 'land', DONAU, 3, 'welt');
+  add('g-anden', 'ein Land mit Anteil an den Anden', 'land', ANDEN, 3, 'welt');
+  add('g-nord', 'ein Land an der Nordsee', 'land', NORDSEE, 3, 'welt');
+  add('g-schwarz', 'ein Land am Schwarzen Meer', 'land', SCHWARZ, 3, 'welt');
+  // 🔤 letters and names
+  for (const L of 'ABCDEFGHIJKLMNOPRSTUVZ') { const cs = all.filter(c => K(c)[0] === L.toLowerCase()); add('l-' + L, `ein Land mit ${L} am Anfang`, 'land', cs, cs.length >= 10 ? 1 : cs.length >= 6 ? 2 : 3, 'abc'); }
+  add('e-ien', 'ein Land, das auf „-ien“ endet', 'land', all.filter(c => K(c).endsWith('ien')), 1, 'abc');
+  add('e-stan', 'ein Land, das auf „-stan“ endet', 'land', all.filter(c => K(c).endsWith('stan')), 2, 'abc');
+  add('e-land', 'ein Land, das auf „-land“ endet', 'land', all.filter(c => K(c).endsWith('land')), 2, 'abc');
+  add('e-a', 'ein Land, das auf „-a“ endet', 'land', all.filter(c => K(c).endsWith('a')), 1, 'abc');
+  add('b-vokal', 'ein Land, das mit einem Vokal beginnt (auch Ä, Ö, Ü)', 'land', all.filter(c => /^[aeiou]/.test(K(c))), 1, 'abc');
+  add('b-doppel', 'ein Land mit Doppelbuchstaben (wie „nn“ in Finnland)', 'land', all.filter(c => /(\p{L})\1/u.test(nm(c).toLowerCase())), 2, 'abc');
+  add('b-umlaut', 'ein Land mit Ä, Ö oder Ü im Namen', 'land', all.filter(c => /[äöü]/i.test(BY[c].n)), 2, 'abc');
+  add('b-lang', 'ein Land mit mindestens zwölf Buchstaben', 'land', all.filter(c => nm(c).replace(/[^\p{L}]/gu, '').length >= 12), 2, 'abc');
+  add('len4', 'ein Land mit genau vier Buchstaben', 'land', all.filter(c => /^\p{L}{4}$/u.test(BY[c].n)), 3, 'abc');
+  add('b-same', 'ein Land, dessen Hauptstadt mit demselben Buchstaben beginnt', 'land', all.filter(c => K(c)[0] === NORM(BY[c].k)[0]), 2, 'abc');
+  add('b-gleich', 'ein Land, dessen Hauptstadt (fast) genauso heißt', 'land', GLEICH, 3, 'abc');
+  // 🏛️ capitals
+  add('c-eu', 'die Hauptstadt eines EU-Landes', 'cap', EU, 1, 'cap');
+  for (const [r, txt] of Object.entries(REG)) add('c-' + r, 'eine Hauptstadt ' + txt, 'cap', all.filter(c => BY[c].r === r), r === 'Europe' ? 1 : r === 'Asia' || r === 'Americas' ? 2 : 3, 'cap');
+  for (const [sub, de] of Object.entries(SUB_DE)) { const cs = all.filter(c => BY[c].s === sub); if (cs.length >= 9) add('cs-' + sub, 'eine Hauptstadt ' + (IN_SUB[sub] || 'in ' + de), 'cap', cs, 3, 'cap'); }
+  for (const L of 'ABCDKLMPST') add('cl-' + L, `eine Hauptstadt mit ${L} am Anfang`, 'cap', all.filter(c => NORM(BY[c].k)[0] === L.toLowerCase()), 3, 'cap');
+  add('c-2w', 'eine Hauptstadt aus zwei oder mehr Wörtern', 'cap', all.filter(c => /\s/.test(BY[c].k.trim())), 3, 'cap');
+  // 🤝 alliances and languages
+  add('w-eu', 'ein Mitglied der EU', 'land', EU, 1, 'bund');
+  add('w-nato', 'ein NATO-Mitglied', 'land', NATO, 1, 'bund');
+  add('w-eur', 'ein Land, in dem man mit Euro bezahlt', 'land', EURO, 1, 'bund');
+  add('w-eng', 'ein Land mit Englisch als Amtssprache', 'land', ENGLISCH, 1, 'bund');
+  add('w-fra', 'ein Land mit Französisch als Amtssprache', 'land', FRANZ, 2, 'bund');
+  add('w-ara', 'ein Land mit Arabisch als Amtssprache', 'land', ARAB, 2, 'bund');
+  add('w-spa', 'ein Land mit Spanisch als Amtssprache', 'land', SPANISCH, 2, 'bund');
+  add('w-por', 'ein Land mit Portugiesisch als Amtssprache', 'land', PORTUGIESISCH, 3, 'bund');
+  add('w-deu', 'ein Land mit Deutsch als Amtssprache', 'land', DEUTSCH, 3, 'bund');
+  add('w-mon', 'eine Monarchie (König, Fürst, Sultan, Emir …)', 'land', MONARCHIE, 2, 'bund');
+  add('w-sow', 'eine ehemalige Sowjetrepublik', 'land', SOWJET, 2, 'bund');
+  add('w-g7', 'ein G7-Land', 'land', G7, 2, 'bund');
+  add('w-wm', 'ein Fußball-Weltmeister (Männer, England zählt)', 'land', WM_SIEGER, 2, 'bund');
+  add('w-wmh', 'ein Gastgeber einer Fußball-WM (Männer)', 'land', WM_HOST, 2, 'bund');
+  // 🏔️ D-A-CH and 🎲 mixed word lists
+  for (const [id, label, tier, pack, ph, open, list] of WORDS) {
+    const names = {}, keys = new Map();
+    list.split(';').forEach((e, i) => { const [main, ...al] = e.split('|'), code = 'w' + i; names[code] = main; for (const x of [main, ...al]) { const k = NORMW(x); if (k.length < 2) continue; if (!keys.has(k)) keys.set(k, []); if (!keys.get(k).includes(code)) keys.get(k).push(code); } });
+    out.push({ id: 'w-' + id, label, kind: 'word', set: new Set(Object.keys(names)), n: Object.keys(names).length, tier, pack, ph, open: !!open, names, keys });
+  }
   return out;
 })();
+const cname = (cat, code) => cat.kind === 'cap' ? BY[code].k : cat.kind === 'word' ? (cat.names && cat.names[code]) || code.slice(2) : BY[code].n;
+const catPh = cat => cat.ph || (cat.kind === 'cap' ? 'Hauptstadt' : 'Land');
+const catNames = cat => cat.kind === 'word' ? Object.values(cat.names || {}) : COUNTRIES.map(c => cat.kind === 'cap' ? c.k : c.n);
+const freeTxt = s => String(s || '').replace(/[^\p{L}\p{N} .'’-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 30);
+function catLookup(cat, text) { // countries and capitals via the shared index, word lists via their own (same typo tolerance)
+  if (cat.kind !== 'word') return lookup(cat.kind, text);
+  const k = NORMW(text); if (k.length < 2) return []; if (cat.keys.has(k)) return cat.keys.get(k).slice();
+  let best = [], bd = 9; for (const [key, codes] of cat.keys) { if (key.length < 5) continue; const d = lev(k, key); if (d > (key.length >= 9 ? 2 : 1)) continue; if (d < bd) { bd = d; best = codes.slice(); } else if (d === bd) best = [...new Set(best.concat(codes))]; }
+  return best;
+}
+// variants and the chain
+const VARS = { classic: ['💣', 'Klassisch', 'Eine Kategorie, alle nennen reihum, bis es knallt.'], chain: ['🔗', 'Länderkette', 'Jedes Land beginnt mit dem letzten Buchstaben des vorigen. Wer eine Sackgasse baut (kein Land mit dem Buchstaben mehr übrig), killt die Kette.'], memory: ['🧠', 'Gedächtnis', 'Genanntes wird nicht angezeigt. Wer etwas wiederholt, fliegt sofort in die Luft.'] };
+const TURBO = 0.55;
+const chainNm = c => BY[c].n.replace(/\s*\(.*\)\s*/g, '');
+const firstL = c => NORM(chainNm(c))[0], lastL = c => NORM(chainNm(c)).slice(-1);
+const chainSet = (L, used) => COUNTRIES.filter(c => firstL(c.c) === L && !used.includes(c.c)).map(c => c.c);
+const chainLabel = L => `ein Land mit „${L.toUpperCase()}“ am Anfang`;
+const trailHTML = (names, L) => 'Kette: ' + (names.length > 4 ? '… ' : '') + names.slice(-4).map(esc).join(' → ') + ` → <b>${esc(L.toUpperCase())}…</b>`;
+function chainCat() { const starts = COUNTRIES.filter(c => c.t <= 2 && chainSet(lastL(c.c), [c.c]).length >= 4), s = starts[Math.floor(Math.random() * starts.length)].c, L = lastL(s); return { id: 'chain', label: chainLabel(L), kind: 'land', chain: true, start: s, trail: [s], letter: L, set: chainSet(L, [s]), n: 0, tier: 1, pack: 'chain' }; }
+function chainStep(cat, code, used) { cat.trail.push(code); cat.letter = lastL(code); const s = chainSet(cat.letter, used); cat.set = Array.isArray(cat.set) ? s : new Set(s); cat.label = chainLabel(cat.letter); return s.length; }
+const catPool = (level, packs) => { const minN = { 1: 10, 2: 6, 3: 3 }[level]; return CATS.filter(c => c.tier <= level && c.n >= minN && packs.includes(c.pack)); };
+function pickCat(level, packs, seen, vr, turbo) { // every chosen theme gets the same share, inside a theme harder categories weigh more on higher levels
+  let cat;
+  if (vr === 'chain') cat = chainCat();
+  else {
+    let all = catPool(level, packs); if (!all.length) all = catPool(level, PACKS.map(p => p[0]));
+    const roll = (items, wf) => { const w = items.map(wf); let r = Math.random() * sum(w), i = 0; while (r > w[i] && i < w.length - 1) r -= w[i++]; return items[i]; };
+    // a theme's share grows with the square root of its size; each theme runs through its categories before repeating one
+    const groups = [...new Set(all.map(c => c.pack))].map(k => { const inP = all.filter(c => c.pack === k); let free = inP.filter(c => !seen.has(c.id)); if (!free.length) { inP.forEach(c => seen.delete(c.id)); free = inP.length > 1 ? inP.filter(c => c.id !== seen.lastId) : inP; } return { n: inP.length, free }; });
+    const base = c => (level === 3 ? [0, 1, 2, 3][c.tier] : level === 2 ? [0, 1, 2][c.tier] : 1) * (c.id.startsWith('n-') ? 0.25 : /^c?l-/.test(c.id) ? 0.5 : 1);
+    cat = roll(roll(groups, g => Math.sqrt(g.n)).free, base); seen.add(cat.id); seen.lastId = cat.id;
+  }
+  return { ...cat, set: new Set(cat.set), keys: cat.keys ? new Map(cat.keys) : undefined, trail: cat.trail ? cat.trail.slice() : undefined, turbo: !!turbo && Math.random() < 0.3 };
+}
+Object.assign(S, { bvar: VARS[DB.bvar] ? DB.bvar : 'classic', bpacks: (Array.isArray(DB.bpacks) ? DB.bpacks : []).filter(k => PACKS.some(p => p[0] === k)), bturbo: !!DB.bturbo });
+if (!S.bpacks.length) S.bpacks = PACKS.map(p => p[0]);
+function bombOptsHTML(c, pre, online) { // variant, themes and extras; shared by the one-phone setup and the online lobby
+  const n = catPool(c.level, c.packs).length;
+  return `<span class="eyebrow">Variante</span><div class="chips">${Object.entries(VARS).map(([k, [em, nm]]) => `<button class="chip" data-act="${pre}var" data-v="${k}" aria-pressed="${c.var === k}">${em} ${nm}</button>`).join('')}</div><span class="small muted">${esc((VARS[c.var] || VARS.classic)[2])}</span>
+    ${c.var === 'chain' ? '' : `<span class="eyebrow">Themen</span><div class="chips">${PACKS.map(([k, em, nm]) => `<button class="chip" data-act="${pre}pack" data-v="${k}" aria-pressed="${c.packs.includes(k)}">${em} ${nm}</button>`).join('')}</div><span class="small muted">${n} Kategorien auf dieser Stufe</span>`}
+    <span class="eyebrow">Extras</span><div class="chips"><button class="chip" data-act="${pre}turbo" aria-pressed="${!!c.turbo}">⚡ Turbo-Kategorien</button>${online ? `<button class="chip" data-act="omilk" aria-pressed="${!!c.milk}">🥛 Milchshake-Pausen</button>` : ''}</div>
+    ${c.turbo ? `<span class="small muted">Ab und zu brennt die Lunte fast doppelt so schnell${online ? ', dafür zählt dort jeder Treffer doppelt' : ''}.</span>` : ''}`;
+}
 const BTIME = { 1: 15, 2: 10, 3: 7 };
 let B = null, bTimer = null, bRaf = null, bPassT = null, AC = null;
 function bStop() { clearTimeout(bTimer); clearTimeout(bPassT); cancelAnimationFrame(bRaf); bTimer = bPassT = null; }
@@ -697,13 +847,8 @@ function bSound(type) {
 }
 const alive = () => B.players.filter(p => p.lives > 0);
 const nextAlive = i => { let j = i; do { j = (j + 1) % B.players.length; } while (B.players[j].lives <= 0); return j; };
-function bNewCat() {
-  const minN = { 1: 10, 2: 6, 3: 3 }[B.level];
-  let pool = CATS.filter(c => c.tier <= B.level && c.n >= minN && !B.seen.has(c.id)); if (!pool.length) { B.seen.clear(); pool = CATS.filter(c => c.tier <= B.level && c.n >= minN); }
-  const w = pool.map(c => (B.level === 3 ? [0, 1, 2, 3][c.tier] : B.level === 2 ? [0, 1, 2][c.tier] : 1) * (c.id.startsWith('n-') ? 0.2 : 1)); let r = Math.random() * sum(w), i = 0; while (r > w[i] && i < w.length - 1) r -= w[i++];
-  B.cat = pool[i]; B.seen.add(B.cat.id); B.used = []; B.tcur = B.tbase;
-}
-function bStartGame(names, lives, level) { bStop(); B = { players: names.map((n, i) => ({ name: n, color: COLORS[i % COLORS.length], lives, ans: 0, close: 0, boom: 0, skip: true })), lives, level, tbase: BTIME[level], turn: 0, seen: new Set(), phase: 'ready', sound: B ? B.sound : true, msg: '' }; bNewCat(); S.view = 'bomb'; render(); scrollTo(0, 0); }
+function bNewCat() { B.cat = pickCat(B.level, B.packs, B.seen, B.var, B.turbo); B.used = B.cat.chain ? [B.cat.start] : []; B.tcur = B.tbase * (B.cat.turbo ? TURBO : 1); }
+function bStartGame(names, lives, level) { bStop(); B = { players: names.map((n, i) => ({ name: n, color: COLORS[i % COLORS.length], lives, ans: 0, close: 0, boom: 0, trap: 0, skip: true })), lives, level, tbase: BTIME[level], turn: 0, seen: new Set(), phase: 'ready', sound: B ? B.sound : true, msg: '', var: S.bvar, packs: S.bpacks.slice(), turbo: S.bturbo }; bNewCat(); S.view = 'bomb'; render(); scrollTo(0, 0); }
 function bArm() {
   const ms = B.tcur * 1000, t0 = performance.now(); B.deadline = t0 + ms; let lastTick = 0;
   const tick = now => { if (!B || B.phase !== 'turn') return; const left = Math.max(0, B.deadline - now), f = document.getElementById('bfuse'), sec = document.getElementById('bsec'), bomb = document.getElementById('bomb');
@@ -714,93 +859,99 @@ function bArm() {
   bRaf = requestAnimationFrame(tick); bTimer = setTimeout(bBoom, ms);
 }
 function bUpdate() { // refresh the parts of the turn screen around the input, so the keyboard stays open
-  const pl = B.players[B.turn], left = [...B.cat.set].filter(c => !B.used.includes(c)).length, set = (id, h) => { const el = document.getElementById(id); if (el) el.innerHTML = h; };
+  const pl = B.players[B.turn], cat = B.cat, left = [...cat.set].filter(c => !B.used.includes(c)).length, said = B.used.length - (cat.chain ? 1 : 0), set = (id, h) => { const el = document.getElementById(id); if (el) el.innerHTML = h; };
   set('blives', livesHTML()); set('bwho', `<span style="color:${pl.color}">${esc(pl.name)}</span> ist dran`);
-  set('bleft', B.level === 1 ? `noch ${left} möglich` : B.used.length ? `${B.used.length} genannt` : '');
-  set('bused', B.used.map(c => `<span class="chip">${esc(B.cat.kind === 'cap' ? BY[c].k : BY[c].n)}</span>`).join(''));
+  set('bcat', esc(cat.label)); set('bchain', cat.chain ? trailHTML(cat.trail.map(c => BY[c].n), cat.letter) : '');
+  set('bleft', B.level === 1 ? `noch ${left} möglich` : said ? `${said} genannt` : '');
+  set('bused', B.var === 'memory' ? '' : B.used.map(c => `<span class="chip">${esc(cname(cat, c))}</span>`).join(''));
   const sk = document.getElementById('bskipbtn'); if (sk) { sk.disabled = !pl.skip; sk.textContent = pl.skip ? '⏭️ Weiterschieben (1×)' : '⏭️ schon geschoben'; }
   set('bsug', ''); set('bmsg', '');
 }
 function bMsg(txt, cls, extra = '') { const el = document.getElementById('bmsg'); if (el) { el.className = 'bmsg ' + cls; el.innerHTML = esc(txt) + extra; } }
 function bSubmit(text) {
-  if (!B || B.phase !== 'turn' || bPassT) return; const inp = document.getElementById('bin'), kind = B.cat.kind;
-  const codes = lookup(kind, text), shake = () => { if (inp) { inp.classList.remove('shake'); void inp.offsetWidth; inp.classList.add('shake'); } };
-  if (!codes.length) { shake(); bMsg(kind === 'cap' ? 'Keine Hauptstadt erkannt' : 'Kein Land erkannt', 'bad'); return; }
-  const fit = codes.find(c => B.cat.set.has(c) && !B.used.includes(c));
+  if (!B || B.phase !== 'turn' || bPassT) return; const inp = document.getElementById('bin'), cat = B.cat, kind = cat.kind;
+  const codes = catLookup(cat, text), shake = () => { if (inp) { inp.classList.remove('shake'); void inp.offsetWidth; inp.classList.add('shake'); } }, force = ` <button class="chip" data-act="bforce">Zählt doch, sagt die Gruppe</button>`;
+  if (!codes.length) { shake(); const t = freeTxt(text); if (kind === 'word' && NORMW(t).length >= 2) { B.pending = 'x:' + t; bMsg(`„${t}“ steht nicht auf meiner Liste`, 'bad', force); } else bMsg(kind === 'cap' ? 'Keine Hauptstadt erkannt' : kind === 'word' ? 'Nichts erkannt' : 'Kein Land erkannt', 'bad'); return; }
+  const fit = codes.find(c => cat.set.has(c) && !B.used.includes(c));
   if (fit) return bAccept(fit);
-  const nm = c => kind === 'cap' ? BY[c].k : BY[c].n;
-  if (codes.some(c => B.used.includes(c))) { shake(); bMsg(`${nm(codes.find(c => B.used.includes(c)))} wurde schon genannt`, 'bad'); return; }
+  const rep = codes.find(c => B.used.includes(c));
+  if (rep) { if (B.var === 'memory') return bBoom(`${cname(cat, rep)} war schon genannt`); shake(); bMsg(`${cname(cat, rep)} wurde schon genannt`, 'bad'); return; }
   shake(); B.pending = codes[0];
-  bMsg(`${nm(codes[0])} passt nicht`, 'bad', ` <button class="chip" data-act="bforce">Zählt doch, sagt die Gruppe</button>`);
+  bMsg(`${cname(cat, codes[0])} passt nicht`, 'bad', force);
 }
 function bAccept(code, forced) {
-  const pl = B.players[B.turn], left = B.deadline - performance.now(); bStop();
-  B.used.push(code); if (forced) B.cat.set.add(code); pl.ans++; if (left < 1500) pl.close++; B.tcur = Math.max(B.tbase * 0.6, B.tcur - 0.4); bSound('ok'); buzz(20);
-  const remaining = [...B.cat.set].filter(c => !B.used.includes(c)).length, nm = B.cat.kind === 'cap' ? BY[code].k : BY[code].n;
-  if (!remaining) { B.phase = 'empty'; B.turn = nextAlive(B.turn); render(); return; }
+  const pl = B.players[B.turn], cat = B.cat, left = B.deadline - performance.now(), tf = cat.turbo ? TURBO : 1; bStop();
+  B.used.push(code); if (forced) { cat.set.add(code); if (code.startsWith('x:') && cat.keys) cat.keys.set(NORMW(code.slice(2)), [code]); }
+  pl.ans++; if (left < 1500) pl.close++; B.tcur = Math.max(B.tbase * 0.6 * tf, B.tcur - 0.4 * tf); bSound('ok'); buzz(20);
+  const nm = cname(cat, code), remaining = cat.chain ? chainStep(cat, code, B.used) : [...cat.set].filter(c => !B.used.includes(c)).length;
+  if (!remaining) { B.trap = cat.chain ? { by: B.turn, letter: cat.letter } : null; if (cat.chain) pl.trap++; B.phase = 'empty'; B.turn = nextAlive(B.turn); render(); return; }
   const nx = nextAlive(B.turn); bPass(`✓ ${esc(nm)}${left < 1500 ? ' <small class="muted">(knapp!)</small>' : ''}<br><span style="color:${B.players[nx].color}">weiter an ${esc(B.players[nx].name)}</span>`, nx);
 }
 function bPass(html, nx) {
-  B.turn = nx; const el = document.getElementById('bpass'), inp = document.getElementById('bin');
+  B.turn = nx; bUpdate(); const el = document.getElementById('bpass'), inp = document.getElementById('bin');
   if (el) { el.innerHTML = html; el.hidden = false; } if (inp) inp.value = '';
   bPassT = setTimeout(() => { bPassT = null; if (!B || B.phase !== 'turn') return; if (el) el.hidden = true; bUpdate(); bArm(); document.getElementById('bin')?.focus(); }, 1100);
 }
 function bSkip() { const pl = B.players[B.turn]; if (!pl.skip || bPassT || B.phase !== 'turn') return; pl.skip = false; bStop(); const nx = nextAlive(B.turn); bPass(`⏭️ ${esc(pl.name)} schiebt weiter<br><span style="color:${B.players[nx].color}">an ${esc(B.players[nx].name)}</span>`, nx); }
-function bBoom() {
+function bBoom(why) {
   if (!B || B.phase !== 'turn') return; bStop(); const pl = B.players[B.turn]; pl.lives--; pl.boom++;
-  B.phase = 'boom'; B.hints = [...B.cat.set].filter(c => !B.used.includes(c)).sort(() => Math.random() - 0.5).slice(0, 3);
+  B.phase = 'boom'; B.why = typeof why === 'string' ? why : null; B.hints = [...B.cat.set].filter(c => !B.used.includes(c)).sort(() => Math.random() - 0.5).slice(0, 3);
   bSound('boom'); buzz([220, 80, 320]); render(); document.body.classList.remove('flash'); void document.body.offsetWidth; document.body.classList.add('flash');
 }
 function bNext() {
+  B.trap = null; B.why = null;
   if (alive().length <= 1) { B.phase = 'end'; render(); scrollTo(0, 0); echoXP(2500); setTimeout(() => confettiBurst(), 300); return; }
   if (B.phase === 'boom') B.turn = nextAlive(B.turn);
   bNewCat(); B.phase = 'ready'; render(); scrollTo(0, 0);
 }
 const livesHTML = () => B.players.map((p, i) => `<span class="lchip${p.lives <= 0 ? ' out' : ''}${i === B.turn && B.phase !== 'end' ? ' cur' : ''}" style="color:${p.color}"><span style="color:var(--ink)">${esc(p.name)}</span>${p.lives > 0 ? '❤️'.repeat(p.lives) : '💀'}</span>`).join('');
+const LVL_TXT = { 1: 'Große Kategorien, Vorschläge beim Tippen, angezeigt wird, wie viele noch passen.', 2: 'Dazu kleinere Kategorien wie Regionen, Nachbarländer oder Sprachen; Vorschläge beim Tippen.', 3: 'Alles, auch Kleinstaaten und Achttausender. Keine Vorschläge, Tippfehler bis zu einem Buchstaben verzeiht das Spiel.' };
 function viewBSetup() {
   if (S.party.length < 3) S.party = [S.party[0] || DB.name || '', S.party[1] || '', S.party[2] || ''];
   const names = S.party;
   return `<div class="topbar"><button class="link" data-act="home">← Atlas-Duell</button><span></span></div>
   <div class="seg"><button data-act="online">Jeder am eigenen Handy</button><button aria-pressed="true">Ein Handy</button></div>
-  <div class="hero"><span class="eyebrow">Bombe</span><h2>Wer traut sich?</h2><p class="muted small">Ein Handy wandert reihum. Wer dran ist, nennt ein passendes Land, bevor seine Zeit abläuft, und gibt weiter. Schon genannte Länder zählen nicht. Knallt es bei dir, verlierst du ein Leben. Wer am Ende übrig ist, gewinnt.</p></div>
+  <div class="hero"><span class="eyebrow">Bombe</span><h2>Wer traut sich?</h2><p class="muted small">Ein Handy wandert reihum. Wer dran ist, nennt etwas Passendes, bevor seine Zeit abläuft, und gibt weiter. Schon Genanntes zählt nicht. Knallt es bei dir, verlierst du ein Leben. Wer am Ende übrig ist, gewinnt.</p></div>
   <div class="names">${names.map((n, i) => `<div class="nrow"><i class="dot" style="background:${COLORS[i]}"></i><input class="field" data-pi="${i}" maxlength="16" placeholder="Spieler ${i + 1}" value="${esc(n)}">${names.length > 3 ? `<button data-act="pdel" data-v="${i}" aria-label="Entfernen">×</button>` : ''}</div>`).join('')}</div>
   ${names.length < 10 ? `<button class="btn" data-act="padd">+ Spieler</button>` : ''}
   <div class="card" style="gap:10px"><span class="eyebrow">Leben</span><div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="blives" data-v="${l}" aria-pressed="${S.blives === l}">${'❤️'.repeat(l)}</button>`).join('')}</div>
     <span class="eyebrow">Schwierigkeit</span><div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="lvl" data-v="${l}" aria-pressed="${S.level === l}">${lvlName(l)} · ${BTIME[l]} s</button>`).join('')}</div>
-    <span class="small muted">${{ 1: 'Große Kategorien wie Kontinente oder Anfangsbuchstaben, Vorschläge beim Tippen, angezeigt wird, wie viele noch passen.', 2: 'Dazu Regionen, Nachbarländer, Sprachen und Hauptstädte in Europa; Vorschläge beim Tippen.', 3: 'Alles, auch Kleinstaaten und Hauptstädte nach Anfangsbuchstabe. Keine Vorschläge, Tippfehler bis zu einem Buchstaben verzeiht das Spiel.' }[S.level]}</span></div>
+    <span class="small muted">${LVL_TXT[S.level]}</span>
+    ${bombOptsHTML({ var: S.bvar, packs: S.bpacks, turbo: S.bturbo, level: S.level }, 'b')}</div>
   <button class="btn primary big" data-act="bgo">💣 Bombe scharf machen</button>`;
 }
 function viewBomb() {
-  const pl = B.players[B.turn];
+  const pl = B.players[B.turn], cat = B.cat;
   const top = `<div class="topbar"><button class="link" data-act="quit">✕ Beenden</button><button class="link" data-act="bsound">${B.sound ? '🔊' : '🔇'}</button></div><div class="lives" id="blives">${livesHTML()}</div>`;
-  if (B.phase === 'ready') return `${top}<div class="handoff"><span class="eyebrow">Neue Kategorie · Handy an</span><div class="who" style="color:${pl.color}">${esc(pl.name)}</div><span class="small muted">Die Kategorie erscheint, sobald die Lunte brennt. Zeit pro Zug: ${fmt(B.tbase)} s, mit jedem Treffer etwas weniger.</span><button class="btn primary big" data-act="bstart" style="max-width:360px">💣 Zünden</button></div>`;
+  if (B.phase === 'ready') return `${top}<div class="handoff"><span class="eyebrow">${cat.chain ? 'Neue Kette' : 'Neue Kategorie'} · Handy an</span><div class="who" style="color:${pl.color}">${esc(pl.name)}</div>${cat.turbo ? '<span class="tag gold" style="justify-self:center">⚡ Turbo-Kategorie · kürzere Lunte</span>' : ''}<span class="small muted">${cat.chain ? `Startland: <b>${esc(BY[cat.start].n)}</b>. Jedes Land beginnt mit dem letzten Buchstaben des vorigen.` : 'Die Kategorie erscheint, sobald die Lunte brennt.'} Zeit pro Zug: ${fmt(B.tcur)} s, mit jedem Treffer etwas weniger.</span><button class="btn primary big" data-act="bstart" style="max-width:360px">💣 Zünden</button></div>`;
   if (B.phase === 'turn') return `${top}
-    <div class="card bcat"><span class="eyebrow">Nenne</span><div class="q" id="bcat">${esc(B.cat.label)}</div><span class="small muted" id="bleft"></span></div>
+    <div class="card bcat"><span class="eyebrow">${cat.turbo ? '⚡ Turbo · ' : ''}${B.var === 'memory' ? '🧠 Gedächtnis · ' : ''}Nenne</span><div class="q" id="bcat">${esc(cat.label)}</div><span class="small muted" id="bchain"></span><span class="small muted" id="bleft"></span></div>
     <div class="bombzone"><div class="bomb" id="bomb">💣</div><div class="fuse"><i id="bfuse"></i></div><div class="bsec mono" id="bsec"></div><div class="bpass" id="bpass" hidden></div></div>
     <div class="bwho" id="bwho"></div>
-    <form id="bform" autocomplete="off"><input id="bin" class="field" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send" placeholder="${B.cat.kind === 'cap' ? 'Hauptstadt' : 'Land'} eintippen …" aria-label="Antwort"><button class="btn primary" type="submit">OK</button></form>
+    <form id="bform" autocomplete="off"><input id="bin" class="field" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send" placeholder="${esc(catPh(cat))} eintippen …" aria-label="Antwort"><button class="btn primary" type="submit">OK</button></form>
     <div class="bsug" id="bsug"></div><div class="bmsg" id="bmsg"></div>
     <button class="btn" data-act="bskip" id="bskipbtn"></button><div class="chips" id="bused"></div>`;
   if (B.phase === 'boom' || B.phase === 'empty') {
-    const lost = B.phase === 'boom' ? B.players[B.players.indexOf(B.players.find((p, i) => i === B.turn))] : null;
-    return `${top}<div class="boomscr"><span class="em">${B.phase === 'boom' ? '💥' : '🎆'}</span>${B.phase === 'boom'
-      ? `<h1>Boom!</h1><p><b style="color:${lost.color}">${esc(lost.name)}</b> ${lost.lives > 0 ? `verliert ein Leben, noch ${'❤️'.repeat(lost.lives)}` : 'ist raus 💀'}</p>${B.hints.length ? `<p class="small muted">Hätte gepasst: ${B.hints.map(c => esc(B.cat.kind === 'cap' ? BY[c].k : BY[c].n)).join(', ')}</p>` : ''}`
-      : `<h1>Leergespielt!</h1><p>Alle ${B.used.length} Antworten zu „${esc(B.cat.label)}“ genannt. Keiner verliert ein Leben.</p>`}
-      <p class="small muted">Kategorie war: ${esc(B.cat.label)} · ${B.used.length} genannt</p></div><button class="btn primary big" data-act="bnext">${alive().length <= 1 ? 'Zur Siegerehrung' : 'Nächste Kategorie'}</button>`;
+    const lost = B.phase === 'boom' ? B.players[B.turn] : null, tr = B.trap, said = B.used.length - (cat.chain ? 1 : 0);
+    return `${top}<div class="boomscr"><span class="em">${B.phase === 'boom' ? '💥' : tr ? '😈' : '🎆'}</span>${B.phase === 'boom'
+      ? `<h1>Boom!</h1>${B.why ? `<p><b>🧠 ${esc(B.why)}</b></p>` : ''}<p><b style="color:${lost.color}">${esc(lost.name)}</b> ${lost.lives > 0 ? `verliert ein Leben, noch ${'❤️'.repeat(lost.lives)}` : 'ist raus 💀'}</p>${B.hints.length ? `<p class="small muted">Hätte gepasst: ${B.hints.map(c => esc(cname(cat, c))).join(', ')}</p>` : ''}`
+      : tr ? `<h1>Sackgasse!</h1><p><b style="color:${B.players[tr.by].color}">${esc(B.players[tr.by].name)}</b> hat die Kette gekillt: Kein Land mit „${esc(tr.letter.toUpperCase())}“ mehr übrig. Keiner verliert ein Leben.</p>`
+      : `<h1>Leergespielt!</h1><p>Alle ${said} Antworten zu „${esc(cat.label)}“ genannt. Keiner verliert ein Leben.</p>`}
+      <p class="small muted">${cat.chain ? 'Kette: ' + cat.trail.map(c => esc(BY[c].n)).join(' → ') : `Kategorie war: ${esc(cat.label)} · ${said} genannt`}</p></div><button class="btn primary big" data-act="bnext">${alive().length <= 1 ? 'Zur Siegerehrung' : B.var === 'chain' ? 'Neue Kette' : 'Nächste Kategorie'}</button>`;
   }
   const win = alive()[0], ps = B.players.slice().sort((a, b) => b.lives - a.lives || b.ans - a.ans);
-  const best = (key, em, title, unit) => { const s = B.players.slice().sort((a, b) => b[key] - a[key]); return s[0][key] > 0 && (s.length < 2 || s[0][key] > s[1][key]) ? `<div class="award"><span class="em">${em}</span><span class="eyebrow">${title}</span><b>${esc(s[0].name)}</b><span class="small muted mono">${s[0][key]} ${unit}</span></div>` : ''; };
-  return `<div class="topbar"><button class="link" data-act="home">← Atlas-Duell</button><span class="tag gold">${lvlName(B.level)}</span></div>
+  const best = (key, em, title, unit) => { const s = B.players.slice().sort((a, b) => b[key] - a[key]); return s[0][key] > 0 && (s.length < 2 || s[0][key] > s[1][key]) ? `<div class="award"><span class="em">${em}</span><span class="eyebrow">${title}</span><b>${esc(s[0].name)}</b><span class="small muted mono">${s[0][key]} ${Array.isArray(unit) ? unit[s[0][key] === 1 ? 0 : 1] : unit}</span></div>` : ''; };
+  return `<div class="topbar"><button class="link" data-act="home">← Atlas-Duell</button><span class="tag gold">${lvlName(B.level)} · ${(VARS[B.var] || VARS.classic)[1]}</span></div>
     <div class="boomscr"><span class="em">🏆</span><h1 style="color:${win ? win.color : 'inherit'}">${win ? esc(win.name) + ' überlebt' : 'Alle hochgegangen'}</h1></div>
-    ${boardHTML(ps.map(p => [p.name, p.ans, (p.lives > 0 ? '❤️'.repeat(p.lives) : '💀') + ` · ${p.boom}× Boom`, p.color]), null, true)}<p class="small muted" style="margin-top:-6px">Zahl = genannte Länder</p>
-    <div class="awards">${best('ans', '🎇', 'Feuerwerker', 'Treffer')}${best('close', '🧊', 'Nerven aus Stahl', 'knappe Rettungen')}${best('boom', '💣', 'Pechvogel', 'Explosionen')}</div>
-    <div class="row wrap"><button class="btn primary grow" data-act="bagain">Revanche</button><button class="btn grow" data-act="home">Startseite</button></div>`;
+    ${boardHTML(ps.map(p => [p.name, p.ans, (p.lives > 0 ? '❤️'.repeat(p.lives) : '💀') + ` · ${p.boom}× Boom`, p.color]), null, true)}<p class="small muted" style="margin-top:-6px">Zahl = richtige Antworten</p>
+    <div class="awards">${best('ans', '🎇', 'Feuerwerker', 'Treffer')}${best('close', '🧊', 'Nerven aus Stahl', ['knappe Rettung', 'knappe Rettungen'])}${best('boom', '💣', 'Pechvogel', ['Explosion', 'Explosionen'])}${best('trap', '😈', 'Fiesling', ['Sackgasse', 'Sackgassen'])}</div>
+    <div class="row wrap"><button class="btn primary grow" data-act="bagain">Revanche</button><button class="btn grow" data-act="bsetup">Einstellungen</button><button class="btn grow" data-act="home">Startseite</button></div>`;
 }
 function bAfter() {
   if (B.phase !== 'turn') return;
   bUpdate(); const inp = document.getElementById('bin'); inp?.focus();
-  inp?.addEventListener('input', () => { if (B.level === 3) return; const k = NORM(inp.value), box = document.getElementById('bsug'); if (!box) return; if (k.length < 3) { box.innerHTML = ''; return; }
-    const kind = B.cat.kind, names = [...new Set(COUNTRIES.map(c => kind === 'cap' ? c.k : c.n).filter(n => NORM(n).startsWith(k)))].slice(0, 4);
+  inp?.addEventListener('input', () => { if (B.level === 3) return; const kf = B.cat.kind === 'word' ? NORMW : NORM, k = kf(inp.value), box = document.getElementById('bsug'); if (!box) return; if (k.length < 3) { box.innerHTML = ''; return; }
+    const names = [...new Set(catNames(B.cat).filter(n => kf(n).startsWith(k)))].slice(0, 4);
     box.innerHTML = names.map(n => `<button class="chip" data-act="bsug" data-v="${esc(n)}">${esc(n)}</button>`).join(''); });
 }
 function confettiBurst() { const keep = M; M = { phase: 'end', mode: 'party' }; try { maybeConfetti(); } finally { M = keep; } }
@@ -824,25 +975,26 @@ async function obHost(name) {
   const code = [...Array(4)].map(() => ROOM_ABC[Math.floor(Math.random() * ROOM_ABC.length)]).join('');
   NET = { role: 'host', code, conns: new Map(), me: 0, st: null, status: 'Raum wird eröffnet …' }; render();
   const peer = new Peer('atlasduell-' + code.toLowerCase(), peerOpts()); NET.peer = peer;
-  peer.on('open', () => { OBS = { phase: 'lobby', players: [{ name, color: COLORS[0], lives: S.blives, ans: 0, close: 0, boom: 0, skip: true, online: true, pid: 'host' }], level: S.level, lives: S.blives, turn: 0, seq: 0, used: [], seen: new Set(), total: new Map(), games: 0, milk: true }; NET.status = ''; obBroadcast(); wake(); });
+  peer.on('open', () => { OBS = { phase: 'lobby', players: [{ name, color: COLORS[0], lives: S.blives, ans: 0, close: 0, boom: 0, skip: true, online: true, pid: 'host' }], level: S.level, lives: S.blives, turn: 0, seq: 0, used: [], seen: new Set(), total: new Map(), games: 0, milk: true, var: S.bvar, packs: S.bpacks.slice(), turbo: S.bturbo, cid: 0 }; NET.status = ''; obBroadcast(); wake(); });
   peer.on('connection', conn => { conn.on('data', d => obRecv(conn, d)); conn.on('close', () => obGone(conn)); conn.on('error', () => obGone(conn)); });
   peer.on('error', err => { if (err.type === 'unavailable-id') { obHost(name); return; } NET && (NET.status = 'Verbindungsproblem: ' + (err.type || err.message)); render(); });
   peer.on('disconnected', () => { try { peer.reconnect(); } catch {} });
 }
 function obSnap() {
-  const o = OBS; return { code: NET.code, phase: o.phase, players: o.players.map(p => ({ name: p.name, color: p.color, lives: p.lives, ans: p.ans, close: p.close, boom: p.boom, skip: p.skip, online: p.online, shakes: p.shakes || 0 })),
-    turn: o.turn, level: o.level, lives: o.lives, tbase: BTIME[o.level], cat: o.cat ? { label: o.cat.label, kind: o.cat.kind, left: o.cat.set.filter(c => !o.used.includes(c)).length } : null,
-    used: o.used, left: o.until ? Math.max(0, o.until - performance.now()) : 0, full: o.phase === 'turn' ? o.tcur * 1000 : 0, last: o.last || null, msg: o.msg || null, hints: o.hints || [], seq: ++o.seq,
+  const o = OBS, c = o.cat; return { code: NET.code, phase: o.phase, players: o.players.map(p => ({ name: p.name, color: p.color, lives: p.lives, ans: p.ans, close: p.close, boom: p.boom, trap: p.trap || 0, skip: p.skip, online: p.online, shakes: p.shakes || 0 })),
+    turn: o.turn, level: o.level, lives: o.lives, tbase: BTIME[o.level], var: o.var, packs: o.packs, turbo: !!o.turbo, cid: o.cid || 0,
+    cat: c ? { id: c.id, label: c.label, kind: c.kind, ph: catPh(c), left: c.set.filter(x => !o.used.includes(x)).length, said: o.used.length - (c.chain ? 1 : 0), chain: !!c.chain, trail: c.chain ? c.trail.map(x => BY[x].n) : null, letter: c.letter || null, turbo: !!c.turbo } : null,
+    used: o.used, usedN: c ? o.used.map(x => cname(c, x)) : [], left: o.until ? Math.max(0, o.until - performance.now()) : 0, full: o.phase === 'turn' ? o.tcur * 1000 : 0, last: o.last || null, msg: o.msg || null, hints: o.hints || [], seq: ++o.seq,
     helpOpen: !!o.helpOpen, hint: o.hint || null, hmsg: o.hmsg || null, helps: o.players.map(p => p.help || 0), milk: !!o.milk, shake: ['shake', 'shakeres', 'shakecd'].includes(o.phase) ? { counts: o.shakeCounts || [], res: o.shakeRes || null } : null, results: o.results || null, totals: [...(o.total || new Map())].sort((a, b) => b[1] - a[1]), games: o.games || 0 };
 }
 function obBroadcast() { const snap = obSnap(); for (const [, c] of NET.conns) send(c.conn, { t: 'state', s: snap, me: c.idx }); obApply(snap, 0); }
 function obSet(phase, ms, then) { clearTimeout(OB_T); clearTimeout(OB_H); if (phase !== 'shake') clearInterval(OB_S); if (phase !== 'turn') OBS.helpOpen = false; OBS.phase = phase; OBS.until = ms ? performance.now() + ms : 0; if (ms && then) OB_T = setTimeout(then, ms); obBroadcast(); }
 const onAlive = () => OBS.players.filter(p => p.lives > 0 && p.online);
 function obNext(i) { const n = OBS.players.length; for (let k = 1; k <= n; k++) { const j = (i + k) % n, p = OBS.players[j]; if (p.lives > 0 && p.online) return j; } return i; }
-function obNewCat() { const keep = B; B = { level: OBS.level, seen: OBS.seen, tbase: BTIME[OBS.level] }; bNewCat(); OBS.cat = { ...B.cat, set: [...B.cat.set] }; OBS.tcur = BTIME[OBS.level]; OBS.used = []; B = keep; }
+function obNewCat() { const c = pickCat(OBS.level, OBS.packs, OBS.seen, OBS.var, OBS.turbo); OBS.cat = { ...c, set: [...c.set] }; OBS.used = c.chain ? [c.start] : []; OBS.tcur = BTIME[OBS.level] * (c.turbo ? TURBO : 1); OBS.cid = (OBS.cid || 0) + 1; }
 function obStart() {
   if (OBS.players.filter(p => p.online).length < MIN_P) { toast(`Mindestens ${MIN_P} Spieler im Raum`); return; }
-  for (const p of OBS.players) Object.assign(p, { lives: p.online ? OBS.lives : 0, ans: 0, close: 0, boom: 0, skip: true, help: HELPS, gave: [], chances: 0, milk: 0, shakes: 0 }); OBS.cats = 0;
+  for (const p of OBS.players) Object.assign(p, { lives: p.online ? OBS.lives : 0, ans: 0, close: 0, boom: 0, skip: true, help: HELPS, gave: [], chances: 0, milk: 0, shakes: 0, trap: 0, tb: 0 }); OBS.cats = 0;
   OBS.seen = new Set(); OBS.out = OBS.players.map((p, i) => p.online ? null : i).filter(x => x != null); OBS.results = null; OBS.turn = OBS.players.findIndex(p => p.online); OBS.last = null; OBS.msg = null; OBS.hint = null; OBS.hmsg = null; obNewCat(); obSet('ready', 3000, obTurn);
 }
 function obTurn() {
@@ -852,10 +1004,9 @@ function obTurn() {
 }
 function obHelp(idx, text) { // another player gives the stuck one the first one or two letters of a fitting answer
   const p = OBS.players[idx]; if (OBS.phase !== 'turn' || !OBS.helpOpen || OBS.hint || idx === OBS.turn || !p || !p.online || !(p.help > 0)) return;
-  const pre = NORM(text).slice(0, 2), say = t => { OBS.hmsg = { to: idx, text: t, n: (OBS.hmsg ? OBS.hmsg.n || 0 : 0) + 1 }; obBroadcast(); };
+  const kf = OBS.cat.kind === 'word' ? NORMW : NORM, pre = kf(text).slice(0, 2), say = t => { OBS.hmsg = { to: idx, text: t, n: (OBS.hmsg ? OBS.hmsg.n || 0 : 0) + 1 }; obBroadcast(); };
   if (!pre) return say('Ein oder zwei Buchstaben eintippen');
-  const nm = c => OBS.cat.kind === 'cap' ? BY[c].k : BY[c].n;
-  if (!OBS.cat.set.some(c => !OBS.used.includes(c) && NORM(nm(c)).startsWith(pre))) return say(`Mit „${pre.toUpperCase()}“ beginnt keine passende Antwort mehr`);
+  if (!OBS.cat.set.some(c => !OBS.used.includes(c) && kf(cname(OBS.cat, c)).startsWith(pre))) return say(`Mit „${pre.toUpperCase()}“ beginnt keine passende Antwort mehr`);
   p.help--; p.gave.push(OBS.turn); OBS.hint = { by: idx, to: OBS.turn, text: pre.toUpperCase() }; OBS.hmsg = null; obBroadcast();
 }
 function obNextCat() { // every third category: a milkshake break
@@ -877,32 +1028,34 @@ function obShakeEnd() {
 function obEnd() { // points for this game, added to the room's running total
   const alive = onAlive(), win = alive.length === 1 ? OBS.players.indexOf(alive[0]) : -1, order = [];
   if (win >= 0) order.push(win); for (const i of [...OBS.out].reverse()) if (!order.includes(i)) order.push(i); OBS.players.forEach((p, i) => { if (!order.includes(i)) order.push(i); });
-  const PLACE = [5, 3, 1];
+  const PLACE = [5, 3, 1]; // plus: turbo hits count twice, a chain dead end gives +1
   OBS.results = OBS.players.map((p, i) => { const place = order.indexOf(i) + 1, placePts = PLACE[place - 1] || 0, bonus = win >= 0 ? 2 * p.gave.filter(x => x === win).length : 0, geiz = p.gave.length === 0 && p.chances > 0 ? -2 : 0;
-    return { name: p.name, color: p.color, ans: p.ans, place, placePts, bonus, geiz, milk: p.milk || 0, helps: p.gave.length, pts: p.ans + placePts + bonus + geiz + (p.milk || 0) }; });
+    return { name: p.name, color: p.color, ans: p.ans, place, placePts, bonus, geiz, milk: p.milk || 0, tb: p.tb || 0, trap: p.trap || 0, helps: p.gave.length, pts: p.ans + placePts + bonus + geiz + (p.milk || 0) + (p.tb || 0) + (p.trap || 0) }; });
   for (const r of OBS.results) OBS.total.set(r.name, (OBS.total.get(r.name) || 0) + r.pts);
   OBS.games++; obSet('end');
 }
 function obAnswer(idx, text) {
-  if (OBS.phase !== 'turn' || idx !== OBS.turn) return; const kind = OBS.cat.kind, codes = lookup(kind, text), nm = c => kind === 'cap' ? BY[c].k : BY[c].n;
-  const say = (t, force) => { OBS.msg = { to: idx, text: t, cls: 'bad', force: !!force, n: (OBS.msg ? OBS.msg.n || 0 : 0) + 1 }; OBS.pending = force ? codes[0] : null; obBroadcast(); };
-  if (!codes.length) return say(kind === 'cap' ? `„${String(text).slice(0, 30)}“: keine Hauptstadt erkannt` : `„${String(text).slice(0, 30)}“: kein Land erkannt`);
-  const fit = codes.find(c => OBS.cat.set.includes(c) && !OBS.used.includes(c)); if (fit) return obAccept(fit);
-  if (codes.some(c => OBS.used.includes(c))) return say(`${nm(codes.find(c => OBS.used.includes(c)))} wurde schon genannt`);
-  say(`${nm(codes[0])} passt nicht`, true);
+  if (OBS.phase !== 'turn' || idx !== OBS.turn) return; const cat = OBS.cat, kind = cat.kind, codes = catLookup(cat, text), nm = c => cname(cat, c);
+  const say = (t, pend) => { OBS.msg = { to: idx, text: t, cls: 'bad', force: !!pend, n: (OBS.msg ? OBS.msg.n || 0 : 0) + 1 }; OBS.pending = pend || null; obBroadcast(); };
+  if (!codes.length) { const t = freeTxt(text); if (kind === 'word' && NORMW(t).length >= 2) return say(`„${t}“ steht nicht auf meiner Liste`, 'x:' + t); return say(`„${String(text).slice(0, 30)}“: ${kind === 'cap' ? 'keine Hauptstadt' : kind === 'word' ? 'nichts' : 'kein Land'} erkannt`); }
+  const fit = codes.find(c => cat.set.includes(c) && !OBS.used.includes(c)); if (fit) return obAccept(fit);
+  const rep = codes.find(c => OBS.used.includes(c));
+  if (rep) { if (OBS.var === 'memory') return obBoom(`${nm(rep)} war schon genannt`); return say(`${nm(rep)} wurde schon genannt`); }
+  say(`${nm(codes[0])} passt nicht`, codes[0]);
 }
 function obAccept(code, forced) {
-  const idx = OBS.turn, pl = OBS.players[idx], left = OBS.until - performance.now();
-  OBS.used.push(code); if (forced && !OBS.cat.set.includes(code)) OBS.cat.set.push(code); pl.ans++; if (left < 1500) pl.close++; OBS.tcur = Math.max(BTIME[OBS.level] * 0.6, OBS.tcur - 0.4); OBS.msg = null; OBS.pending = null;
-  const nm = OBS.cat.kind === 'cap' ? BY[code].k : BY[code].n, remaining = OBS.cat.set.filter(c => !OBS.used.includes(c)).length;
+  const idx = OBS.turn, pl = OBS.players[idx], cat = OBS.cat, left = OBS.until - performance.now(), tf = cat.turbo ? TURBO : 1;
+  OBS.used.push(code); if (forced && !cat.set.includes(code)) { cat.set.push(code); if (code.startsWith('x:') && cat.keys) cat.keys.set(NORMW(code.slice(2)), [code]); }
+  pl.ans++; if (cat.turbo) pl.tb = (pl.tb || 0) + 1; if (left < 1500) pl.close++; OBS.tcur = Math.max(BTIME[OBS.level] * 0.6 * tf, OBS.tcur - 0.4 * tf); OBS.msg = null; OBS.pending = null;
+  const nm = cname(cat, code), remaining = cat.chain ? chainStep(cat, code, OBS.used) : cat.set.filter(c => !OBS.used.includes(c)).length;
   OBS.last = { kind: 'ok', name: nm, by: idx, close: left < 1500 }; OBS.turn = obNext(idx);
-  if (!remaining) return obSet('empty', 3500, obNextCat);
+  if (!remaining) { if (cat.chain) { pl.trap = (pl.trap || 0) + 1; OBS.last = { kind: 'trap', name: nm, by: idx, letter: cat.letter }; } return obSet('empty', 3500, obNextCat); }
   obSet('pass', 1200, obTurn);
 }
 function obSkip(idx) { const pl = OBS.players[idx]; if (OBS.phase !== 'turn' || idx !== OBS.turn || !pl.skip) return; pl.skip = false; OBS.last = { kind: 'skip', by: idx }; OBS.msg = null; OBS.turn = obNext(idx); obSet('pass', 1200, obTurn); }
-function obBoom() {
-  const pl = OBS.players[OBS.turn]; pl.lives--; pl.boom++; if (pl.lives <= 0 && !OBS.out.includes(OBS.turn)) OBS.out.push(OBS.turn); OBS.last = { kind: 'boom', by: OBS.turn }; OBS.msg = null;
-  OBS.hints = OBS.cat.set.filter(c => !OBS.used.includes(c)).sort(() => Math.random() - 0.5).slice(0, 3).map(c => OBS.cat.kind === 'cap' ? BY[c].k : BY[c].n);
+function obBoom(why) {
+  const pl = OBS.players[OBS.turn]; pl.lives--; pl.boom++; if (pl.lives <= 0 && !OBS.out.includes(OBS.turn)) OBS.out.push(OBS.turn); OBS.last = { kind: 'boom', by: OBS.turn, why: typeof why === 'string' ? why : null }; OBS.msg = null;
+  OBS.hints = OBS.cat.set.filter(c => !OBS.used.includes(c)).sort(() => Math.random() - 0.5).slice(0, 3).map(c => cname(OBS.cat, c));
   if (onAlive().length <= 1) return obSet('boom', 3500, obEnd);
   obSet('boom', 3500, () => { OBS.turn = obNext(OBS.turn); obNextCat(); });
 }
@@ -912,7 +1065,7 @@ function obRecv(conn, d) {
     const name = cleanName(d.name); if (!name) return send(conn, { t: 'reject', why: 'Bitte einen Namen eintragen.' });
     let idx = OBS.players.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
     if (idx >= 0 && OBS.players[idx].online) return send(conn, { t: 'reject', why: `Der Name „${name}“ ist schon im Raum.` });
-    if (idx < 0) { if (OBS.phase !== 'lobby' && OBS.phase !== 'end') return send(conn, { t: 'reject', why: 'Das Spiel läuft schon. Nach der Runde kannst du einsteigen.' }); if (OBS.players.length >= MAX_P) return send(conn, { t: 'reject', why: `Der Raum ist voll (${MAX_P}).` }); OBS.players.push({ name, color: COLORS[OBS.players.length % COLORS.length], lives: OBS.phase === 'lobby' ? OBS.lives : 0, ans: 0, close: 0, boom: 0, skip: true, online: true, help: HELPS, gave: [], chances: 0 }); idx = OBS.players.length - 1; }
+    if (idx < 0) { if (OBS.phase !== 'lobby' && OBS.phase !== 'end') return send(conn, { t: 'reject', why: 'Das Spiel läuft schon. Nach der Runde kannst du einsteigen.' }); if (OBS.players.length >= MAX_P) return send(conn, { t: 'reject', why: `Der Raum ist voll (${MAX_P}).` }); OBS.players.push({ name, color: COLORS[OBS.players.length % COLORS.length], lives: OBS.phase === 'lobby' ? OBS.lives : 0, ans: 0, close: 0, boom: 0, trap: 0, tb: 0, skip: true, online: true, help: HELPS, gave: [], chances: 0 }); idx = OBS.players.length - 1; }
     else OBS.players[idx].online = true;
     NET.conns.set(conn.peer, { conn, idx }); obBroadcast(); return;
   }
@@ -957,7 +1110,7 @@ function obApply(st, me) {
   if (S.view !== 'online') return;
   if (st.phase === 'shake' && document.getElementById('shakescr')) { shakeBoard(); obClock(); return; }
   // keep the turn screen (and its input) alive between turns, so the keyboard stays open
-  if ((st.phase === 'turn' || st.phase === 'pass') && document.getElementById('obturn') && NET.catShown === st.cat.label) obPatch(); else render();
+  if ((st.phase === 'turn' || st.phase === 'pass') && document.getElementById('obturn') && NET.catShown === st.cid) obPatch(); else render();
   obClock();
 }
 const SHK = { n: 0, last: 0, on: false, sent: 0, iv: null };
@@ -983,8 +1136,9 @@ function obClock() {
 const onLives = st => st.players.map((p, i) => `<span class="lchip${p.lives <= 0 ? ' out' : ''}${i === st.turn && ['turn', 'pass'].includes(st.phase) ? ' cur' : ''}" style="color:${p.color}"><i class="odot${p.online ? '' : ' off'}"></i><span style="color:var(--ink)">${esc(p.name)}${i === NET.me ? ' (du)' : ''}</span>${st.phase === 'lobby' ? '' : p.lives > 0 ? '❤️'.repeat(p.lives) : '💀'}</span>`).join('');
 function obPatch() { // update the live parts of the turn screen
   const st = NET.st, me = NET.me, pl = st.players[st.turn], mine = st.turn === me && st.phase === 'turn', set = (id, h) => { const el = document.getElementById(id); if (el) el.innerHTML = h; };
-  set('blives', onLives(st)); set('bleft', st.level === 1 ? `noch ${st.cat.left} möglich` : st.used.length ? `${st.used.length} genannt` : '');
-  set('bused', st.used.map(c => `<span class="chip">${esc(st.cat.kind === 'cap' ? BY[c].k : BY[c].n)}</span>`).join(''));
+  set('blives', onLives(st)); set('bleft', st.level === 1 ? `noch ${st.cat.left} möglich` : st.cat.said ? `${st.cat.said} genannt` : '');
+  set('bcat', esc(st.cat.label)); set('bchain', st.cat.chain ? trailHTML(st.cat.trail, st.cat.letter) : '');
+  set('bused', st.var === 'memory' ? '' : (st.usedN || []).map(n => `<span class="chip">${esc(n)}</span>`).join(''));
   set('bwho', mine ? '<span class="yourturn" style="color:var(--rec)">Du bist dran!</span>' : `<span style="color:${pl.color}">${esc(pl.name)}</span> ist dran`);
   const pass = document.getElementById('bpass'), L = st.last;
   if (pass) { if (st.phase === 'pass' && L) { const by = st.players[L.by], nx = st.players[st.turn]; pass.innerHTML = (L.kind === 'ok' ? `✓ ${esc(L.name)}${L.close ? ' <small class="muted">(knapp!)</small>' : ''}` : L.kind === 'skip' ? `⏭️ ${esc(by.name)} schiebt weiter` : `📴 ${esc(by.name)} ist weg`) + `<br><span style="color:${nx.color}">${st.turn === me ? 'jetzt du!' : 'weiter an ' + esc(nx.name)}</span>`; pass.hidden = false; } else pass.hidden = true; }
@@ -1020,55 +1174,58 @@ function viewOnline() {
   if (st.phase === 'lobby') return `${top}<div class="card" style="text-align:center;justify-items:center"><span class="eyebrow">Raumcode</span><div class="roomcode">${esc(st.code)}</div><button class="btn" data-act="oshare">Link in die Gruppe schicken</button>${S.showLink ? `<input class="sharebox" readonly value="${esc(S.showLink)}">` : ''}</div>
     <div class="card"><h3>Im Raum (${st.players.filter(p => p.online).length}/${MAX_P})</h3>${lives}</div>
     ${st.games ? `<div class="card"><h3>Gesamtwertung · ${st.games} ${st.games === 1 ? 'Runde' : 'Runden'}</h3>${boardHTML(st.totals.map(([n, v]) => [n, v, '', (st.players.find(p => p.name === n) || {}).color]))}</div>` : ''}
-    <details class="rules"><summary>Regeln und Punkte</summary><ul><li>Reihum ein passendes Land nennen, bevor die eigene Zeit abläuft. Schon Genanntes zählt nicht. Knallt es bei dir, ist ein Leben weg.</li><li>🤝 Hängt jemand rund vier Sekunden fest, können die anderen helfen: ein oder zwei Anfangsbuchstaben einer passenden Antwort. Jeder hat ${HELPS} Tipps pro Runde, pro Zug gibt es einen.</li><li>Punkte pro Runde: jede richtige Antwort +1, Platz 1/2/3: +5/+3/+1.</li><li>Hast du der Person geholfen, die am Ende gewinnt: +2 je Tipp. Wer in einer Runde nie hilft, obwohl er konnte: −2 (Geizhals).</li><li>🥛 Nach jeder dritten Kategorie: Milchshake-Pause. Acht Sekunden Handy schütteln (oder tippen), wer am meisten Schaum schlägt, bekommt +2, wer am wenigsten schüttelt, bekommt als Nächstes die Bombe.</li><li>Alles wird über die Runden in der Gesamtwertung gesammelt.</li></ul></details>
-    ${host ? `<div class="card" style="gap:10px"><span class="eyebrow">Leben</span><div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="olives" data-v="${l}" aria-pressed="${st.lives === l}">${'❤️'.repeat(l)}</button>`).join('')}</div><span class="eyebrow">Schwierigkeit</span><div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="olvl" data-v="${l}" aria-pressed="${st.level === l}">${lvlName(l)} · ${BTIME[l]} s</button>`).join('')}</div><span class="eyebrow">Extras</span><div class="chips"><button class="chip" data-act="omilk" aria-pressed="${st.milk}">🥛 Milchshake-Pausen</button></div></div>
-      <button class="btn primary big" data-act="ostart" ${st.players.filter(p => p.online).length < MIN_P ? 'disabled' : ''}>💣 ${st.players.filter(p => p.online).length < MIN_P ? `Warte auf mindestens ${MIN_P} Spieler` : 'Spiel starten'}</button>` : `<div class="card"><p class="muted">Warte, bis ${esc(st.players[0].name)} startet · ${lvlName(st.level)} · ${'❤️'.repeat(st.lives)}</p></div>`}`;
+    <details class="rules"><summary>Regeln und Punkte</summary><ul><li>Reihum ein passendes Land nennen, bevor die eigene Zeit abläuft. Schon Genanntes zählt nicht. Knallt es bei dir, ist ein Leben weg.</li><li>🤝 Hängt jemand rund vier Sekunden fest, können die anderen helfen: ein oder zwei Anfangsbuchstaben einer passenden Antwort. Jeder hat ${HELPS} Tipps pro Runde, pro Zug gibt es einen.</li><li>Punkte pro Runde: jede richtige Antwort +1, Platz 1/2/3: +5/+3/+1.</li><li>Hast du der Person geholfen, die am Ende gewinnt: +2 je Tipp. Wer in einer Runde nie hilft, obwohl er konnte: −2 (Geizhals).</li><li>🥛 Nach jeder dritten Kategorie: Milchshake-Pause. Acht Sekunden Handy schütteln (oder tippen), wer am meisten Schaum schlägt, bekommt +2, wer am wenigsten schüttelt, bekommt als Nächstes die Bombe.</li><li>🔗 Länderkette: Jedes Land beginnt mit dem letzten Buchstaben des vorigen. Wer eine Sackgasse baut, bekommt +1 (Fiesling), keiner verliert ein Leben.</li><li>🧠 Gedächtnis: Genanntes wird nicht angezeigt, eine Wiederholung lässt die Bombe sofort hochgehen.</li><li>⚡ Turbo-Kategorien: Die Lunte brennt fast doppelt so schnell, dafür zählt jeder Treffer doppelt.</li><li>Alles wird über die Runden in der Gesamtwertung gesammelt.</li></ul></details>
+    ${host ? `<div class="card" style="gap:10px"><span class="eyebrow">Leben</span><div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="olives" data-v="${l}" aria-pressed="${st.lives === l}">${'❤️'.repeat(l)}</button>`).join('')}</div><span class="eyebrow">Schwierigkeit</span><div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="olvl" data-v="${l}" aria-pressed="${st.level === l}">${lvlName(l)} · ${BTIME[l]} s</button>`).join('')}</div>${bombOptsHTML({ var: st.var, packs: st.packs || [], turbo: st.turbo, milk: st.milk, level: st.level }, 'o', true)}</div>
+      <button class="btn primary big" data-act="ostart" ${st.players.filter(p => p.online).length < MIN_P ? 'disabled' : ''}>💣 ${st.players.filter(p => p.online).length < MIN_P ? `Warte auf mindestens ${MIN_P} Spieler` : 'Spiel starten'}</button>` : `<div class="card"><p class="muted">Warte, bis ${esc(st.players[0].name)} startet · ${lvlName(st.level)} · ${'❤️'.repeat(st.lives)}</p><p class="small muted">${(VARS[st.var] || VARS.classic).slice(0, 2).join(' ')}${st.var === 'chain' ? '' : ' · ' + (st.packs || []).map(k => PACKS.find(p => p[0] === k)).filter(Boolean).map(p => p[1] + ' ' + esc(p[2])).join(', ')}${st.turbo ? ' · ⚡ Turbo' : ''}${st.milk ? ' · 🥛 Milchshake' : ''}</p></div>`}`;
   const pl = st.players[st.turn];
-  if (st.phase === 'ready') { NET.catShown = null; return `${top}${lives}<div class="handoff"><span class="eyebrow">Neue Kategorie · es beginnt</span><div class="who" style="color:${pl.color}">${st.turn === me ? 'Du' : esc(pl.name)}</div><div class="countdown mono" id="obcd">3</div></div>`; }
-  if (st.phase === 'turn' || st.phase === 'pass') { NET.catShown = st.cat.label; setTimeout(obPatch, 0);
-    return `${top}${lives}<div id="obturn" class="card bcat"><span class="eyebrow">Nenne</span><div class="q">${esc(st.cat.label)}</div><span class="small muted" id="bleft"></span></div>
+  if (st.phase === 'ready') { NET.catShown = null; return `${top}${lives}<div class="handoff"><span class="eyebrow">${st.cat && st.cat.chain ? 'Neue Kette' : 'Neue Kategorie'} · es beginnt</span><div class="who" style="color:${pl.color}">${st.turn === me ? 'Du' : esc(pl.name)}</div>${st.cat && st.cat.turbo ? '<span class="tag gold" style="justify-self:center">⚡ Turbo-Kategorie · Treffer zählen doppelt</span>' : ''}${st.cat && st.cat.chain ? `<span class="small muted">Startland: <b>${esc(st.cat.trail[0])}</b></span>` : ''}<div class="countdown mono" id="obcd">3</div></div>`; }
+  if (st.phase === 'turn' || st.phase === 'pass') { NET.catShown = st.cid; setTimeout(obPatch, 0);
+    return `${top}${lives}<div id="obturn" class="card bcat"><span class="eyebrow">${st.cat.turbo ? '⚡ Turbo · ' : ''}${st.var === 'memory' ? '🧠 Gedächtnis · ' : ''}Nenne</span><div class="q" id="bcat">${esc(st.cat.label)}</div><span class="small muted" id="bchain"></span><span class="small muted" id="bleft"></span></div>
     <div class="bombzone"><div class="bomb" id="bomb">💣</div><div class="fuse"><i id="bfuse"></i></div><div class="bsec mono" id="bsec"></div><div class="bpass" id="bpass" hidden></div></div>
     <div class="bwho" id="bwho"></div><div class="hintbig" id="obhint" hidden></div><div class="ptyping" id="obtyping" hidden>…</div>
     <div class="card helpcard" id="obhelp" hidden><span id="hlabel" class="small"></span><form id="hform" autocomplete="off"><input id="hin" class="field" maxlength="2" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="z. B. SA" aria-label="Anfangsbuchstaben"><button class="btn" type="submit">Tipp geben</button></form><span id="hmsg" class="small" style="color:var(--rec)"></span></div>
-    <form id="bform" autocomplete="off" hidden><input id="bin" class="field" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send" placeholder="${st.cat.kind === 'cap' ? 'Hauptstadt' : 'Land'} eintippen …" aria-label="Antwort"><button class="btn primary" type="submit">OK</button></form>
+    <form id="bform" autocomplete="off" hidden><input id="bin" class="field" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send" placeholder="${esc(st.cat.ph || 'Land')} eintippen …" aria-label="Antwort"><button class="btn primary" type="submit">OK</button></form>
     <div class="bsug" id="bsug"></div><div class="bmsg" id="bmsg"></div><button class="btn" data-act="oskip" id="bskipbtn" hidden></button><div class="chips" id="bused"></div>`; }
   if (st.phase === 'shakecd') return `${top}${lives}<div class="handoff"><span style="font-size:80px">🥛</span><h1>Milchshake-Pause!</h1><p class="muted">Gleich ${SHAKE_MS / 1000} Sekunden lang das Handy schütteln, so wild es geht. Am meisten Schaum: +2 Punkte. Am wenigsten: kriegt als Nächstes die Bombe.</p><div class="countdown mono" id="obcd">3</div></div>`;
   if (st.phase === 'shake') { setTimeout(shakeBoard, 0); return `${top}<div id="shakescr" class="boomscr" style="padding-top:4px"><span class="eyebrow">Schütteln! Noch <b id="obcd">8</b> s</span><span id="shem" style="font-size:44px">🥛</span>${GLASS}<div class="big-num" id="shn">${SHK.n}</div></div>
     <button class="shakebtn" id="shaketap" data-act="shaketap">Kein Sensor? Hier wie wild tippen</button><div class="card" id="shboard"></div>`; }
   if (st.phase === 'shakeres') { const r = st.shake.res, c = st.shake.counts, rows = st.players.map((p, i) => [p.name + (i === me ? ' (du)' : ''), c[i] || 0, i === (r && r.low) ? '🐄 kriegt als Nächstes die Bombe' : r && r.winners.includes(i) ? '🥛 Schaumkrone +2' : '', p.color]).filter((x, i) => st.players[i].online);
     return `${top}<div class="boomscr"><span class="em">🥛</span><h1>${r && r.winners.length ? r.winners.map(i => esc(st.players[i].name)).join(' & ') + ' ' + (r.winners.length > 1 ? 'haben' : 'hat') + ' den meisten Schaum' : 'Keiner hat geschüttelt'}</h1></div>${boardHTML(rows)}<span class="small muted" style="text-align:center">Weiter in <b id="obcd">5</b> s</span>`; }
-  if (st.phase === 'boom' || st.phase === 'empty') { const L = st.last, lost = L && st.players[L.by];
-    return `${top}${lives}<div class="boomscr"><span class="em">${st.phase === 'boom' ? '💥' : '🎆'}</span>${st.phase === 'boom' ? `<h1>Boom!</h1><p><b style="color:${lost.color}">${L.by === me ? 'Dich' : esc(lost.name)}</b> ${L.by === me ? 'hat es erwischt' : 'hat es erwischt'}${lost.lives > 0 ? `, noch ${'❤️'.repeat(lost.lives)}` : ' 💀 raus'}</p>${st.hints.length ? `<p class="small muted">Hätte gepasst: ${st.hints.map(esc).join(', ')}</p>` : ''}` : `<h1>Leergespielt!</h1><p>Alle ${st.used.length} Antworten genannt, keiner verliert ein Leben.</p>`}<p class="small muted">Kategorie war: ${esc(st.cat.label)}</p><span class="small muted">Weiter in <b id="obcd">4</b> s</span></div>`; }
+  if (st.phase === 'boom' || st.phase === 'empty') { const L = st.last, lost = L && st.players[L.by], trap = L && L.kind === 'trap';
+    return `${top}${lives}<div class="boomscr"><span class="em">${st.phase === 'boom' ? '💥' : trap ? '😈' : '🎆'}</span>${st.phase === 'boom' ? `<h1>Boom!</h1>${L.why ? `<p><b>🧠 ${esc(L.why)}</b></p>` : ''}<p><b style="color:${lost.color}">${L.by === me ? 'Dich' : esc(lost.name)}</b> hat es erwischt${lost.lives > 0 ? `, noch ${'❤️'.repeat(lost.lives)}` : ' 💀 raus'}</p>${st.hints.length ? `<p class="small muted">Hätte gepasst: ${st.hints.map(esc).join(', ')}</p>` : ''}`
+      : trap ? `<h1>Sackgasse!</h1><p>${L.by === me ? '<b>Du</b> hast' : `<b style="color:${lost.color}">${esc(lost.name)}</b> hat`} die Kette gekillt: Kein Land mit „${esc(String(L.letter).toUpperCase())}“ mehr übrig. +1 Punkt, keiner verliert ein Leben.</p>`
+      : `<h1>Leergespielt!</h1><p>Alle ${st.cat.said} Antworten genannt, keiner verliert ein Leben.</p>`}<p class="small muted">${st.cat.chain ? 'Kette: ' + st.cat.trail.map(esc).join(' → ') : 'Kategorie war: ' + esc(st.cat.label)}</p><span class="small muted">Weiter in <b id="obcd">4</b> s</span></div>`; }
   const ps = st.players.map((p, i) => ({ ...p, i })).sort((a, b) => b.lives - a.lives || b.ans - a.ans), win = st.players.filter(p => p.lives > 0);
-  const best = (key, em, title, unit) => { const s2 = st.players.slice().sort((a, b) => b[key] - a[key]); return s2[0][key] > 0 && (s2.length < 2 || s2[0][key] > s2[1][key]) ? `<div class="award"><span class="em">${em}</span><span class="eyebrow">${title}</span><b>${esc(s2[0].name)}</b><span class="small muted mono">${s2[0][key]} ${unit}</span></div>` : ''; };
+  const best = (key, em, title, unit) => { const s2 = st.players.slice().sort((a, b) => b[key] - a[key]); return s2[0][key] > 0 && (s2.length < 2 || s2[0][key] > s2[1][key]) ? `<div class="award"><span class="em">${em}</span><span class="eyebrow">${title}</span><b>${esc(s2[0].name)}</b><span class="small muted mono">${s2[0][key]} ${Array.isArray(unit) ? unit[s2[0][key] === 1 ? 0 : 1] : unit}</span></div>` : ''; };
   return `${top}<div class="boomscr"><span class="em">🏆</span><h1>${win.length === 1 ? (st.players.indexOf(win[0]) === me ? 'Du überlebst!' : esc(win[0].name) + ' überlebt') : 'Spiel vorbei'}</h1></div>
-    ${st.results ? `<div class="card"><h3>Punkte dieser Runde</h3>${boardHTML(st.results.slice().sort((a, b) => a.place - b.place).map(r => [r.name + (st.players.findIndex(p => p.name === r.name) === me ? ' (du)' : ''), r.pts, [`${r.ans} Treffer`, r.placePts ? `Platz ${r.place} +${r.placePts}` : `Platz ${r.place}`, r.bonus ? `Hilfe +${r.bonus}` : '', r.milk ? `Milchshake +${r.milk}` : '', r.geiz ? 'Geizhals −2' : '', r.helps ? `${r.helps}× geholfen` : ''].filter(Boolean).join(' · '), r.color]), null, true)}</div>
+    ${st.results ? `<div class="card"><h3>Punkte dieser Runde</h3>${boardHTML(st.results.slice().sort((a, b) => a.place - b.place).map(r => [r.name + (st.players.findIndex(p => p.name === r.name) === me ? ' (du)' : ''), r.pts, [`${r.ans} Treffer`, r.placePts ? `Platz ${r.place} +${r.placePts}` : `Platz ${r.place}`, r.bonus ? `Hilfe +${r.bonus}` : '', r.milk ? `Milchshake +${r.milk}` : '', r.tb ? `Turbo +${r.tb}` : '', r.trap ? `Sackgasse +${r.trap}` : '', r.geiz ? 'Geizhals −2' : '', r.helps ? `${r.helps}× geholfen` : ''].filter(Boolean).join(' · '), r.color]), null, true)}</div>
       <div class="card"><h3>Gesamtwertung · ${st.games} ${st.games === 1 ? 'Runde' : 'Runden'}</h3>${boardHTML(st.totals.map(([n, v]) => [n, v, '', (st.players.find(p => p.name === n) || {}).color]))}</div>` : ''}
-    <div class="awards">${best('ans', '🎇', 'Feuerwerker', 'Treffer')}${best('close', '🧊', 'Nerven aus Stahl', 'knappe Rettungen')}${best('boom', '💣', 'Pechvogel', 'Explosionen')}${best('shakes', '🥛', 'Milchbart', 'mal geschüttelt')}</div>
+    <div class="awards">${best('ans', '🎇', 'Feuerwerker', 'Treffer')}${best('close', '🧊', 'Nerven aus Stahl', ['knappe Rettung', 'knappe Rettungen'])}${best('boom', '💣', 'Pechvogel', ['Explosion', 'Explosionen'])}${best('shakes', '🥛', 'Milchbart', 'mal geschüttelt')}${best('trap', '😈', 'Fiesling', ['Sackgasse', 'Sackgassen'])}</div>
     ${host ? '<button class="btn primary big" data-act="oagain">Revanche</button><button class="btn" data-act="olobby">Zurück in die Lobby</button>' : `<p class="muted small">${esc(st.players[0].name)} kann eine Revanche starten.</p>`}`;
 }
 function onlineAfter() {
   const inp = document.getElementById('bin');
-  if (inp) { let tt = 0; inp.addEventListener('input', () => { const now = Date.now(); if (now - tt > 120) { tt = now; act({ t: 'typing', text: inp.value }); } const st = NET && NET.st; if (!st || st.level === 3 || !st.cat) return; const k = NORM(inp.value), box = document.getElementById('bsug'); if (!box) return; if (k.length < 3) { box.innerHTML = ''; return; }
-    const names = [...new Set(COUNTRIES.map(c => st.cat.kind === 'cap' ? c.k : c.n).filter(n => NORM(n).startsWith(k)))].slice(0, 4); box.innerHTML = names.map(n => `<button class="chip" data-act="osug" data-v="${esc(n)}">${esc(n)}</button>`).join(''); }); }
+  if (inp) { let tt = 0; inp.addEventListener('input', () => { const now = Date.now(); if (now - tt > 120) { tt = now; act({ t: 'typing', text: inp.value }); } const st = NET && NET.st; if (!st || st.level === 3 || !st.cat) return; const kf = st.cat.kind === 'word' ? NORMW : NORM, k = kf(inp.value), box = document.getElementById('bsug'); if (!box) return; if (k.length < 3) { box.innerHTML = ''; return; }
+    const src = st.cat.kind === 'word' ? Object.values((CATS.find(c => c.id === st.cat.id) || {}).names || {}) : COUNTRIES.map(c => st.cat.kind === 'cap' ? c.k : c.n), names = [...new Set(src.filter(n => kf(n).startsWith(k)))].slice(0, 4); box.innerHTML = names.map(n => `<button class="chip" data-act="osug" data-v="${esc(n)}">${esc(n)}</button>`).join(''); }); }
   obClock();
 }
 
 /* ---------- actions ---------- */
 const readName = () => { const el = document.getElementById('myname'); if (el) { DB.name = cleanName(el.value); saveDB(); } return DB.name; };
 function needName() { const n = readName(); if (!n) { toast('Erst einen Namen eintragen'); document.getElementById('myname')?.focus(); return null; } return n; }
-const newSeed = () => Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, 'x').padEnd(6, 'q');
+const newSeed = (rg = S.region) => '2' + (REGS[rg] ? rg : 'w') + '-' + Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, 'x').padEnd(6, 'q');
 app.addEventListener('input', e => { const i = e.target.dataset.pi; if (i != null) S.party[+i] = cleanName(e.target.value); if (e.target.id === 'myname') { DB.name = cleanName(e.target.value); saveDB(); } });
 app.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return; const a = b.dataset.act, v = b.dataset.v;
   if (a === 'zin' || a === 'zout') { if (Z) Z.svg.transition().duration(220).call(Z.zoom.scaleBy, a === 'zin' ? 2 : 0.5); return; }
   if (a === 'lvl') { S.level = +v; render(); return; }
+  if (a === 'reg') { if (!REGS[v]) return; S.region = v; DB.region = v; saveDB(); render(); return; }
   if (a === 'home') { stopClock(); bStop(); B = null; M = null; S.view = 'home'; S.showLink = null; history.replaceState(null, '', location.pathname); LINK = null; render(); scrollTo(0, 0); return; }
   if (a === 'daily') { const n = needName(); if (!n) return; const seed = 'tag-' + dk(new Date()), g = DB.games[gkey(seed, 2)]; if (g && g.me) { LINK = { s: seed, l: 2, p: g.p }; S.view = 'link'; render(); return; } S.view = 'match'; startMatch('daily', seed, 2, [n]); return; }
   if (a === 'duel') { const n = needName(); if (!n) return; S.view = 'match'; S.showLink = null; startMatch('duel', newSeed(), S.level, [n]); return; }
   if (a === 'join') { const n = needName(); if (!n) return; if (LINK.p.some(p => p[0].toLowerCase() === n.toLowerCase())) { toast('Der Name ist in dieser Rangliste schon vergeben'); return; } mergeGame(LINK.s, LINK.l, LINK.p); S.view = 'match'; startMatch(LINK.s.startsWith('tag-') ? 'daily' : 'duel', LINK.s, LINK.l, [n]); return; }
   if (a === 'open') { const g = DB.games[v]; if (!g) return; LINK = { s: g.s, l: g.l, p: g.p }; S.view = 'link'; S.showLink = null; render(); scrollTo(0, 0); return; }
-  if (a === 'share-g') { const g = DB.games[v]; if (!g) return; const me = g.p.find(x => x[0] === g.me), rounds = makeGame(g.s, g.l), label = g.s.startsWith('tag-') ? `Tagesduell ${g.s.slice(10, 12)}.${g.s.slice(8, 10)}.` : 'Duell · ' + lvlName(g.l); const lead = g.p.slice().sort((x, y) => sum(y[1]) - sum(x[1]))[0];
+  if (a === 'share-g') { const g = DB.games[v]; if (!g) return; const me = g.p.find(x => x[0] === g.me), rounds = makeGame(g.s, g.l), label = gameLabel(g.s, g.l); const lead = g.p.slice().sort((x, y) => sum(y[1]) - sum(x[1]))[0];
     share(`⚔️ Atlas-Duell · ${label}\n${me ? `${me[0]}: ${fmt(sum(me[1]))} Punkte\n${me[1].map((p, i) => sq(p, rounds[i])).join('')}\n` : ''}${g.p.length > 1 ? `Vorne: ${lead[0]} (${fmt(sum(lead[1]))}). ` : ''}Schlägst du das?`, linkFor(g)); return; }
   if (a === 'party') { S.view = 'setup'; render(); return; }
   if (a === 'bomb') { S.view = 'online'; render(); scrollTo(0, 0); return; }
@@ -1087,12 +1244,19 @@ app.addEventListener('click', e => {
       if (a === 'olives') { OBS.lives = +v; S.blives = +v; for (const p of OBS.players) p.lives = OBS.lives; obBroadcast(); return; }
       if (a === 'olvl') { OBS.level = +v; S.level = +v; obBroadcast(); return; }
       if (a === 'omilk') { OBS.milk = !OBS.milk; obBroadcast(); return; }
+      if (a === 'ovar') { if (!VARS[v]) return; OBS.var = S.bvar = DB.bvar = v; saveDB(); obBroadcast(); return; }
+      if (a === 'opack') { const has = OBS.packs.includes(v); if (!PACKS.some(p => p[0] === v)) return; if (has && OBS.packs.length === 1) { toast('Mindestens ein Thema'); return; } OBS.packs = has ? OBS.packs.filter(x => x !== v) : OBS.packs.concat(v); S.bpacks = OBS.packs.slice(); DB.bpacks = S.bpacks; saveDB(); obBroadcast(); return; }
+      if (a === 'oturbo') { OBS.turbo = S.bturbo = DB.bturbo = !OBS.turbo; saveDB(); obBroadcast(); return; }
       if (a === 'ostart' || a === 'oagain') return obStart();
       if (a === 'olobby') { if (OBS.players.filter(p => p.online).length < 1) return; OBS.players = OBS.players.filter(p => p.online); NET.conns.forEach(c => { c.idx = OBS.players.findIndex(p => p.name === NET.st.players[c.idx].name); }); for (const p of OBS.players) p.lives = OBS.lives; clearTimeout(OB_T); OBS.phase = 'lobby'; OBS.until = 0; obBroadcast(); return; }
       if (a === 'oforce') { if (OBS.pending && OBS.phase === 'turn' && !OBS.used.includes(OBS.pending)) obAccept(OBS.pending, true); return; }
     }
   }
   if (a === 'blives') { S.blives = +v; render(); return; }
+  if (a === 'bvar') { if (!VARS[v]) return; S.bvar = DB.bvar = v; saveDB(); render(); return; }
+  if (a === 'bpack') { if (!PACKS.some(p => p[0] === v)) return; const has = S.bpacks.includes(v); if (has && S.bpacks.length === 1) { toast('Mindestens ein Thema'); return; } S.bpacks = has ? S.bpacks.filter(x => x !== v) : S.bpacks.concat(v); DB.bpacks = S.bpacks; saveDB(); render(); return; }
+  if (a === 'bturbo') { S.bturbo = DB.bturbo = !S.bturbo; saveDB(); render(); return; }
+  if (a === 'bsetup') { bStop(); B = null; S.view = 'bsetup'; render(); scrollTo(0, 0); return; }
   if (a === 'bgo') { const names = S.party.map(cleanName).filter(Boolean); if (names.length < 3) { toast('Mindestens drei Namen'); return; } if (names.length > 10) { toast('Höchstens zehn Spieler'); return; } if (new Set(names.map(x => x.toLowerCase())).size !== names.length) { toast('Jeder Name nur einmal'); return; } S.party = names; bStartGame(names, S.blives, S.level); return; }
   if (B && S.view === 'bomb') {
     if (a === 'bstart') { try { AC ||= new (window.AudioContext || window.webkitAudioContext)(); AC.resume && AC.resume(); } catch {} motionPermission(); B.phase = 'turn'; render(); bArm(); return; }
@@ -1106,7 +1270,7 @@ app.addEventListener('click', e => {
   if (a === 'padd') { S.party.push(''); render(); document.querySelector(`[data-pi="${S.party.length - 1}"]`)?.focus(); return; }
   if (a === 'pdel') { S.party.splice(+v, 1); render(); return; }
   if (a === 'pgo') { const names = S.party.map(cleanName).filter(Boolean); if (names.length < 2) { toast('Mindestens zwei Namen'); return; } if (new Set(names.map(x => x.toLowerCase())).size !== names.length) { toast('Jeder Name nur einmal'); return; } S.party = names; S.view = 'match'; startMatch('party', newSeed(), S.level, names); return; }
-  if (a === 'again') { const names = M.players.map(p => p.name); startMatch('party', newSeed(), M.level, names); return; }
+  if (a === 'again') { const names = M.players.map(p => p.name); startMatch('party', newSeed(regOf(M.seed)), M.level, names); return; }
   if (a === 'quit') { if (!confirmQuit()) return; stopClock(); bStop(); B = null; M = null; S.view = LINK ? 'link' : 'home'; render(); return; }
   if (!M) return;
   if (a === 'go') return beginTurn();
@@ -1132,7 +1296,7 @@ if (ROOM) { S.view = 'online'; S.joinCode = ROOM[1].toUpperCase(); }
 LINK = ROOM ? null : parseLink(location.hash);
 if (LINK) { const g = mergeGame(LINK.s, LINK.l, LINK.p); LINK.p = g.p; S.view = 'link'; }
 render();
-window.DUELL_TEST = { SHK, shakeCount, get NET() { return NET; }, get OBS() { return OBS; }, get B() { return B; }, CATS, lookup, NORM, WPROJ, makeGame, basePts, record, parseLink, linkFor, maskFact, landDist, get M() { return M; }, S, DB, BY, NEIGH, capLL, KM };
+window.DUELL_TEST = { PACKS, VARS, pickCat, catLookup, catPool, chainSet, lastL, firstL, cname, WORDS, isV2, regOf, REGS, SHK, shakeCount, get NET() { return NET; }, get OBS() { return OBS; }, get B() { return B; }, CATS, lookup, NORM, WPROJ, makeGame, basePts, record, parseLink, linkFor, maskFact, landDist, get M() { return M; }, S, DB, BY, NEIGH, capLL, KM };
 </script>
 </body>
 </html>
