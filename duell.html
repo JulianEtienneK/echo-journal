@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Atlas-Duell</title>
+<meta name="theme-color" content="#F2F3EF">
+<meta name="robots" content="noindex">
+<meta property="og:title" content="Atlas-Duell">
+<meta property="og:description" content="Wer kennt die Welt besser? Zehn Runden: Hauptstädte auf der Karte finden, Flaggen, Umrisse, Entfernungen schätzen.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Atlas-Duell. One column like Echo Atlas: question on top, map or picture as the stage, answers below. */
+:root {
+  --bg: #F2F3EF; --surface: #FFFFFF; --surface-2: #E7EAE4; --ink: #1A1E1C; --muted: #5C6661; --line: #D5DAD3;
+  --calm: #1B8173; --calm-soft: rgba(27,129,115,.12); --rec: #D4542A; --rec-soft: rgba(212,84,42,.12);
+  --gold: #A87D14; --gold-soft: rgba(184,138,30,.16);
+  --ocean: #DCE6E8; --land: #C9CFC6; --land-line: #F7F8F5; --target: #1B8173;
+  --shadow: 0 1px 2px rgba(20,30,25,.05), 0 10px 28px rgba(20,30,25,.07);
+  --f-display: "Bricolage Grotesque", "DM Sans", system-ui, sans-serif;
+  --f-body: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --r: 18px; color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F1211; --surface: #171B19; --surface-2: #212624; --ink: #E8ECE7; --muted: #95A09A; --line: #2A312E;
+  --calm: #3DC2AD; --calm-soft: rgba(61,194,173,.14); --rec: #FF7647; --rec-soft: rgba(255,118,71,.15);
+  --gold: #E5B84C; --gold-soft: rgba(229,184,76,.15);
+  --ocean: #142024; --land: #34403B; --land-line: #171B19; --target: #3DC2AD;
+  --shadow: 0 1px 0 rgba(255,255,255,.03); color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0F1211; --surface: #171B19; --surface-2: #212624; --ink: #E8ECE7; --muted: #95A09A; --line: #2A312E;
+  --calm: #3DC2AD; --calm-soft: rgba(61,194,173,.14); --rec: #FF7647; --rec-soft: rgba(255,118,71,.15);
+  --gold: #E5B84C; --gold-soft: rgba(229,184,76,.15);
+  --ocean: #142024; --land: #34403B; --land-line: #171B19; --target: #3DC2AD;
+  --shadow: 0 1px 0 rgba(255,255,255,.03); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--calm); outline-offset: 2px; border-radius: 8px; }
+#app { max-width: 600px; margin: 0 auto; display: grid; gap: 14px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: calc(env(safe-area-inset-top, 0px) + 16px) calc(env(safe-area-inset-bottom, 0px) + 40px); }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; line-height: 1.15; text-wrap: balance; }
+h1 { font-size: 32px; font-weight: 700; letter-spacing: -.02em; }
+h2 { font-size: 24px; font-weight: 700; letter-spacing: -.01em; }
+h3 { font-size: 17px; font-weight: 700; }
+p { margin: 0; }
+.eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); } .small { font-size: 13px; }
+.card { background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); padding: 18px; display: grid; gap: 12px; min-width: 0; }
+.row { display: flex; align-items: center; gap: 10px; min-width: 0; } .spread { justify-content: space-between; } .grow { flex: 1; min-width: 0; } .wrap { flex-wrap: wrap; }
+.btn { border: 0; border-radius: 14px; padding: 13px 18px; font-weight: 700; background: var(--surface-2); display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
+.btn.primary { background: var(--calm); color: #fff; }
+:root[data-theme="dark"] .btn.primary { color: #0F1211; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.primary { color: #0F1211; } }
+.btn.big { padding: 17px 20px; font-size: 18px; width: 100%; }
+.btn:disabled { opacity: .45; cursor: default; }
+.link { background: none; border: 0; padding: 6px 0; color: var(--muted); font-weight: 500; white-space: nowrap; text-decoration: none; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 7px 13px; font-size: 14px; font-weight: 500; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.field { width: 100%; font: 700 17px/1.3 var(--f-body); padding: 13px 15px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); }
+.field:focus { outline: none; border-color: var(--calm); }
+.tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 99px; background: var(--surface-2); color: var(--muted); }
+.tag.gold { background: var(--gold-soft); color: var(--gold); } .tag.calm { background: var(--calm-soft); color: var(--calm); }
+.hero { display: grid; gap: 6px; padding-top: 6px; }
+.hero h1 span { color: var(--calm); }
+.mode { border: 0; text-align: left; width: 100%; }
+.mode .row > .em { font-size: 30px; flex: none; }
+/* round */
+.progress { display: flex; gap: 4px; } .progress i { flex: 1; height: 6px; border-radius: 99px; background: var(--surface-2); }
+.progress i.g { background: var(--calm); } .progress i.y { background: var(--gold); } .progress i.r { background: var(--rec); } .progress i.cur { background: var(--ink); opacity: .45; }
+.tbar { height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; } .tbar i { display: block; height: 100%; width: 100%; background: var(--gold); border-radius: 99px; }
+.tbar.low i { background: var(--rec); }
+.q { font-family: var(--f-display); font-size: 23px; font-weight: 700; text-wrap: balance; line-height: 1.2; }
+.stage { position: relative; background: var(--ocean); border-radius: var(--r); overflow: hidden; aspect-ratio: 3 / 2; touch-action: none; }
+.stage svg { width: 100%; height: 100%; display: block; }
+.stage .sphere { fill: var(--ocean); }
+.stage .land { fill: var(--land); stroke: var(--land-line); stroke-width: .6; vector-effect: non-scaling-stroke; }
+.stage .land.target { fill: var(--target); }
+.stage .land.won { stroke: var(--surface); stroke-width: 1; }
+.stage .line { fill: none; stroke-width: 2; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+.stage .pin path { stroke: #fff; stroke-width: 1.5; }
+.stage .pin circle { fill: #fff; }
+.stage .tmark circle:not(.wdot) { fill: var(--target); stroke: #fff; stroke-width: 2; }
+.stage .tmark path { fill: #fff; }
+.stage .plabel { font: 700 11px var(--f-body); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+.zoomctl { position: absolute; right: 8px; top: 8px; display: grid; gap: 6px; }
+.zoomctl button { width: 38px; height: 38px; border-radius: 12px; border: 0; background: var(--surface); box-shadow: var(--shadow); font-weight: 700; font-size: 18px; }
+.drop { animation: drop .45s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes drop { from { opacity: 0; transform: translateY(-18px); } }
+.flagbig { display: grid; place-items: center; background: var(--surface-2); border-radius: var(--r); padding: 22px; }
+.flagbig img { width: min(320px, 80%); aspect-ratio: 4 / 3; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.18); object-fit: cover; }
+.shapebox { background: var(--surface-2); border-radius: var(--r); aspect-ratio: 3 / 2; } .shapebox svg { width: 100%; height: 100%; display: block; } .shapebox path { fill: var(--target); }
+.fact { background: var(--gold-soft); border-radius: 14px; padding: 14px 16px; font-size: 17px; line-height: 1.45; display: flex; gap: 10px; }
+.opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.opts.one { grid-template-columns: 1fr; }
+.opt { border: 2px solid var(--line); background: var(--surface); border-radius: 14px; padding: 14px 12px; font-weight: 700; text-align: left; display: flex; gap: 10px; align-items: center; min-width: 0; min-height: 56px; touch-action: manipulation; }
+.opt img { width: 46px; aspect-ratio: 4 / 3; border-radius: 4px; object-fit: cover; flex: none; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.opt.duo { flex-direction: column; text-align: center; padding: 16px 10px; }
+.opt.duo img { width: 80%; max-width: 140px; }
+.opt.ok { border-color: var(--calm); background: var(--calm-soft); } .opt.bad { border-color: var(--rec); background: var(--rec-soft); }
+.opt.gone { display: none; }
+.opt:disabled { cursor: default; }
+.jokers { display: flex; gap: 8px; }
+.joker { flex: 1; border: 1px dashed var(--line); background: transparent; border-radius: 12px; padding: 8px 6px; font-size: 13px; font-weight: 700; display: grid; justify-items: center; gap: 0; }
+.joker small { font-weight: 500; color: var(--muted); font-size: 11px; }
+.joker.on { border-style: solid; border-color: var(--gold); background: var(--gold-soft); color: var(--gold); }
+.joker:disabled { opacity: .32; cursor: default; }
+.joker.on:disabled { opacity: 1; }
+.hintbar { background: var(--gold-soft); color: var(--ink); border-radius: 12px; padding: 9px 12px; font-size: 14px; }
+.slider { display: grid; gap: 10px; background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); padding: 20px 18px; }
+.slider input { width: 100%; accent-color: var(--calm); height: 30px; touch-action: none; }
+.slider .val { font-family: var(--f-display); font-weight: 700; font-size: 38px; text-align: center; line-height: 1; }
+.scale { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-family: var(--f-mono); }
+/* feedback */
+.gain { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.gain .pts { font-family: var(--f-display); font-size: 46px; font-weight: 700; line-height: 1; color: var(--calm); }
+.gain .pts.zero { color: var(--rec); }
+.bonus { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.answer { display: flex; gap: 14px; align-items: center; border-radius: var(--r); background: var(--surface); box-shadow: var(--shadow); padding: 14px 16px; }
+.answer img { width: 64px; aspect-ratio: 4 / 3; border-radius: 5px; object-fit: cover; flex: none; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+.answer b { font-family: var(--f-display); font-size: 19px; }
+/* boards */
+.board { display: grid; gap: 6px; }
+.brow { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; background: var(--surface); border-radius: 12px; padding: 10px 12px; box-shadow: var(--shadow); }
+.brow.me { box-shadow: inset 0 0 0 2px var(--calm), var(--shadow); }
+.brow .rk { font-family: var(--f-mono); color: var(--muted); text-align: center; }
+.brow .nm { font-weight: 700; display: flex; gap: 8px; align-items: center; min-width: 0; }
+.brow .nm > span { display: grid; min-width: 0; }
+.brow .nm b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brow .sub { font-size: 12px; color: var(--muted); font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stage .wdot { fill-opacity: .95; stroke: #fff; stroke-width: 1.5; }
+.brow .tot { font-family: var(--f-mono); font-weight: 500; }
+.brow .delta { font-family: var(--f-mono); font-size: 12px; min-width: 34px; text-align: right; }
+.delta.up { color: var(--calm); } .delta.down { color: var(--rec); }
+.dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.handoff { min-height: 62vh; display: grid; place-items: center; text-align: center; gap: 14px; align-content: center; }
+.handoff .who { font-family: var(--f-display); font-size: 44px; font-weight: 700; line-height: 1.05; }
+.podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 8px; text-align: center; padding-top: 10px; }
+.podium .col { display: grid; gap: 6px; justify-items: center; min-width: 0; }
+.podium .nm { font-weight: 700; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.podium .blk { width: 100%; border-radius: 12px 12px 4px 4px; display: grid; place-items: center; font-family: var(--f-display); font-weight: 700; font-size: 26px; color: #fff; animation: rise .7s cubic-bezier(.2, 1.2, .4, 1) both; }
+.podium .p1 .blk { height: 120px; background: var(--gold); animation-delay: .5s; } .podium .p2 .blk { height: 86px; background: #8D9692; animation-delay: .25s; } .podium .p3 .blk { height: 64px; background: #B07A4A; }
+@keyframes rise { from { transform: scaleY(0); transform-origin: bottom; } }
+.awards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.award { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); padding: 12px; display: grid; gap: 2px; }
+.award .em { font-size: 22px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.emojirow { font-size: 20px; letter-spacing: 2px; text-align: center; }
+.big-num { font-family: var(--f-display); font-size: 54px; font-weight: 700; line-height: 1; }
+.names { display: grid; gap: 8px; }
+.nrow { display: flex; gap: 8px; align-items: center; }
+.nrow .field { padding: 10px 13px; font-size: 16px; }
+.nrow button { border: 0; background: var(--surface-2); border-radius: 12px; width: 44px; height: 44px; flex: none; font-size: 18px; }
+details.rules { background: var(--surface); border-radius: var(--r); padding: 14px 18px; box-shadow: var(--shadow); }
+details.rules summary { font-weight: 700; cursor: pointer; }
+details.rules ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; }
+.toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 700; z-index: 20; box-shadow: var(--shadow); max-width: calc(100% - 32px); text-align: center; animation: pop .25s ease-out; }
+@keyframes pop { from { transform: translate(-50%, 10px); opacity: 0; } }
+#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 30; }
+.sharebox { width: 100%; font: 400 13px var(--f-mono); padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); }
+@media (max-width: 380px) { .opts:not(.duo2) { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main id="app"><p class="muted" style="padding:60px 0;text-align:center">Lade die Welt …</p></main>
+<script src="geo/d3.min.js"></script>
+<script src="geo/topojson-client.min.js"></script>
+<script src="geo/data.js"></script>
+<script src="geo/flags.js"></script>
+<script src="geo/facts.js"></script>
+<script src="geo/caps.js"></script>
+<script>
+'use strict';
+/* Atlas-Duell: ten mixed geography rounds for friends. Every question comes from one seed, so a link gives everyone the same
+   game. Modes: daily duel, challenge link (results travel inside the URL and pile up into a leaderboard, no server), party on
+   one phone (pass it around, then a joint reveal). Extras: three jokers per player, a double final, streak bonus, titles,
+   a map of round winners. Progress lives in localStorage 'echo-duell'. */
+const app = document.getElementById('app');
+const esc = s => String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+const fmt = n => Math.round(n).toLocaleString('de-DE');
+const sum = a => a.reduce((x, y) => x + (y || 0), 0);
+const pad = n => String(n).padStart(2, '0');
+const dk = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+function toast(msg) { document.querySelectorAll('.toast').forEach(t => t.remove()); const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg; document.body.appendChild(el); setTimeout(() => el.remove(), 2600); }
+const buzz = p => { try { navigator.vibrate && navigator.vibrate(p); } catch {} };
+
+/* ---------- world data ---------- */
+const SUB_DE = { 'Western Europe': 'Westeuropa', 'Northern Europe': 'Nordeuropa', 'Southern Europe': 'Südeuropa', 'Eastern Europe': 'Osteuropa', 'Central Europe': 'Mitteleuropa', 'Southeast Europe': 'Südosteuropa', 'Northern Africa': 'Nordafrika', 'Western Africa': 'Westafrika', 'Middle Africa': 'Zentralafrika', 'Eastern Africa': 'Ostafrika', 'Southern Africa': 'Südliches Afrika', 'North America': 'Nordamerika', 'Central America': 'Mittelamerika', 'Caribbean': 'Karibik', 'South America': 'Südamerika', 'Western Asia': 'Westasien', 'Central Asia': 'Zentralasien', 'Southern Asia': 'Südasien', 'Eastern Asia': 'Ostasien', 'South-Eastern Asia': 'Südostasien', 'Australia and New Zealand': 'Australien & Neuseeland', 'Melanesia': 'Melanesien', 'Micronesia': 'Mikronesien', 'Polynesia': 'Polynesien' };
+const COUNTRIES = GEO.countries.map(c => ({ ...c, k: (FACTS[c.c] || [])[0] || c.cap, fact: (FACTS[c.c] || [])[1] || '' }));
+const BY = Object.fromEntries(COUNTRIES.map(c => [c.c, c]));
+const CODE_BY_ID = new Map(COUNTRIES.map(c => [String(c.g), c.c]));
+const FEATS = topojson.feature(GEO.topo, GEO.topo.objects.countries).features;
+const FEAT = {}; for (const f of FEATS) { const k = CODE_BY_ID.get(String(f.id)); if (k) FEAT[k] = f; }
+const NEIGH = (() => { const gs = GEO.topo.objects.countries.geometries, nb = topojson.neighbors(gs), out = {}; gs.forEach((g, i) => { const a = CODE_BY_ID.get(String(g.id)); if (a) out[a] = nb[i].map(j => CODE_BY_ID.get(String(gs[j].id))).filter(Boolean); }); return out; })();
+const flagCache = {}, flag = code => flagCache[code] || (flagCache[code] = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(FLAGS[code] || ''));
+const capLL = code => { const p = CAPS[code] || BY[code].ll; return [p[1], p[0]]; }; // [lon, lat]
+const midLL = code => [BY[code].ll[1], BY[code].ll[0]];
+const KM = (a, b) => d3.geoDistance(a, b) * 6371;
+function landDist(code, ll) { // 0 inside the country, else distance to its nearest border point
+  const f = FEAT[code]; if (!f) return [KM(ll, midLL(code)), midLL(code)];
+  if (d3.geoContains(f, ll)) return [0, ll];
+  let best = Infinity, bp = null; const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+  for (const poly of polys) for (const ring of poly) for (const p of ring) { const d = KM(ll, p); if (d < best) { best = d; bp = p; } }
+  return [best, bp];
+}
+
+/* ---------- seeded game ---------- */
+function rng(str) { let h = 1779033703 ^ str.length; for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; } let a = h >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const LEVELS = { 1: ['Leicht', c => c.t <= 2], 2: ['Mittel', c => c.t <= 3], 3: ['Schwer', () => true] };
+const TYPES = { pinCap: ['📍', 'Hauptstadt finden'], pinLand: ['🗺️', 'Land finden'], flag: ['🚩', 'Flagge'], shape: ['🧩', 'Umriss'], bigger: ['⚖️', 'Größer?'], dist: ['📏', 'Entfernung'], fact: ['💡', 'Fun Fact'], nord: ['🧭', 'Nördlicher?'], nachbar: ['🤝', 'Nachbarland'] };
+const LIMIT = { pinCap: 30, pinLand: 30, dist: 25, flag: 15, shape: 15, fact: 20, nachbar: 15, bigger: 10, nord: 10 };
+const MC = ['flag', 'shape', 'fact', 'nachbar', 'bigger', 'nord'];
+function makeGame(seed, level) {
+  const r = rng(seed + '|' + level), pick = a => a[Math.floor(r() * a.length)];
+  const shuf = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const pool = COUNTRIES.filter(LEVELS[level][1]), used = new Set();
+  const take = list => { const free = list.filter(c => !used.has(c.c)); const c = pick(free.length ? free : list); used.add(c.c); return c; };
+  const near = (c, list) => { const s = list.filter(x => x.s === c.s && x.c !== c.c); if (s.length >= 3) return s; const rg = list.filter(x => x.r === c.r && x.c !== c.c); return rg.length >= 3 ? rg : list.filter(x => x.c !== c.c); };
+  const four = (c, list) => shuf([c.c, ...shuf(near(c, list)).slice(0, 3).map(x => x.c)]);
+  const types = shuf(['pinLand', 'flag', 'shape', 'bigger', 'dist', 'fact', 'nord', 'nachbar', 'pinCap']).concat('pinCap');
+  return types.map((type, i) => {
+    const R = { type, final: i === types.length - 1 };
+    if (type === 'pinCap') R.c = take(pool).c;
+    else if (type === 'pinLand') R.c = take(pool.filter(x => FEAT[x.c])).c;
+    else if (type === 'flag' || type === 'fact') { const c = take(pool); R.c = c.c; R.opts = four(c, pool); }
+    else if (type === 'shape') { const sh = pool.filter(x => FEAT[x.c]), c = take(sh.filter(x => x.a > 2000)); R.c = c.c; R.opts = four(c, sh); }
+    else if (type === 'nachbar') {
+      const c = take(pool.filter(x => (NEIGH[x.c] || []).length)), nb = NEIGH[c.c], inPool = nb.filter(x => pool.some(p => p.c === x)), ans = pick(inPool.length ? inPool : nb);
+      const non = pool.filter(x => x.c !== c.c && !nb.includes(x.c)).sort((a, b) => KM(midLL(a.c), midLL(c.c)) - KM(midLL(b.c), midLL(c.c))).slice(0, 7);
+      R.c = c.c; R.ans = ans; R.opts = shuf([ans, ...shuf(non).slice(0, 3).map(x => x.c)]);
+    } else if (type === 'bigger') {
+      const a = take(pool); let cand = pool.filter(x => !used.has(x.c) && x.a && a.a && Math.max(x.a, a.a) / Math.min(x.a, a.a) >= 1.15 && Math.max(x.a, a.a) / Math.min(x.a, a.a) <= 2.2);
+      if (!cand.length) cand = pool.filter(x => !used.has(x.c) && x.a !== a.a);
+      const b = take(cand), pair = shuf([a.c, b.c]); R.opts = pair; R.ans = BY[pair[0]].a > BY[pair[1]].a ? pair[0] : pair[1]; R.c = R.ans;
+    } else if (type === 'dist') {
+      const a = take(pool); let cand = pool.filter(x => !used.has(x.c) && KM(capLL(a.c), capLL(x.c)) > 400 && KM(capLL(a.c), capLL(x.c)) < 15000); if (!cand.length) cand = pool;
+      const b = take(cand); R.a = a.c; R.b = b.c; R.c = b.c; R.km = Math.round(KM(capLL(a.c), capLL(b.c)));
+    } else if (type === 'nord') {
+      const a = take(pool); let cand = pool.filter(x => !used.has(x.c) && x.r !== a.r && Math.abs(capLL(x.c)[1] - capLL(a.c)[1]) >= 1.5 && Math.abs(capLL(x.c)[1] - capLL(a.c)[1]) <= 9);
+      if (!cand.length) cand = pool.filter(x => !used.has(x.c) && Math.abs(capLL(x.c)[1] - capLL(a.c)[1]) >= 1);
+      const b = take(cand), pair = shuf([a.c, b.c]); R.opts = pair; R.ans = capLL(pair[0])[1] > capLL(pair[1])[1] ? pair[0] : pair[1]; R.c = R.ans;
+    }
+    return R;
+  });
+}
+const answerOf = R => R.type === 'flag' || R.type === 'shape' || R.type === 'fact' ? R.c : R.ans;
+function maskFact(code) { // hide the country and capital: every word starting with the first four letters of their name parts
+  const c = BY[code], stems = new Set();
+  const ALIAS = { US: ['usa', 'amerik'], GB: ['brit', 'engl', 'schott'], NL: ['holl', 'nieder'], CH: ['schweiz', 'eidgen'], KR: ['kore'], KP: ['kore'], CZ: ['tsche'], AE: ['emir', 'dubai'], DE: ['deutsch'], AT: ['österr'] };
+  for (const w of (c.n + ' ' + c.k).split(/[\s\-–()]+/)) { const x = w.replace(/[^\p{L}]/gu, '').toLowerCase(), cmp = /^(nord|süd|ost|west)(\p{L}{4,})/u.exec(x); if (x.length >= 3 && !['republik', 'demokratische', 'vereinigte', 'vereinigtes', 'saint', 'staaten', 'inseln', 'föderierte', 'stadt', 'city'].includes(x)) stems.add(x.slice(0, 4)); if (cmp) stems.add(cmp[2].slice(0, 4)); }
+  for (const a of ALIAS[code] || []) stems.add(a);
+  return c.fact.replace(/\p{L}+/gu, w => [...stems].some(s => w.toLowerCase().startsWith(s)) ? '[…]' : w);
+}
+
+/* ---------- scoring ---------- */
+const timePts = (ok, ms, lim) => ok ? Math.round((400 + 600 * Math.max(0, 1 - ms / (lim * 1000))) / 10) * 10 : 0;
+function basePts(R, v, ms) {
+  if (v == null) return 0;
+  if (R.type === 'pinCap') return Math.round(1000 * Math.exp(-KM(v, capLL(R.c)) / 1000));
+  if (R.type === 'pinLand') return Math.round(1000 * Math.exp(-landDist(R.c, v)[0] / 1000));
+  if (R.type === 'dist') return Math.round(1000 * Math.max(0, 1 - Math.abs(Math.log(v / R.km)) / Math.log(3)));
+  return timePts(v === answerOf(R), ms, LIMIT[R.type]);
+}
+function record(pl, i, R, v, ms, joker) {
+  const b = basePts(R, v, ms), mult = R.final || joker === 'x2' ? 2 : 1;
+  let streak = 0; for (let k = i - 1; k >= 0 && pl.rec[k] && pl.rec[k].b >= 700; k--) streak++;
+  const bonus = b >= 700 && streak >= 2 ? 100 : 0;
+  pl.rec[i] = { b, p: b * mult + bonus, v, ms: Math.round(ms), j: joker || null, bonus, mult };
+  if (joker) pl.jok[joker] = false;
+  return pl.rec[i];
+}
+const sq = (p, R) => { const b = R && R.final ? p / 2 : p; return b >= 800 ? '🟩' : b >= 400 ? '🟨' : b > 0 ? '🟧' : '⬛'; };
+
+/* ---------- storage and links ---------- */
+const LSK = 'echo-duell';
+let DB = (() => { try { return JSON.parse(localStorage.getItem(LSK)) || {}; } catch { return {}; } })();
+DB.games ||= {}; DB.name ||= '';
+const saveDB = () => { try { localStorage.setItem(LSK, JSON.stringify(DB)); } catch {} };
+const gkey = (s, l) => s + '|' + l;
+const b64e = s => btoa(String.fromCharCode(...new TextEncoder().encode(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const b64d = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)));
+const cleanName = n => String(n || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 16);
+function parseLink(hash) {
+  const m = /^#d=([A-Za-z0-9_-]{4,4000})$/.exec(hash || ''); if (!m) return null;
+  try {
+    const o = JSON.parse(b64d(m[1]));
+    if (!o || o.v !== 1 || typeof o.s !== 'string' || !/^[a-z0-9-]{3,24}$/.test(o.s) || ![1, 2, 3].includes(o.l)) return null;
+    const p = (Array.isArray(o.p) ? o.p : []).slice(0, 12).map(x => Array.isArray(x) ? [cleanName(x[0]), (Array.isArray(x[1]) ? x[1] : []).slice(0, 10).map(n => Math.max(0, Math.min(2100, Math.round(+n) || 0)))] : null).filter(x => x && x[0] && x[1].length === 10);
+    return { s: o.s, l: o.l, p };
+  } catch { return null; }
+}
+const linkFor = g => location.origin + location.pathname + '#d=' + b64e(JSON.stringify({ v: 1, s: g.s, l: g.l, p: g.p }));
+function mergeGame(s, l, p) { const k = gkey(s, l), g = DB.games[k] || (DB.games[k] = { s, l, p: [], me: null, t: Date.now() }); for (const [n, pts] of p) if (!g.p.some(x => x[0].toLowerCase() === n.toLowerCase())) g.p.push([n, pts]); g.t = Date.now(); saveDB(); return g; }
+function echoXP(total) { try { const raw = localStorage.getItem('echo-games'); if (!raw) return; const g = JSON.parse(raw), xp = Math.min(40, Math.round(total / 250)); g.xp = (g.xp || 0) + xp; g.days ||= {}; const d = g.days[dk(new Date())] ||= { xp: 0 }; d.xp = (d.xp || 0) + xp; d.duell = (d.duell || 0) + 1; localStorage.setItem('echo-games', JSON.stringify(g)); } catch {} }
+async function share(text, url) {
+  try { if (navigator.share) { await navigator.share({ title: 'Atlas-Duell', text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(text + '\n' + url); toast('Kopiert, jetzt in den Gruppenchat einfügen'); } catch { S.showLink = url; render(); }
+}
+
+/* ---------- map ---------- */
+const PW = 600, PH = 400, WPROJ = d3.geoNaturalEarth1().fitExtent([[4, 4], [PW - 4, PH - 4]], { type: 'Sphere' }), WPATH = d3.geoPath(WPROJ);
+const SPHERE = WPATH({ type: 'Sphere' }), LANDS = FEATS.map(f => [CODE_BY_ID.get(String(f.id)) || '', WPATH(f)]).filter(x => x[1]);
+const COLORS = ['#1B8173', '#D4542A', '#A87D14', '#2F6FB0', '#B0407A', '#5E8C2F', '#7A5AC8', '#8A5A3B'];
+const PINPATH = 'M0,0 C-4,-7 -9,-11 -9,-17 A9,9 0 1 1 9,-17 C9,-11 4,-7 0,0Z';
+const pinSVG = (ll, color, label, cls = '', delay = 0) => { const p = WPROJ(ll); if (!p) return ''; return `<g class="pin" data-x="${p[0].toFixed(2)}" data-y="${p[1].toFixed(2)}" transform="translate(${p[0].toFixed(2)},${p[1].toFixed(2)})"><g class="${cls}" style="animation-delay:${delay}s"><path d="${PINPATH}" fill="${color}"/><circle cy="-17" r="3.4"/>${label ? `<text class="plabel" x="12" y="-14" fill="${color}">${esc(label)}</text>` : ''}</g></g>`; };
+const targetSVG = ll => { const p = WPROJ(ll); return `<g class="tmark" data-x="${p[0].toFixed(2)}" data-y="${p[1].toFixed(2)}" transform="translate(${p[0].toFixed(2)},${p[1].toFixed(2)})"><circle r="9"/><path d="M0,-5 L1.5,-1.5 5,-1.5 2.3,0.8 3.2,4.6 0,2.4 -3.2,4.6 -2.3,0.8 -5,-1.5 -1.5,-1.5Z"/></g>`; };
+function mapHTML(id, inner = '', opts = {}) {
+  const lands = LANDS.map(([c, d]) => `<path class="land${opts.target === c ? ' target' : ''}${opts.fills && opts.fills[c] ? ' won' : ''}" d="${d}"${opts.fills && opts.fills[c] ? ` style="fill:${opts.fills[c]}"` : ''}/>`).join('');
+  return `<div class="stage"><svg id="${id}" viewBox="0 0 ${PW} ${PH}" role="img" aria-label="Weltkarte"><g class="zg"><path class="sphere" d="${SPHERE}"/>${lands}${inner}</g></svg><div class="zoomctl"><button data-act="zin" aria-label="Hineinzoomen">+</button><button data-act="zout" aria-label="Herauszoomen">−</button></div></div>`;
+}
+let Z = null; // live zoom of the map on screen
+function initMap(id, fit, onTap) {
+  const svg = d3.select('#' + id); if (svg.empty()) return;
+  const g = svg.select('.zg'), scaleMarks = k => g.selectAll('.pin,.tmark').attr('transform', function () { return `translate(${this.dataset.x},${this.dataset.y}) scale(${1 / k})`; });
+  const zoom = d3.zoom().scaleExtent([1, 40]).translateExtent([[0, 0], [PW, PH]]).clickDistance(10).on('zoom', e => { g.attr('transform', e.transform); scaleMarks(e.transform.k); });
+  svg.call(zoom).on('dblclick.zoom', null);
+  if (fit) svg.call(zoom.transform, fit);
+  if (onTap) svg.on('click', e => { const [x, y] = d3.pointer(e, g.node()), ll = WPROJ.invert([x, y]); if (!ll || !isFinite(ll[0])) return; const back = WPROJ(ll); if (!back || Math.hypot(back[0] - x, back[1] - y) > 2) return; onTap(ll, g, zoom); });
+  Z = { svg, zoom, g };
+}
+function fitTo(lls, minSpan = 60) { // zoom transform that shows all points with some padding
+  const pts = lls.map(ll => WPROJ(ll)).filter(Boolean); if (!pts.length) return d3.zoomIdentity;
+  let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity]; for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+  const w = Math.max(x1 - x0, minSpan), h = Math.max(y1 - y0, minSpan * PH / PW), k = Math.max(1, Math.min(10, 0.8 * Math.min(PW / w, PH / h))), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  return d3.zoomIdentity.translate(PW / 2 - k * cx, PH / 2 - k * cy).scale(k);
+}
+function shapeSVG(code) { const f = FEAT[code]; const c = d3.geoCentroid(f), p = d3.geoAzimuthalEqualArea().rotate([-c[0], -c[1]]).fitExtent([[40, 30], [PW - 40, PH - 30]], f); return `<svg viewBox="0 0 ${PW} ${PH}" role="img" aria-label="Umriss eines Landes"><path d="${d3.geoPath(p)(f)}"/></svg>`; }
+
+/* ---------- match state ---------- */
+const S = { view: 'home', level: 2, party: [], showLink: null };
+let M = null, LINK = null, timer = null, raf = null;
+function stopClock() { clearTimeout(timer); cancelAnimationFrame(raf); timer = null; }
+function newPlayer(name, i) { return { name, color: COLORS[i % COLORS.length], rec: [], jok: { '5050': true, tipp: true, x2: true } }; }
+function startMatch(mode, seed, level, names) {
+  stopClock();
+  M = { mode, seed, level, rounds: makeGame(seed, level), i: 0, turn: 0, players: names.map(newPlayer), cur: null, phase: mode === 'party' ? 'hand' : 'q' };
+  if (M.phase === 'q') beginTurn(); else render();
+}
+const P = () => M.players[M.turn];
+function beginTurn() { M.cur = { j: null, hide: [], hint: null, pin: null, km: null, t0: performance.now() }; M.phase = 'q'; render(); startClock(); }
+function startClock() {
+  const R = M.rounds[M.i], lim = LIMIT[R.type] * 1000, t0 = M.cur.t0;
+  const tick = () => { const left = Math.max(0, 1 - (performance.now() - t0) / lim), bar = document.querySelector('.tbar'); if (bar) { bar.firstChild.style.width = (left * 100).toFixed(1) + '%'; bar.classList.toggle('low', left < 0.25); } if (left > 0) raf = requestAnimationFrame(tick); };
+  raf = requestAnimationFrame(tick);
+  timer = setTimeout(() => { const R2 = M.rounds[M.i]; submit(R2.type.startsWith('pin') ? M.cur.pin : R2.type === 'dist' ? M.cur.km : null, true); }, lim);
+}
+function submit(v, timeout) {
+  if (!M || M.phase !== 'q') return; stopClock();
+  const R = M.rounds[M.i], rec = record(P(), M.i, R, v, performance.now() - M.cur.t0, M.cur.j);
+  buzz(rec.b >= 700 ? 25 : [30, 40, 30]); if (timeout && v == null) toast('Zeit abgelaufen');
+  if (M.mode !== 'party') { M.phase = 'fb'; }
+  else if (M.turn < M.players.length - 1) { M.turn++; M.phase = 'hand'; }
+  else { M.phase = 'reveal'; }
+  render(); scrollTo(0, 0);
+}
+function nextRound() {
+  if (M.i >= M.rounds.length - 1) return finish();
+  M.i++; M.turn = 0;
+  if (M.mode === 'party') { M.phase = 'hand'; render(); scrollTo(0, 0); } else { beginTurn(); scrollTo(0, 0); }
+}
+function finish() {
+  stopClock(); M.phase = 'end';
+  if (M.mode !== 'party') {
+    const me = M.players[0], pts = me.rec.map(r => r.p), g = mergeGame(M.seed, M.level, [[me.name, pts]]); g.me = me.name; saveDB();
+    if (M.mode === 'daily') { const d = dk(new Date()), y = new Date(); y.setDate(y.getDate() - 1); DB.dstreak = DB.dlast === dk(y) ? (DB.dstreak || 0) + 1 : DB.dlast === d ? DB.dstreak || 1 : 1; DB.dlast = d; saveDB(); }
+    history.replaceState(null, '', '#d=' + linkFor(g).split('#d=')[1]);
+    echoXP(sum(pts));
+  } else echoXP(Math.max(...M.players.map(p => sum(p.rec.map(r => r.p)))));
+  render(); scrollTo(0, 0); setTimeout(maybeConfetti, 300);
+}
+
+/* ---------- jokers ---------- */
+function useJoker(j) {
+  if (!M || M.phase !== 'q' || M.cur.j) return; const R = M.rounds[M.i], pl = P();
+  if (!pl.jok[j] || !jokerFits(j, R)) return;
+  M.cur.j = j;
+  if (j === '5050') { const ok = answerOf(R), wrong = R.opts.filter(x => x !== ok).sort(() => Math.random() - 0.5).slice(0, 2); M.cur.hide = wrong; }
+  if (j === 'tipp') {
+    if (R.type === 'dist') { const lo = Math.round(R.km / 1.7 / 100) * 100, hi = Math.round(R.km * 1.7 / 100) * 100; M.cur.hint = `Zwischen ${fmt(lo)} und ${fmt(hi)} km.`; }
+    else { const c = BY[R.c], members = COUNTRIES.filter(x => x.s === c.s); M.cur.hint = `Region: ${SUB_DE[c.s] || c.s}.`; M.cur.fit = fitTo(members.map(x => midLL(x.c)), 30); }
+  }
+  pl.jok[j] = true; // consumed on submit (record), so a timeout still counts it
+  render();
+}
+const jokerFits = (j, R) => j === 'x2' ? !R.final : j === '5050' ? ['flag', 'shape', 'fact', 'nachbar'].includes(R.type) : ['pinCap', 'pinLand', 'dist'].includes(R.type);
+function drawPin(ll) { if (!Z) return; Z.g.selectAll('.pin').remove(); Z.g.node().insertAdjacentHTML('beforeend', pinSVG(ll, P().color, '', 'drop')); const k = d3.zoomTransform(Z.svg.node()).k; Z.g.selectAll('.pin').attr('transform', function () { return `translate(${this.dataset.x},${this.dataset.y}) scale(${1 / k})`; }); const b = document.getElementById('pinok'); if (b) b.disabled = false; }
+
+/* ---------- views ---------- */
+const lvlName = l => LEVELS[l][0];
+const totalOf = pl => sum(pl.rec.map(r => r && r.p));
+const tname = R => TYPES[R.type][0] + ' ' + TYPES[R.type][1];
+function viewHome() {
+  const d = dk(new Date()), daily = DB.games[gkey('tag-' + d, 2)], dDone = daily && daily.me;
+  const recent = Object.values(DB.games).filter(g => g.p.length).sort((a, b) => b.t - a.t).slice(0, 5);
+  const echo = (() => { try { return !!localStorage.getItem('echo-games'); } catch { return false; } })();
+  return `${echo ? `<div class="topbar"><a class="link" href="./#games">← Echo</a><span></span></div>` : ''}
+  <div class="hero"><span class="eyebrow">Geografie für Freunde</span><h1>Atlas-<span>Duell</span></h1><p class="muted">Zehn Runden, eine Welt: Hauptstädte auf der Karte finden, Flaggen, Umrisse, Entfernungen schätzen. Wer kennt sie besser?</p></div>
+  <label class="card" style="gap:6px"><span class="eyebrow">Dein Name</span><input class="field" id="myname" maxlength="16" placeholder="z. B. Julian" value="${esc(DB.name)}" autocomplete="nickname"></label>
+  <button class="card mode" data-act="daily"><div class="row spread"><div class="row"><span class="em">📅</span><div style="display:grid"><h3>Tagesduell</h3><span class="small muted">${dDone ? `Heute: ${fmt(sum(daily.p.find(x => x[0] === daily.me)[1]))} Punkte · ${daily.p.length} Spieler` : 'Heute dieselben zehn Fragen für alle'}</span></div></div><span class="tag gold">${DB.dstreak && (DB.dlast === d || dDone) ? '🔥 ' + DB.dstreak : dDone ? 'erledigt' : 'neu'}</span></div></button>
+  <div class="card"><div class="row"><span style="font-size:30px">⚔️</span><div style="display:grid"><h3>Freunde herausfordern</h3><span class="small muted">Du spielst vor, schickst den Link in die Gruppe, jeder spielt dieselben Fragen. Die Rangliste wächst im Link mit.</span></div></div>
+    <div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="lvl" data-v="${l}" aria-pressed="${S.level === l}">${lvlName(l)}</button>`).join('')}</div>
+    <button class="btn primary big" data-act="duel">Neues Duell starten</button></div>
+  <button class="card mode" data-act="party"><div class="row spread"><div class="row"><span class="em">🎉</span><div style="display:grid"><h3>Party-Modus</h3><span class="small muted">Ein Handy, 2 bis 8 Leute: reihum antworten, dann gemeinsam auflösen</span></div></div><span>→</span></div></button>
+  ${recent.length ? `<div class="card"><h3>Deine Duelle</h3>${recent.map(g => { const top = g.p.slice().sort((a, b) => sum(b[1]) - sum(a[1]))[0]; return `<button class="mode" style="background:none;padding:0" data-act="open" data-v="${esc(gkey(g.s, g.l))}"><div class="row spread"><div style="display:grid"><b>${g.s.startsWith('tag-') ? 'Tagesduell ' + g.s.slice(10, 12) + '.' + g.s.slice(8, 10) + '.' : 'Duell · ' + lvlName(g.l)}</b><span class="small muted">${g.p.length} Spieler · vorne ${esc(top[0])} mit ${fmt(sum(top[1]))}</span></div><span class="small muted">${g.me ? fmt(sum((g.p.find(x => x[0] === g.me) || [0, []])[1])) : 'offen'} →</span></div></button>`; }).join('<hr style="border:0;border-top:1px solid var(--line);margin:0">')}</div>` : ''}
+  <details class="rules"><summary>So wird gezählt</summary><ul>
+    <li>📍 Karte: Pin setzen und bestätigen. Je näher, desto mehr Punkte, bis 1.000. Mit zwei Fingern oder +/− zoomen.</li>
+    <li>🚩 Quizrunden: richtig und schnell gibt bis 1.000, falsch 0.</li>
+    <li>📏 Schätzen: je näher an der echten Luftlinie, desto mehr.</li>
+    <li>🃏 Drei Joker pro Spiel, jeder einmal: 50:50, Tipp (Region oder Bereich) und ×2 für eine Runde.</li>
+    <li>🔥 Serie: Ab der dritten starken Runde in Folge (700+) gibt es 100 Bonus.</li>
+    <li>🏁 Das Finale zählt doppelt.</li></ul></details>`;
+}
+function boardHTML(rows, meName) { // rows: [name, total, sub?, color?, delta?]
+  const s = rows.slice().sort((a, b) => b[1] - a[1]);
+  return `<div class="board">${s.map((r, i) => `<div class="brow${meName && r[0] === meName ? ' me' : ''}"><span class="rk">${['🥇', '🥈', '🥉'][i] || i + 1}</span><span class="nm">${r[3] ? `<i class="dot" style="background:${r[3]}"></i>` : ''}<span><b>${esc(r[0])}</b>${r[2] ? `<span class="sub">${esc(r[2])}</span>` : ''}</span></span><span class="tot">${fmt(r[1])}</span><span class="delta ${r[4] > 0 ? 'up' : r[4] < 0 ? 'down' : ''}">${r[4] > 0 ? '▲' + r[4] : r[4] < 0 ? '▼' + -r[4] : ''}</span></div>`).join('')}</div>`;
+}
+function viewLink() {
+  const g = DB.games[gkey(LINK.s, LINK.l)] || { p: LINK.p }, ps = g.p, first = ps[0], played = g.me;
+  const label = LINK.s.startsWith('tag-') ? `Tagesduell vom ${LINK.s.slice(10, 12)}.${LINK.s.slice(8, 10)}.` : 'Duell · ' + lvlName(LINK.l);
+  return `<div class="topbar"><button class="link" data-act="home">← Atlas-Duell</button><span class="tag gold">${esc(label)}</span></div>
+  <div class="hero"><span class="eyebrow">Herausforderung</span><h1>${first ? `${esc(first[0])} fordert dich heraus` : 'Ein Duell wartet'}</h1><p class="muted">${ps.length ? `${ps.length} ${ps.length === 1 ? 'Person hat' : 'Leute haben'} schon gespielt. Dieselben zehn Fragen, wer holt mehr?` : 'Dieselben zehn Fragen für alle.'}</p></div>
+  ${ps.length ? boardHTML(ps.map(p => [p[0], sum(p[1])]), played) : ''}
+  ${played ? `<div class="card"><p>Du hast dieses Duell schon gespielt.</p><button class="btn primary big" data-act="share-g" data-v="${esc(gkey(LINK.s, LINK.l))}">Rangliste teilen</button></div>${S.showLink ? `<input class="sharebox" readonly value="${esc(S.showLink)}">` : ''}`
+    : `<label class="card" style="gap:6px"><span class="eyebrow">Dein Name</span><input class="field" id="myname" maxlength="16" placeholder="Name für die Rangliste" value="${esc(DB.name)}"></label><button class="btn primary big" data-act="join">Mitspielen</button>`}
+  <details class="rules"><summary>So wird gezählt</summary><ul><li>📍 Karte: Pin setzen und bestätigen, je näher, desto mehr (bis 1.000).</li><li>🚩 Quiz: richtig und schnell gibt bis 1.000.</li><li>🃏 Drei Joker: 50:50, Tipp, ×2. 🏁 Finale doppelt. 🔥 Serie +100.</li></ul></details>`;
+}
+function viewSetup() {
+  const names = S.party.length ? S.party : (S.party = [DB.name || '', '']);
+  return `<div class="topbar"><button class="link" data-act="home">← Atlas-Duell</button><span></span></div>
+  <div class="hero"><span class="eyebrow">Party-Modus</span><h2>Wer spielt mit?</h2><p class="muted small">Reihum antwortet jeder für sich, das Handy wird weitergegeben. Danach zeigt die Auflösung alle Antworten auf einmal.</p></div>
+  <div class="names">${names.map((n, i) => `<div class="nrow"><i class="dot" style="background:${COLORS[i]}"></i><input class="field" data-pi="${i}" maxlength="16" placeholder="Spieler ${i + 1}" value="${esc(n)}">${names.length > 2 ? `<button data-act="pdel" data-v="${i}" aria-label="Entfernen">×</button>` : ''}</div>`).join('')}</div>
+  ${names.length < 8 ? `<button class="btn" data-act="padd">+ Spieler</button>` : ''}
+  <div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="lvl" data-v="${l}" aria-pressed="${S.level === l}">${lvlName(l)}</button>`).join('')}</div>
+  <button class="btn primary big" data-act="pgo">Los geht's</button>`;
+}
+function topRound() {
+  const R = M.rounds[M.i], pl = P();
+  return `<div class="topbar"><button class="link" data-act="quit">✕ Beenden</button><span class="small muted mono">${M.mode === 'party' ? `<i class="dot" style="background:${pl.color};display:inline-block;vertical-align:-1px"></i> ${esc(pl.name)} · ` : ''}${fmt(totalOf(pl))} P</span></div>
+  <div class="progress">${M.rounds.map((x, i) => { const r = pl.rec[i]; return `<i class="${r ? (r.b >= 800 ? 'g' : r.b >= 400 ? 'y' : 'r') : i === M.i ? 'cur' : ''}"></i>`; }).join('')}</div>
+  <div class="row spread"><span class="eyebrow">Runde ${M.i + 1}/${M.rounds.length} · ${tname(R)}</span>${R.final ? '<span class="tag gold">🏁 Finale ×2</span>' : ''}</div>`;
+}
+function viewQ() {
+  const R = M.rounds[M.i], c = BY[R.c], cur = M.cur, pl = P();
+  const jok = ['5050', 'tipp', 'x2'].map(j => { const can = pl.jok[j] && jokerFits(j, R) && !cur.j, on = cur.j === j; return `<button class="joker${on ? ' on' : ''}" data-act="joker" data-v="${j}" ${can ? '' : 'disabled'}>${{ '5050': '½ 50:50', tipp: '💡 Tipp', x2: '×2' }[j]}<small>${on ? 'aktiv' : pl.jok[j] ? 'frei' : 'weg'}</small></button>`; }).join('');
+  const opt = (code, label, extra = '') => `<button class="opt${cur.hide.includes(code) ? ' gone' : ''}" data-act="ans" data-v="${code}" ${cur.hide.includes(code) ? 'disabled' : ''}>${extra}<span>${label}</span></button>`;
+  let title = '', sub = '', body = '';
+  if (R.type === 'pinCap' || R.type === 'pinLand') {
+    title = R.type === 'pinCap' ? `Wo liegt ${esc(c.k)}?` : `Wo liegt ${esc(c.n)}?`;
+    sub = R.type === 'pinCap' ? `Hauptstadt von ${esc(c.n)}` : 'Tippe irgendwo ins Land.';
+    body = mapHTML('pmap') + `<button class="btn primary big" id="pinok" data-act="pinok" ${cur.pin ? '' : 'disabled'}>Pin bestätigen</button>`;
+  } else if (R.type === 'flag') { title = 'Zu welchem Land gehört die Flagge?'; body = `<div class="flagbig"><img src="${flag(R.c)}" alt="Flagge"></div><div class="opts">${R.opts.map(x => opt(x, esc(BY[x].n))).join('')}</div>`; }
+  else if (R.type === 'shape') { title = 'Welches Land hat diesen Umriss?'; body = `<div class="shapebox">${shapeSVG(R.c)}</div><div class="opts">${R.opts.map(x => opt(x, esc(BY[x].n))).join('')}</div>`; }
+  else if (R.type === 'fact') { title = 'Welches Land ist gemeint?'; body = `<div class="fact"><b>💡</b><span>${esc(maskFact(R.c))}</span></div><div class="opts">${R.opts.map(x => opt(x, esc(BY[x].n))).join('')}</div>`; }
+  else if (R.type === 'nachbar') { title = `Welches Land grenzt an ${esc(c.n)}?`; sub = 'Gemeint ist eine Landgrenze.'; body = `<div class="opts">${R.opts.map(x => opt(x, esc(BY[x].n), `<img src="${flag(x)}" alt="">`)).join('')}</div>`; }
+  else if (R.type === 'bigger') { title = 'Welches Land ist größer?'; sub = 'Nach Fläche'; body = `<div class="opts duo2">${R.opts.map(x => `<button class="opt duo" data-act="ans" data-v="${x}"><img src="${flag(x)}" alt=""><span>${esc(BY[x].n)}</span></button>`).join('')}</div>`; }
+  else if (R.type === 'nord') { title = 'Welche Hauptstadt liegt weiter nördlich?'; body = `<div class="opts duo2">${R.opts.map(x => `<button class="opt duo" data-act="ans" data-v="${x}"><img src="${flag(x)}" alt=""><span>${esc(BY[x].k)}<br><small class="muted">${esc(BY[x].n)}</small></span></button>`).join('')}</div>`; }
+  else if (R.type === 'dist') {
+    const a = BY[R.a], b = BY[R.b]; title = `Wie weit ist es von ${esc(a.k)} nach ${esc(b.k)}?`; sub = `${esc(a.n)} → ${esc(b.n)}, Luftlinie`;
+    const v = cur.sv != null ? cur.sv : 500;
+    body = `<div class="slider"><div class="val" id="kmval">${cur.km ? '≈ ' + fmt(cur.km) + ' km' : 'Schieben'}</div><input type="range" id="kmsl" min="0" max="1000" step="1" value="${v}" aria-label="Entfernung"><div class="scale"><span>100 km</span><span>1.400</span><span>20.000 km</span></div></div><button class="btn primary big" id="kmok" data-act="kmok" ${cur.km ? '' : 'disabled'}>Schätzung abgeben</button>`;
+  }
+  return `${topRound()}<div class="tbar"><i></i></div><div style="display:grid;gap:4px"><div class="q">${title}</div>${sub ? `<span class="muted small">${sub}</span>` : ''}</div>
+    ${cur.hint ? `<div class="hintbar">💡 ${esc(cur.hint)}</div>` : ''}${body}<div class="jokers">${jok}</div>`;
+}
+function answerLine(R, rec) {
+  if (!rec || rec.v == null) return 'keine Antwort';
+  if (R.type === 'pinCap') return fmt(KM(rec.v, capLL(R.c))) + ' km daneben';
+  if (R.type === 'pinLand') { const d = landDist(R.c, rec.v)[0]; return d ? fmt(d) + ' km daneben' : 'im Land'; }
+  if (R.type === 'dist') return '≈ ' + fmt(rec.v) + ' km';
+  const nm = R.type === 'nord' ? BY[rec.v].k : BY[rec.v].n; return (rec.v === answerOf(R) ? '✓ ' : '✗ ') + nm;
+}
+function solution(R) {
+  const c = BY[R.c];
+  if (R.type === 'pinCap') return `<div class="answer"><img src="${flag(R.c)}" alt=""><div style="display:grid"><b>${esc(c.k)}</b><span class="small muted">Hauptstadt von ${esc(c.n)}</span></div></div>`;
+  if (R.type === 'dist') return `<div class="answer"><div style="display:grid"><b>${fmt(R.km)} km</b><span class="small muted">${esc(BY[R.a].k)} → ${esc(BY[R.b].k)}, Luftlinie</span></div></div>`;
+  if (R.type === 'bigger') return `<div class="answer"><div style="display:grid;gap:2px">${R.opts.map(x => `<span><b style="font-size:16px">${esc(BY[x].n)}</b> <span class="mono small">${fmt(BY[x].a)} km²</span>${x === R.ans ? ' ✓' : ''}</span>`).join('')}</div></div>`;
+  if (R.type === 'nord') return `<div class="answer"><div style="display:grid;gap:2px">${R.opts.map(x => `<span><b style="font-size:16px">${esc(BY[x].k)}</b> <span class="mono small">${capLL(x)[1].toFixed(1).replace('.', ',')}° N</span>${x === R.ans ? ' ✓' : ''}</span>`).join('')}</div></div>`;
+  if (R.type === 'nachbar') { const a = BY[R.ans]; return `<div class="answer"><img src="${flag(R.ans)}" alt=""><div style="display:grid"><b>${esc(a.n)}</b><span class="small muted">Alle Nachbarn von ${esc(c.n)}: ${(NEIGH[R.c] || []).map(x => esc(BY[x].n)).join(', ')}</span></div></div>`; }
+  return `<div class="answer"><img src="${flag(R.c)}" alt=""><div style="display:grid"><b>${esc(c.n)}</b>${R.type === 'fact' ? `<span class="small">${esc(c.fact)}</span>` : `<span class="small muted">${esc(SUB_DE[c.s] || c.s)} · Hauptstadt ${esc(c.k)}</span>`}</div></div>`;
+}
+function roundMap(R, players) { // map of the round with every pin and the target
+  if (!['pinCap', 'pinLand', 'dist'].includes(R.type)) return '';
+  let inner = '', pts = [];
+  if (R.type === 'dist') { const a = capLL(R.a), b = capLL(R.b); inner = `<path class="line" style="stroke:var(--target)" d="${WPATH({ type: 'LineString', coordinates: [a, b] })}"/>${targetSVG(a)}${targetSVG(b)}`; pts = [a, b]; return { html: mapHTML('rmap', inner), fit: fitTo(pts, 80) }; }
+  const t = R.type === 'pinCap' ? capLL(R.c) : null;
+  for (const pl of players) { const rec = pl.rec[M.i]; if (!rec || !rec.v) continue; const to = t || landDist(R.c, rec.v)[1]; if (to && (to[0] !== rec.v[0] || to[1] !== rec.v[1])) inner += `<path class="line" style="stroke:${pl.color}" d="${WPATH({ type: 'LineString', coordinates: [rec.v, to] })}"/>`; pts.push(rec.v); }
+  inner += t ? targetSVG(t) : '';
+  players.forEach((pl, i) => { const rec = pl.rec[M.i]; if (rec && rec.v) inner += pinSVG(rec.v, pl.color, players.length > 1 ? pl.name : '', 'drop', i * 0.12); });
+  pts.push(t || midLL(R.c));
+  return { html: mapHTML('rmap', inner, { target: R.type === 'pinLand' ? R.c : null }), fit: fitTo(pts, R.type === 'pinLand' ? 50 : 40) };
+}
+function viewFb() {
+  const R = M.rounds[M.i], pl = P(), rec = pl.rec[M.i], rm = roundMap(R, [pl]);
+  return `${topRound()}<div class="gain"><div style="display:grid"><span class="eyebrow">Diese Runde</span><span class="pts${rec.p ? '' : ' zero'}" data-count="${rec.p}">0</span></div><div class="bonus">${rec.mult > 1 ? `<span class="tag gold">${R.final ? '🏁 Finale ×2' : '×2 Joker'}</span>` : ''}${rec.bonus ? '<span class="tag calm">🔥 Serie +100</span>' : ''}<span class="tag">${esc(answerLine(R, rec))}</span></div></div>
+    ${rm ? rm.html : ''}${solution(R)}<button class="btn primary big" data-act="next" id="nextbtn">${M.i >= M.rounds.length - 1 ? 'Zum Ergebnis' : 'Weiter'}</button>`;
+}
+function viewHand() {
+  const pl = P(), R = M.rounds[M.i], prev = M.turn > 0 ? M.players[M.turn - 1] : null;
+  return `<div class="topbar"><button class="link" data-act="quit">✕ Beenden</button><span class="small muted">Runde ${M.i + 1}/${M.rounds.length}</span></div>
+  <div class="handoff"><span class="eyebrow">${prev ? `✓ ${esc(prev.name)} ist fertig · Handy weitergeben an` : 'Als Nächstes ist dran'}</span><div class="who" style="color:${pl.color}">${esc(pl.name)}</div>
+    <span class="tag ${R.final ? 'gold' : ''}" style="justify-self:center">${tname(R)}${R.final ? ' · Finale ×2' : ''}</span>
+    <span class="small muted">Joker: ${['5050', 'tipp', 'x2'].filter(j => pl.jok[j]).map(j => ({ '5050': '50:50', tipp: 'Tipp', x2: '×2' })[j]).join(', ') || 'keine mehr'}</span>
+    <button class="btn primary big" data-act="go" style="max-width:360px">Ich bin ${esc(pl.name)}, los</button></div>`;
+}
+function viewReveal() {
+  const R = M.rounds[M.i], rm = roundMap(R, M.players);
+  const before = M.players.map(p => sum(p.rec.slice(0, M.i).map(r => r.p))), after = M.players.map(totalOf);
+  const rank = arr => arr.map(v => arr.filter(x => x > v).length);
+  const rb = rank(before), ra = rank(after);
+  const rows = M.players.map((p, i) => [p.name, after[i], `${answerLine(R, p.rec[M.i])} · +${fmt(p.rec[M.i].p)}${p.rec[M.i].j === 'x2' ? ' ×2' : ''}${p.rec[M.i].bonus ? ' 🔥' : ''}`, p.color, M.i ? rb[i] - ra[i] : 0]);
+  return `<div class="topbar"><button class="link" data-act="quit">✕ Beenden</button><span class="small muted">Runde ${M.i + 1}/${M.rounds.length}</span></div>
+  <div class="row spread"><span class="eyebrow">Auflösung · ${tname(R)}</span>${R.final ? '<span class="tag gold">🏁 Finale ×2</span>' : ''}</div>
+  ${rm ? rm.html : ''}${solution(R)}${boardHTML(rows)}
+  <button class="btn primary big" data-act="next">${M.i >= M.rounds.length - 1 ? 'Siegerehrung' : 'Nächste Runde'}</button>`;
+}
+function awards(players, rounds) { // titles for the best in each discipline; only clear winners
+  const groups = [['🧭', 'Kartenprofi', ['pinCap', 'pinLand']], ['🚩', 'Flaggen-Ass', ['flag', 'shape']], ['📏', 'Augenmaß', ['dist', 'bigger', 'nord']], ['🧠', 'Weltwissen', ['fact', 'nachbar']]];
+  const out = [];
+  for (const [em, name, ts] of groups) { const sc = players.map(p => [p, sum(rounds.map((R, i) => ts.includes(R.type) ? p.pts[i] : 0))]).sort((a, b) => b[1] - a[1]); if (sc.length > 1 && sc[0][1] > sc[1][1] && sc[0][1] > 0) out.push([em, name, sc[0][0].name, fmt(sc[0][1]) + ' P']); }
+  const hits = players.map(p => [p, p.pts.filter((x, i) => (rounds[i].final ? x / 2 : x) >= 900).length]).sort((a, b) => b[1] - a[1]);
+  if (hits.length > 1 && hits[0][1] > hits[1][1]) out.push(['🎯', 'Volltreffer', hits[0][0].name, hits[0][1] + '× 900+']);
+  const fast = players.filter(p => p.ms).map(p => [p, p.ms]).sort((a, b) => a[1] - b[1]);
+  if (fast.length > 1 && fast[0][1] < fast[1][1]) out.push(['⚡', 'Blitz', fast[0][0].name, (fast[0][1] / 1000).toFixed(1).replace('.', ',') + ' s im Schnitt']);
+  return out.length ? `<div class="awards">${out.map(([em, n, who, val]) => `<div class="award"><span class="em">${em}</span><span class="eyebrow">${n}</span><b>${esc(who)}</b><span class="small muted mono">${val}</span></div>`).join('')}</div>` : '';
+}
+function winnersMap(players, rounds) { // each round's country in the colour of whoever won it
+  const fills = {}, seen = new Set(); rounds.forEach((R, i) => { const sc = players.map(p => p.pts[i]), mx = Math.max(...sc); if (mx <= 0 || sc.filter(x => x === mx).length > 1) return; const w = players[sc.indexOf(mx)]; for (const code of R.type === 'dist' ? [R.a, R.b] : R.type === 'bigger' || R.type === 'nord' ? R.opts : [R.c]) { if (!seen.has(code)) { fills[code] = w.color; seen.add(code); } } });
+  const dots = Object.entries(fills).map(([code, col]) => { const p = WPROJ(midLL(code)); return p ? `<g class="tmark" data-x="${p[0].toFixed(2)}" data-y="${p[1].toFixed(2)}" transform="translate(${p[0].toFixed(2)},${p[1].toFixed(2)})"><circle class="wdot" r="5" style="fill:${col}"/></g>` : ''; }).join('');
+  return `<div style="display:grid;gap:8px"><span class="eyebrow">Wer hat welche Runde geholt</span>${mapHTML('wmap', dots, { fills })}<div class="legend">${players.map(p => `<span><i class="dot" style="background:${p.color}"></i>${esc(p.name)}</span>`).join('')}</div></div>`;
+}
+function viewEnd() {
+  if (M.mode === 'party') {
+    const ps = M.players.map(p => ({ name: p.name, color: p.color, pts: p.rec.map(r => r.p), ms: sum(p.rec.map(r => r.ms)) / p.rec.length })), sorted = ps.slice().sort((a, b) => sum(b.pts) - sum(a.pts));
+    const pod = [sorted[1], sorted[0], sorted[2]];
+    return `<div class="topbar"><button class="link" data-act="home">← Atlas-Duell</button><span class="tag gold">${lvlName(M.level)}</span></div>
+    <div class="hero" style="text-align:center"><span class="eyebrow">Siegerehrung</span><h1>${esc(sorted[0].name)} gewinnt</h1></div>
+    <div class="podium">${pod.map((p, i) => p ? `<div class="col p${[2, 1, 3][i]}"><span class="nm" style="color:${p.color}">${esc(p.name)}</span><span class="mono small">${fmt(sum(p.pts))}</span><div class="blk">${[2, 1, 3][i]}</div></div>` : '<div></div>').join('')}</div>
+    ${boardHTML(ps.map(p => [p.name, sum(p.pts), '', p.color]))}${awards(ps, M.rounds)}${winnersMap(ps, M.rounds)}
+    <div class="row wrap"><button class="btn primary grow" data-act="again">Revanche</button><button class="btn grow" data-act="home">Startseite</button></div>`;
+  }
+  const g = DB.games[gkey(M.seed, M.level)], me = M.players[0], tot = totalOf(me), ps = g.p.map((x, i) => ({ name: x[0], pts: x[1], color: COLORS[i % COLORS.length] }));
+  const rank = ps.filter(p => sum(p.pts) > tot).length + 1, label = M.mode === 'daily' ? 'Tagesduell' : 'Duell · ' + lvlName(M.level);
+  return `<div class="topbar"><button class="link" data-act="home">← Atlas-Duell</button><span class="tag gold">${esc(label)}</span></div>
+  <div class="card" style="text-align:center;justify-items:center"><span class="eyebrow">${ps.length > 1 ? `Platz ${rank} von ${ps.length}` : 'Dein Ergebnis'}</span><div class="big-num" data-count="${tot}">0</div><span class="muted">Punkte</span><div class="emojirow">${me.rec.map((r, i) => sq(r.p, M.rounds[i])).join('')}</div></div>
+  <button class="btn primary big" data-act="share-g" data-v="${esc(gkey(M.seed, M.level))}">${ps.length > 1 ? 'Neue Rangliste in die Gruppe schicken' : 'Freunde herausfordern'}</button>${S.showLink ? `<input class="sharebox" readonly value="${esc(S.showLink)}">` : ''}
+  ${ps.length > 1 ? boardHTML(ps.map(p => [p.name, sum(p.pts), '', p.color]), me.name) + awards(ps, M.rounds) + winnersMap(ps, M.rounds) : ''}
+  <div class="card"><h3>Deine Runden</h3>${M.rounds.map((R, i) => `<div class="row spread small"><span>${TYPES[R.type][0]} ${esc(R.type === 'dist' ? BY[R.a].k + ' → ' + BY[R.b].k : R.type === 'pinCap' ? BY[R.c].k : R.type === 'nord' || R.type === 'bigger' ? R.opts.map(x => BY[x].n).join(' / ') : BY[R.c].n)}</span><span class="mono">${fmt(me.rec[i].p)}</span></div>`).join('')}</div>
+  <div class="row wrap"><button class="btn grow" data-act="duel">Neues Duell</button><button class="btn grow" data-act="home">Startseite</button></div>`;
+}
+function render() {
+  if (!M || S.view !== 'match') app.innerHTML = S.view === 'setup' ? viewSetup() : S.view === 'link' && LINK ? viewLink() : viewHome();
+  else app.innerHTML = M.phase === 'q' ? viewQ() : M.phase === 'fb' ? viewFb() : M.phase === 'hand' ? viewHand() : M.phase === 'reveal' ? viewReveal() : viewEnd();
+  after();
+}
+function after() { // wire maps, sliders and count-ups after a render
+  Z = null;
+  if (M && S.view === 'match' && M.phase === 'q') {
+    const R = M.rounds[M.i];
+    if (R.type.startsWith('pin')) initMap('pmap', M.cur.fit, ll => { M.cur.pin = ll; drawPin(ll); buzz(10); });
+    if (M.cur.pin) drawPin(M.cur.pin);
+    const sl = document.getElementById('kmsl');
+    if (sl) sl.addEventListener('input', () => { M.cur.sv = +sl.value; M.cur.km = Math.round(100 * Math.pow(200, sl.value / 1000) / (sl.value > 500 ? 50 : 10)) * (sl.value > 500 ? 50 : 10); document.getElementById('kmval').textContent = '≈ ' + fmt(M.cur.km) + ' km'; document.getElementById('kmok').disabled = false; });
+  }
+  if (M && S.view === 'match' && (M.phase === 'fb' || M.phase === 'reveal')) { const rm = roundMap(M.rounds[M.i], M.phase === 'fb' ? [P()] : M.players); if (rm) initMap('rmap', rm.fit); }
+  if (M && S.view === 'match' && M.phase === 'end') initMap('wmap');
+  document.querySelectorAll('[data-count]').forEach(el => { const to = +el.dataset.count, t0 = performance.now(); const step = () => { const q = Math.min(1, (performance.now() - t0) / 700); el.textContent = fmt(to * (1 - Math.pow(1 - q, 3))); if (q < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); });
+}
+function maybeConfetti() {
+  if (!M || M.phase !== 'end') return;
+  let win = M.mode === 'party'; if (!win) { const g = DB.games[gkey(M.seed, M.level)], tot = totalOf(M.players[0]); win = g.p.length > 1 ? g.p.every(p => p[0] === M.players[0].name || sum(p[1]) < tot) : tot >= 7000; }
+  if (!win) return;
+  const cv = document.createElement('canvas'); cv.id = 'confetti'; cv.width = innerWidth; cv.height = innerHeight; document.body.appendChild(cv);
+  const ctx = cv.getContext('2d'), parts = [...Array(140)].map(() => ({ x: Math.random() * cv.width, y: -20 - Math.random() * cv.height * 0.5, vx: (Math.random() - 0.5) * 3, vy: 2 + Math.random() * 3, r: 3 + Math.random() * 4, c: COLORS[Math.floor(Math.random() * COLORS.length)], a: Math.random() * 6 }));
+  const t0 = performance.now(); const step = t => { ctx.clearRect(0, 0, cv.width, cv.height); for (const p of parts) { p.x += p.vx; p.y += p.vy; p.vy += 0.04; p.a += 0.1; ctx.fillStyle = p.c; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); ctx.restore(); } if (t - t0 < 3200) requestAnimationFrame(step); else cv.remove(); }; requestAnimationFrame(step);
+}
+
+/* ---------- actions ---------- */
+const readName = () => { const el = document.getElementById('myname'); if (el) { DB.name = cleanName(el.value); saveDB(); } return DB.name; };
+function needName() { const n = readName(); if (!n) { toast('Erst einen Namen eintragen'); document.getElementById('myname')?.focus(); return null; } return n; }
+const newSeed = () => Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, 'x').padEnd(6, 'q');
+app.addEventListener('input', e => { const i = e.target.dataset.pi; if (i != null) S.party[+i] = cleanName(e.target.value); if (e.target.id === 'myname') { DB.name = cleanName(e.target.value); saveDB(); } });
+app.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b || b.disabled) return; const a = b.dataset.act, v = b.dataset.v;
+  if (a === 'zin' || a === 'zout') { if (Z) Z.svg.transition().duration(220).call(Z.zoom.scaleBy, a === 'zin' ? 2 : 0.5); return; }
+  if (a === 'lvl') { S.level = +v; render(); return; }
+  if (a === 'home') { stopClock(); M = null; S.view = 'home'; S.showLink = null; history.replaceState(null, '', location.pathname); LINK = null; render(); scrollTo(0, 0); return; }
+  if (a === 'daily') { const n = needName(); if (!n) return; const seed = 'tag-' + dk(new Date()), g = DB.games[gkey(seed, 2)]; if (g && g.me) { LINK = { s: seed, l: 2, p: g.p }; S.view = 'link'; render(); return; } S.view = 'match'; startMatch('daily', seed, 2, [n]); return; }
+  if (a === 'duel') { const n = needName(); if (!n) return; S.view = 'match'; S.showLink = null; startMatch('duel', newSeed(), S.level, [n]); return; }
+  if (a === 'join') { const n = needName(); if (!n) return; if (LINK.p.some(p => p[0].toLowerCase() === n.toLowerCase())) { toast('Der Name ist in dieser Rangliste schon vergeben'); return; } mergeGame(LINK.s, LINK.l, LINK.p); S.view = 'match'; startMatch(LINK.s.startsWith('tag-') ? 'daily' : 'duel', LINK.s, LINK.l, [n]); return; }
+  if (a === 'open') { const g = DB.games[v]; if (!g) return; LINK = { s: g.s, l: g.l, p: g.p }; S.view = 'link'; S.showLink = null; render(); scrollTo(0, 0); return; }
+  if (a === 'share-g') { const g = DB.games[v]; if (!g) return; const me = g.p.find(x => x[0] === g.me), rounds = makeGame(g.s, g.l), label = g.s.startsWith('tag-') ? `Tagesduell ${g.s.slice(10, 12)}.${g.s.slice(8, 10)}.` : 'Duell · ' + lvlName(g.l); const lead = g.p.slice().sort((x, y) => sum(y[1]) - sum(x[1]))[0];
+    share(`⚔️ Atlas-Duell · ${label}\n${me ? `${me[0]}: ${fmt(sum(me[1]))} Punkte\n${me[1].map((p, i) => sq(p, rounds[i])).join('')}\n` : ''}${g.p.length > 1 ? `Vorne: ${lead[0]} (${fmt(sum(lead[1]))}). ` : ''}Schlägst du das?`, linkFor(g)); return; }
+  if (a === 'party') { S.view = 'setup'; render(); return; }
+  if (a === 'padd') { S.party.push(''); render(); document.querySelector(`[data-pi="${S.party.length - 1}"]`)?.focus(); return; }
+  if (a === 'pdel') { S.party.splice(+v, 1); render(); return; }
+  if (a === 'pgo') { const names = S.party.map(cleanName).filter(Boolean); if (names.length < 2) { toast('Mindestens zwei Namen'); return; } if (new Set(names.map(x => x.toLowerCase())).size !== names.length) { toast('Jeder Name nur einmal'); return; } S.party = names; S.view = 'match'; startMatch('party', newSeed(), S.level, names); return; }
+  if (a === 'again') { const names = M.players.map(p => p.name); startMatch('party', newSeed(), M.level, names); return; }
+  if (a === 'quit') { if (!confirmQuit()) return; stopClock(); M = null; S.view = LINK ? 'link' : 'home'; render(); return; }
+  if (!M) return;
+  if (a === 'go') return beginTurn();
+  if (a === 'ans') return submit(v);
+  if (a === 'pinok') return submit(M.cur.pin);
+  if (a === 'kmok') return submit(M.cur.km);
+  if (a === 'joker') return useJoker(v);
+  if (a === 'next') return nextRound();
+});
+let quitArmed = 0;
+function confirmQuit() { if (Date.now() - quitArmed < 2500) return true; quitArmed = Date.now(); toast('Nochmal tippen zum Beenden'); return false; }
+document.addEventListener('keydown', e => {
+  if (!M || S.view !== 'match' || e.target.matches('input')) return;
+  if (M.phase === 'q') { const n = parseInt(e.key, 10), R = M.rounds[M.i]; if (R.opts && n >= 1 && n <= R.opts.length && !M.cur.hide.includes(R.opts[n - 1])) submit(R.opts[n - 1]); if (e.key === 'Enter') { if (M.cur.pin) submit(M.cur.pin); else if (M.cur.km) submit(M.cur.km); } }
+  else if ((M.phase === 'fb' || M.phase === 'reveal') && e.key === 'Enter') nextRound();
+  else if (M.phase === 'hand' && e.key === 'Enter') beginTurn();
+});
+addEventListener('hashchange', () => { const l = parseLink(location.hash); if (l && (!M || M.phase === 'end')) { LINK = l; M = null; S.view = 'link'; mergeGame(l.s, l.l, l.p); render(); } });
+// start
+LINK = parseLink(location.hash);
+if (LINK) { const g = mergeGame(LINK.s, LINK.l, LINK.p); LINK.p = g.p; S.view = 'link'; }
+render();
+window.DUELL_TEST = { WPROJ, makeGame, basePts, record, parseLink, linkFor, maskFact, landDist, get M() { return M; }, S, DB, BY, NEIGH, capLL, KM };
+</script>
+</body>
+</html>
