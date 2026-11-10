@@ -332,6 +332,17 @@ function startle(v) {
     else { tone(t + 0.02, 1200, 300, 0.6, 'square'); burst(t + 0.1, 0.8, 2, 3000); }                 // shriek
   } catch { /* no audio */ }
 }
+// original procedural scare faces (SVG): grainy, slightly warped, filling the screen
+function scareSVG(v) {
+  const seed = Math.floor(Math.random() * 999), defs = `<defs><filter id="sw" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="${seed}" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="${18 + v * 4}"/></filter><filter id="gr"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="${seed}"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 0"/><feComposite in2="SourceGraphic" operator="in"/></filter><radialGradient id="sk" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#d9d6cc"/><stop offset=".7" stop-color="#8f8a7d"/><stop offset="1" stop-color="#2a2622"/></radialGradient><radialGradient id="vg" r="75%"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000"/></radialGradient></defs>`;
+  const teeth = (x0, x1, y, h, n) => { let d = ''; const w = (x1 - x0) / n; for (let i = 0; i < n; i++) d += `M${x0 + i * w},${y} L${x0 + i * w + w / 2},${y + h * (0.6 + ((i * 7 + seed) % 5) / 10)} L${x0 + (i + 1) * w},${y} Z `; return `<path d="${d}" fill="#e8e2cf"/>`; };
+  let face;
+  if (v === 0) face = `<g filter="url(#sw)"><ellipse cx="200" cy="230" rx="130" ry="185" fill="url(#sk)"/><ellipse cx="148" cy="190" rx="34" ry="48" fill="#050505"/><ellipse cx="252" cy="190" rx="34" ry="48" fill="#050505"/><circle cx="150" cy="198" r="4" fill="#f4f1e6"/><circle cx="250" cy="198" r="4" fill="#f4f1e6"/><path d="M110,300 Q200,${420} 290,300 Q200,350 110,300 Z" fill="#070303"/>${teeth(122, 278, 306, 26, 9)}<path d="M200,40 L190,120 L206,170" stroke="#3b3530" stroke-width="3" fill="none"/></g>`;
+  else if (v === 1) face = `<g filter="url(#sw)">${Array.from({ length: 14 }, (_, i) => { const x = 40 + ((i * 97 + seed) % 320), y = 60 + ((i * 53 + seed * 3) % 420), r = 10 + (i % 4) * 7; return `<ellipse cx="${x}" cy="${y}" rx="${r * 1.6}" ry="${r}" fill="#e9e4d6"/><circle cx="${x + ((i % 3) - 1) * 4}" cy="${y}" r="${r * 0.62}" fill="#5a0e0e"/><circle cx="${x + ((i % 3) - 1) * 4}" cy="${y}" r="${r * 0.3}" fill="#000"/>`; }).join('')}</g>`;
+  else if (v === 2) face = `<g filter="url(#sw)"><path d="M40,250 Q200,120 360,250 Q200,520 40,250 Z" fill="#120606"/><path d="M60,255 Q200,160 340,255" fill="none" stroke="#c9c2ad" stroke-width="6"/>${teeth(70, 330, 225, 95, 12)}${teeth(95, 305, 375, -80, 10)}<circle cx="120" cy="110" r="18" fill="#fff"/><circle cx="280" cy="110" r="18" fill="#fff"/><circle cx="122" cy="112" r="6" fill="#000"/><circle cx="278" cy="112" r="6" fill="#000"/></g>`;
+  else face = `<g filter="url(#sw)"><path d="M70,520 Q70,300 120,250 Q90,150 200,90 Q310,150 280,250 Q330,300 330,520 Z" fill="#050505"/><path d="M200,90 Q110,60 95,0 M200,90 Q290,60 305,0" stroke="#050505" stroke-width="22" fill="none"/><ellipse cx="160" cy="190" rx="16" ry="7" fill="#f2f0e0"/><ellipse cx="240" cy="190" rx="16" ry="7" fill="#f2f0e0"/><circle cx="160" cy="190" r="3" fill="#b30000"/><circle cx="240" cy="190" r="3" fill="#b30000"/><path d="M165,250 Q200,268 235,250" stroke="#2b0000" stroke-width="3" fill="none"/></g>`;
+  return `<svg viewBox="0 0 400 520" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true">${defs}<rect width="400" height="520" fill="${v === 3 ? '#7a0000' : '#000'}"/>${face}<rect width="400" height="520" fill="#888" filter="url(#gr)"/><rect width="400" height="520" fill="url(#vg)"/></svg>`;
+}
 function boostOverlay(html) { let el = document.getElementById('boostov'); if (!el) { document.body.insertAdjacentHTML('beforeend', '<div class="iat" id="boostov" style="background:#0F1211;color:#E8ECE7;grid-template-rows:1fr"></div>'); el = document.getElementById('boostov'); } el.innerHTML = html; }
 function boostEnd(log) {
   clearTimeout(BO && BO.t); clearInterval(BO && BO.iv); document.getElementById('boostov')?.remove();
@@ -353,10 +364,11 @@ function boostStart(kind) {
       BO.recall = (document.getElementById('boostRecall') || {}).value || '';
       startle(variant); try { navigator.vibrate && navigator.vibrate([400, 40, 400, 40, 600]); } catch { /* none */ }
       const el = document.getElementById('boostov'); el.style.background = '#FFFFFF'; el.style.color = '#0F1211';
-      el.innerHTML = `<div class="instr"><span style="font-size:160px;line-height:1">${['💥', '🚨', '🔫', '😱'][variant]}</span></div>`;
+      el.innerHTML = `<div id="scare" style="position:absolute;inset:0;opacity:0">${scareSVG(variant)}</div>`; // white flash first, then the face
+      setTimeout(() => { const sc = document.getElementById('scare'); if (sc) { sc.style.opacity = 1; sc.animate([{ transform: 'scale(.55)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'ease-out' }); } }, 70);
       el.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-18px,8px)' }, { transform: 'translate(16px,-10px)' }, { transform: 'translate(-10px,-6px)' }, { transform: 'translate(0,0)' }], { duration: 380 });
-      setTimeout(() => { el.style.background = '#D4542A'; }, 140);
-      setTimeout(() => { el.style.background = '#0F1211'; el.style.color = '#E8ECE7'; el.innerHTML = AFTER; }, 900);
+      setTimeout(() => { el.style.background = '#000'; }, 70);
+      setTimeout(() => { el.style.background = '#0F1211'; el.style.color = '#E8ECE7'; el.innerHTML = AFTER; }, 1500);
     }, wait);
     return;
   }
