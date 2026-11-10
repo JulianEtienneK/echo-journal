@@ -279,11 +279,80 @@ async function rpEnd(r) {
   RP_BUSY = false; saveT(); render();
 }
 
+/* ================= Merk-Boost: arousal right after learning, with a self-experiment ================= */
+const BOOSTS = {
+  schreck: ['⚡', 'Überraschungs-Schreck', 'Du entspannst, irgendwann in den nächsten zwei Minuten knallt es: Lichtblitz, Geräusch, Vibration. Wann und wie, weißt du vorher nicht.'],
+  move: ['🏃', '90 Sekunden Vollgas', 'Burpees, Hampelmänner, Treppen hoch: 90 Sekunden so intensiv, wie es sicher geht. Der am besten untersuchte Weg.'],
+  kalt: ['🧊', 'Kälte-Reiz', 'Hände bis zum Handgelenk 1 bis 3 Minuten in sehr kaltes Wasser (mit Eiswürfeln). So wird Stress in Studien ausgelöst. Nicht bei Herzproblemen, Raynaud oder offenen Wunden.'],
+};
+const BOOST_INFO = `<details class="card"><summary>Was dahintersteckt, und wie gut das belegt ist</summary><div class="stack small">
+  <p><b>Der Mechanismus ist gut belegt:</b> Aufregung kurz <i>nach</i> dem Lernen setzt Noradrenalin frei, die Amygdala verstärkt dann die Festigung frischer Erinnerungen (McGaugh, Übersichten 2004 und 2013). Darum bleiben aufregende Erlebnisse besonders gut hängen.</p>
+  <p><b>Beim Menschen gezeigt:</b> Ein aufwühlendes Video 30 bis 45 Minuten nach dem Lernen verbesserte das Behalten von Wörtern eine Woche später (Nielson &amp; Powless, 2007). Hände in Eiswasser nach dem Lernen verbesserten die Erinnerung, aber nur an emotionale Bilder, nicht an neutrale (Cahill, Gorski &amp; Le, 2003). 6 Minuten Radfahren nach dem Lernen halfen älteren Menschen beim Erinnern (Segal, Cotman &amp; Cahill, 2012). Sport 4 Stunden nach dem Lernen verbesserte das Behalten nach zwei Tagen (van Dongen et al., 2016).</p>
+  <p><b>Die ehrliche Grenze:</b> Die Effekte sind klein und schwanken. Bei neutralem Stoff wie Karteikarten sind sie unsicher. Einen kurzen Schreck allein hat meines Wissens niemand direkt getestet, und Schrecks verlieren schnell an Wirkung, wenn man sie erwartet. Echo variiert deshalb Zeitpunkt und Art. Ob es dir etwas bringt, zeigt der Selbstversuch unten.</p>
+  <p><b>Was sicher hilft:</b> Nach dem Boost 10 Minuten nichts Neues aufnehmen, also kein Handy und kein Video. Ruhiges Wachsein nach dem Lernen verbessert das Behalten (Dewar et al., 2012). Und abrufen statt nochmal lesen.</p></div></details>`;
+const boosts = () => T.boost || (T.boost = []);
+let BO = null;
+function viewBoost() {
+  const L = boosts(), pend = L.filter(x => !x.rec && Date.now() - x.t > 20 * 3600e3 && Date.now() - x.t < 7 * 864e5), done = L.filter(x => x.rec != null);
+  const g = k => done.filter(x => (k === 'ctl') === (x.type === 'ctl')), mb = mean(g('b').map(x => x.rec)), mc = mean(g('ctl').map(x => x.rec)), last = T.boostTopic || '';
+  return `${topBar()}<div class="stack"><span class="eyebrow">Werkzeug</span><h1>⚡ Merk-Boost</h1><p class="muted">Direkt nach dem Lernen kurz den Puls hochjagen, damit das Gelernte besser hängen bleibt. Nach Anki, Vokabeln oder einer Lernsitzung.</p></div>
+  ${pend.length ? `<div class="card"><span class="eyebrow">⏰ Gedächtnis-Check</span>${pend.map(x => `<div class="stack"><p>Wie viel weißt du noch von <b>${esc(x.topic || 'deiner Lernsitzung')}</b> (${fmtDay(x.date)})? Erst versuchen abzurufen, dann ehrlich schätzen.</p><div class="chips">${[0, 2, 4, 6, 8, 10].map(n => `<button class="chip" data-act="boost-rec" data-v="${x.id}" data-n="${n}">${n}</button>`).join('')}</div></div>`).join('')}<span class="small muted">0 = nichts mehr, 10 = alles. Wenn du in Anki lernst, nimm deine Trefferquote der Wiederholungen.</span></div>` : ''}
+  <div class="card"><label class="lab">Was hast du gerade gelernt?</label><input class="input" id="boostTopic" value="${esc(last)}" placeholder="z. B. 40 Anki-Karten Ernährungsmedizin">
+    ${Object.entries(BOOSTS).map(([k, [em, t, d]]) => `<button class="card hub" data-act="boost-go" data-v="${k}" style="padding:14px;background:var(--surface-2);box-shadow:none"><div class="row"><span style="font-size:24px">${em}</span><div class="stack" style="gap:2px"><b>${t}</b><span class="small muted">${d}</span></div></div></button>`).join('')}
+    <button class="btn" data-act="boost-coin">🎲 Selbstversuch: Zufall entscheidet, Boost oder Kontrolle</button>
+    <span class="small muted">Für einen fairen Vergleich lost Echo aus. Bei „Kontrolle“ lernst du ganz normal ohne Boost weiter. Am nächsten Tag fragt Echo bei beiden, wie viel noch sitzt.</span></div>
+  ${done.length ? `<div class="card"><h3>🧪 Dein Selbstversuch</h3><div class="stats"><div class="stat"><span class="small muted">Mit Boost</span><b class="mono">${g('b').length ? mb.toFixed(1) : '–'}</b><span class="small muted">${g('b').length}×</span></div><div class="stat"><span class="small muted">Ohne</span><b class="mono">${g('ctl').length ? mc.toFixed(1) : '–'}</b><span class="small muted">${g('ctl').length}×</span></div><div class="stat"><span class="small muted">Unterschied</span><b class="mono">${g('b').length && g('ctl').length ? (mb - mc > 0 ? '+' : '') + (mb - mc).toFixed(1) : '–'}</b></div></div>
+    <p class="small">${g('b').length >= 5 && g('ctl').length >= 5 ? (Math.abs(mb - mc) < 0.8 ? 'Bisher kein klarer Unterschied. Bei so wenigen Durchgängen ist das gut möglich, auch wenn ein kleiner Effekt da ist.' : mb > mc ? 'Mit Boost erinnerst du dich im Schnitt besser. Bei so wenigen Durchgängen ist das noch ein Hinweis, kein Beweis.' : 'Ohne Boost lief es bisher besser. Vielleicht stört dich der Boost, oder es ist Zufall.') : 'Ab je 5 Durchgängen mit und ohne Boost lohnt ein erster Blick. Gleiche Lernmenge und Tageszeit machen den Vergleich fairer.'}</p></div>` : ''}
+  ${BOOST_INFO}`;
+}
+// ---- sounds: short, varied, loud enough to surprise but capped (never at full volume on headphones)
+let BAC = null;
+function boom(kind) {
+  try {
+    BAC = BAC || new (window.AudioContext || window.webkitAudioContext)(); const ac = BAC, t = ac.currentTime, out = ac.createGain(); out.gain.value = 0.55; out.connect(ac.destination);
+    const noise = (dur, f, q) => { const n = ac.createBufferSource(), buf = ac.createBuffer(1, ac.sampleRate * dur, ac.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2); n.buffer = buf; const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q; n.connect(bp); bp.connect(out); n.start(t); };
+    const tone = (f1, f2, dur, type) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur); g.gain.setValueAtTime(1, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); o.connect(g); g.connect(out); o.start(t); o.stop(t + dur); };
+    if (kind === 0) { noise(0.7, 900, 0.4); tone(120, 40, 0.5, 'sine'); }          // crash
+    else if (kind === 1) { tone(440, 445, 0.9, 'square'); tone(554, 560, 0.9, 'square'); } // horn
+    else if (kind === 2) { noise(0.25, 2500, 1); tone(1800, 300, 0.35, 'sawtooth'); }     // snap
+    else { tone(900, 1400, 0.15, 'square'); setTimeout(() => boom(2), 160); }              // double alarm
+  } catch { /* no audio */ }
+}
+function boostOverlay(html) { let el = document.getElementById('boostov'); if (!el) { document.body.insertAdjacentHTML('beforeend', '<div class="iat" id="boostov" style="background:#0F1211;color:#E8ECE7;grid-template-rows:1fr"></div>'); el = document.getElementById('boostov'); } el.innerHTML = html; }
+function boostEnd(log) {
+  clearTimeout(BO && BO.t); clearInterval(BO && BO.iv); document.getElementById('boostov')?.remove();
+  if (log) { boosts().push({ id: uid(), date: today(), t: Date.now(), type: BO.kind, topic: BO.topic }); if (boosts().length > 300) T.boost = boosts().slice(-300); saveT(); if (BO.kind !== 'ctl') gainXP('boost', 5); }
+  BO = null; render();
+}
+const AFTER = `<div class="instr"><span style="font-size:48px">✓</span><h2>Geschafft</h2><p>Jetzt <b>10 Minuten nichts Neues</b>: kein Handy, kein Video. Lieber aus dem Fenster schauen, aufräumen oder kurz gehen. So kann sich das Gelernte setzen.</p><p class="small" style="opacity:.7">Morgen fragt Echo, wie viel noch sitzt.</p><button class="btn primary big" data-act="boost-fin">Fertig</button></div>`;
+function boostStart(kind) {
+  BO = { kind, topic: (document.getElementById('boostTopic') || {}).value || T.boostTopic || '' }; T.boostTopic = BO.topic; saveT();
+  if (kind === 'ctl') { boostOverlay(`<div class="instr"><span style="font-size:48px">🎲</span><h2>Heute: Kontrolle</h2><p>Kein Boost diesmal. Mach einfach normal weiter. Morgen vergleicht Echo, wie viel ohne Boost hängen geblieben ist.</p><button class="btn primary big" data-act="boost-fin">Okay</button></div>`); return; }
+  if (kind === 'schreck') {
+    try { BAC = BAC || new (window.AudioContext || window.webkitAudioContext)(); BAC.resume(); } catch { /* no audio */ } // unlock audio inside the tap
+    const wait = 15000 + Math.random() * 95000, variant = Math.floor(Math.random() * 4);
+    boostOverlay(`<div class="instr"><div id="breath" style="width:120px;height:120px;border-radius:50%;margin:0 auto;background:rgba(61,194,173,.25);transition:transform 4s ease-in-out"></div><p>Atme ruhig und denk an nichts Bestimmtes.</p><p class="small" style="opacity:.6">Irgendwann in den nächsten zwei Minuten passiert etwas. Lautstärke mittel, keine In-Ears auf voll.</p><button class="link" data-act="boost-cancel" style="color:#95A09A">Abbrechen</button></div>`);
+    let big = false; BO.iv = setInterval(() => { const b = document.getElementById('breath'); if (b) { big = !big; b.style.transform = big ? 'scale(1.35)' : 'scale(1)'; } }, 4000);
+    BO.t = setTimeout(() => {
+      clearInterval(BO.iv); boom(variant); try { navigator.vibrate && navigator.vibrate([250, 60, 350, 60, 200]); } catch { /* none */ }
+      const el = document.getElementById('boostov'); el.style.background = variant % 2 ? '#FF7647' : '#FFFFFF';
+      el.innerHTML = `<div class="instr"><span style="font-size:96px">${['💥', '📢', '⚡', '🚨'][variant]}</span></div>`;
+      setTimeout(() => { el.style.background = '#0F1211'; el.innerHTML = AFTER; }, 700);
+    }, wait);
+    return;
+  }
+  const total = kind === 'move' ? 90 : 120; let left = total;
+  const paint = () => boostOverlay(`<div class="instr"><span style="font-size:56px">${BOOSTS[kind][0]}</span><h2>${kind === 'move' ? 'Vollgas!' : 'Hände ins kalte Wasser'}</h2><div class="big-num mono">${left}</div><p class="small" style="opacity:.7">${kind === 'move' ? 'Burpees, Hampelmänner, Treppen. Alle 30 Sekunden ein Piep.' : '1 bis 3 Minuten. Brennt es zu stark, raus damit, das zählt trotzdem.'}</p><button class="link" data-act="boost-early" style="color:#95A09A">${kind === 'kalt' ? 'Jetzt raus (fertig)' : 'Abbrechen'}</button></div>`);
+  paint(); try { BAC = BAC || new (window.AudioContext || window.webkitAudioContext)(); BAC.resume(); } catch { /* no audio */ }
+  BO.iv = setInterval(() => { left--; if (left % 30 === 0 && left > 0) boom(2); if (left <= 0) { clearInterval(BO.iv); boom(1); boostOverlay(AFTER); return; } paint(); }, 1000);
+}
+
 /* ================= Hub ================= */
 function viewHub() {
   const due = T.dec.filter(d => d.decided && !d.reviewed && d.due <= today()).length, L = T.soc.lvl || 1, iats = T.iat.filter(r => r.valid).length;
   const card = (v, em, t, sub, meta) => `<button class="card hub" data-act="go" data-v="${v}"><div class="row"><span class="em">${em}</span><div class="stack" style="gap:0"><h3>${t}</h3><span class="small muted">${sub}</span></div></div><span class="small muted">${meta}</span></button>`;
   return `${topBar('echo')}<div class="stack"><span class="eyebrow">Echo</span><h1>Werkzeuge</h1><p class="muted">Werkzeuge, die dich im Alltag schärfer machen: eigene Denkmuster erkennen, besser entscheiden, leichter ins Gespräch kommen.</p></div>
+  ${card('boost', '⚡', 'Merk-Boost', 'Nach dem Lernen kurz erschrecken oder auspowern, dazu ein Selbstversuch', boosts().filter(x => x.type !== 'ctl').length + ' Boosts')}
   ${card('iat', '🧠', 'Bias-Check (IAT)', 'Implizite Assoziationen messen, sechs Tests', iats ? iats + ' Durchgänge' : 'Noch kein Durchgang')}
   ${card('entscheiden', '🧭', 'Entscheiden', '10 Denkwerkzeuge + Entscheidungstagebuch', due ? '⏰ ' + due + ' Rückblick fällig' : T.dec.length + ' Entscheidungen')}
   ${card('sozial', '💬', 'Smalltalk & Fremde', 'Missionen im echten Leben + Gesprächsproben', 'Stufe ' + L + ' · ' + LVL_NAME[L - 1])}
@@ -291,7 +360,7 @@ function viewHub() {
 }
 function render() {
   const v = view;
-  app.innerHTML = v === 'iat' ? viewIAT() : v.startsWith('iat-') ? viewIATResult(v.slice(4)) : v === 'entscheiden' ? viewDecisions() : v.startsWith('dec-') ? viewDecEdit(v.slice(4)) : v.startsWith('rev-') ? viewDecReview(v.slice(4)) : v === 'sozial' ? viewSocial() : v.startsWith('rp-') ? viewRP(v.slice(3)) : viewHub();
+  app.innerHTML = v === 'iat' ? viewIAT() : v.startsWith('iat-') ? viewIATResult(v.slice(4)) : v === 'entscheiden' ? viewDecisions() : v.startsWith('dec-') ? viewDecEdit(v.slice(4)) : v.startsWith('rev-') ? viewDecReview(v.slice(4)) : v === 'sozial' ? viewSocial() : v.startsWith('rp-') ? viewRP(v.slice(3)) : v === 'boost' ? viewBoost() : viewHub();
 }
 
 /* ================= events ================= */
@@ -301,6 +370,12 @@ document.addEventListener('click', e => {
   const d = view.startsWith('dec-') ? decById(view.slice(4)) : view.startsWith('rev-') ? decById(view.slice(4)) : null;
   if (a === 'go') return go(v);
   if (a === 'iat-start') return iatStart(v);
+  if (a === 'boost-go') return boostStart(v);
+  if (a === 'boost-coin') return boostStart(Math.random() < 0.5 ? ['schreck', 'move'][Math.floor(Math.random() * 2)] : 'ctl');
+  if (a === 'boost-fin') return boostEnd(true);
+  if (a === 'boost-cancel') return boostEnd(false);
+  if (a === 'boost-early') { if (BO && BO.kind === 'kalt') { clearInterval(BO.iv); boostOverlay(AFTER); } else boostEnd(false); return; }
+  if (a === 'boost-rec') { const x = boosts().find(y => y.id === v); if (x) { x.rec = +b.dataset.n; saveT(); toast('Notiert'); render(); } return; }
   if (a === 'dec-new') { const nd = { id: uid(), title: '', opts: [], tools: {}, created: today(), conf: 70, revIn: 90 }; T.dec.push(nd); saveT(); return go('dec-' + nd.id); }
   if (a === 'dec-open') return go('dec-' + v);
   if (a === 'dec-review') return go('rev-' + v);
@@ -352,5 +427,5 @@ document.addEventListener('input', e => {
 });
 // options and matrix numbers change the layout of other cards: re-render when leaving the field (keeps the keyboard while typing)
 document.addEventListener('change', e => { if (e.target.dataset.f === 'optsText' || e.target.dataset.mx) { const open = [...document.querySelectorAll('details[data-tool][open]')].map(x => x.dataset.tool); render(); open.forEach(k => document.querySelector(`details[data-tool="${k}"]`)?.setAttribute('open', '')); } });
-window.TOOLS_TEST = { T, iatScore, iatBlocks, iatTrials, IAT_SETS, mxTotals };
+window.TOOLS_TEST = { boostStart, boosts, T, iatScore, iatBlocks, iatTrials, IAT_SETS, mxTotals };
 render();

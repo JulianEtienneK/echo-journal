@@ -87,7 +87,7 @@ function viewVocab() {
     const d = (ES.th || 3) - s.th0;
     return `<div class="topbar"><button class="link" data-act="home">← Spanisch</button><span></span></div><div class="card" style="text-align:center"><span class="eyebrow">${s.place ? 'Einstufung' : 'Runde'} fertig</span><div class="big-num">${s.ok} / ${s.items.length}</div>
       <p>Dein Niveau: <b>${cefr(ES.th)}</b> <span class="muted mono">(${(ES.th || 3).toFixed(2)}${Math.abs(d) >= 0.05 ? (d > 0 ? ' ↑' : ' ↓') : ''})</span></p><p class="xp">+${s.xp || 0} XP</p>
-      <div class="row wrap" style="justify-content:center"><button class="btn primary" data-act="vocab">Noch eine Runde</button><button class="btn" data-act="home">Fertig</button></div></div>`;
+      <div class="row wrap" style="justify-content:center"><button class="btn primary" data-act="vocab">Noch eine Runde</button><button class="btn" data-act="home">Fertig</button></div><a class="btn ghost" href="werkzeuge.html#boost">⚡ Merk-Boost zum Festigen</a></div>`;
   }
   const n = Math.max(s.items.length, s.items.filter(x => x.kind === 'prod').length + s.nNew), pos = s.i + 1, a = s.ans;
   const head = `<div class="topbar"><button class="link" data-act="home">← Spanisch</button><span class="small muted mono">${pos} / ${n} · ${cefr(ES.th)}</span></div><div class="bar"><i style="width:${Math.round(s.i / n * 100)}%"></i></div>`;
@@ -161,7 +161,7 @@ function viewGramList() {
 }
 function viewGram() {
   const g = S.g, tp = TOPICS.find(t => t[0] === g.topic);
-  if (g.done) return `<div class="topbar"><button class="link" data-act="gramlist">← Grammatik</button><span></span></div><div class="card" style="text-align:center"><span class="eyebrow">${esc(tp[1])}</span><div class="big-num">${g.ok % 1 ? g.ok.toFixed(1) : g.ok} / ${g.items.length}</div><p class="xp">+${g.xp} XP</p><div class="row wrap" style="justify-content:center"><button class="btn primary" data-act="gram" data-v="${g.topic}">Nochmal</button><button class="btn" data-act="gramlist">Andere Themen</button></div></div>`;
+  if (g.done) return `<div class="topbar"><button class="link" data-act="gramlist">← Grammatik</button><span></span></div><div class="card" style="text-align:center"><span class="eyebrow">${esc(tp[1])}</span><div class="big-num">${g.ok % 1 ? g.ok.toFixed(1) : g.ok} / ${g.items.length}</div><p class="xp">+${g.xp} XP</p><div class="row wrap" style="justify-content:center"><button class="btn primary" data-act="gram" data-v="${g.topic}">Nochmal</button><button class="btn" data-act="gramlist">Andere Themen</button></div><a class="btn ghost" href="werkzeuge.html#boost">⚡ Merk-Boost zum Festigen</a></div>`;
   const it = g.items[g.i], a = g.ans;
   const head = `<div class="topbar"><button class="link" data-act="gramlist">← Grammatik</button><span class="small muted mono">${g.i + 1} / ${g.items.length}</span></div><div class="bar"><i style="width:${Math.round(g.i / g.items.length * 100)}%"></i></div>`;
   if (it.kind === 'ctx') return `${head}<div class="card"><span class="eyebrow">${esc(tp[1])}</span><p class="q">${esc(it.s).replace('___', '<span style="color:var(--gold)">___</span>')}</p>
