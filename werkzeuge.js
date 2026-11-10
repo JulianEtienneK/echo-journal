@@ -281,7 +281,7 @@ async function rpEnd(r) {
 
 /* ================= Merk-Boost: arousal right after learning, with a self-experiment ================= */
 const BOOSTS = {
-  schreck: ['⚡', 'Überraschungs-Schreck', 'Du entspannst, und meist innerhalb von 20 Sekunden knallt es: Lichtblitz, Geräusch, Vibration. Wann und wie, weißt du vorher nicht.'],
+  schreck: ['⚡', 'Überraschungs-Schreck', 'Du schreibst aus dem Kopf auf, was du gerade gelernt hast, und irgendwann mitten im Schreiben knallt es. Abrufen und Schreck in einem.'],
   move: ['🏃', '90 Sekunden Vollgas', 'Burpees, Hampelmänner, Treppen hoch: 90 Sekunden so intensiv, wie es sicher geht. Der am besten untersuchte Weg.'],
   kalt: ['🧊', 'Kälte-Reiz', 'Hände bis zum Handgelenk 1 bis 3 Minuten in sehr kaltes Wasser (mit Eiswürfeln). So wird Stress in Studien ausgelöst. Nicht bei Herzproblemen, Raynaud oder offenen Wunden.'],
 };
@@ -318,10 +318,24 @@ function boom(kind) {
     else { tone(900, 1400, 0.15, 'square'); setTimeout(() => boom(2), 160); }              // double alarm
   } catch { /* no audio */ }
 }
+function startle(v) {
+  try {
+    BAC = BAC || new (window.AudioContext || window.webkitAudioContext)(); const ac = BAC, t = ac.currentTime + 0.01;
+    const comp = ac.createDynamicsCompressor(); comp.threshold.value = -24; comp.knee.value = 0; comp.ratio.value = 12; comp.attack.value = 0; comp.release.value = 0.1;
+    const out = ac.createGain(); out.gain.value = 1; comp.connect(out); out.connect(ac.destination);
+    const burst = (at, dur, decay, hp) => { const n = ac.createBufferSource(), len = Math.floor(ac.sampleRate * dur), buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay); n.buffer = buf; const f = ac.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = hp; const g = ac.createGain(); g.gain.value = 2.5; n.connect(f); f.connect(g); g.connect(comp); n.start(at); };
+    const tone = (at, f1, f2, dur, type, vol = 1.6) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.setValueAtTime(f1, at); o.frequency.exponentialRampToValueAtTime(f2, at + dur); g.gain.setValueAtTime(vol, at); g.gain.exponentialRampToValueAtTime(0.001, at + dur); o.connect(g); g.connect(comp); o.start(at); o.stop(at + dur); };
+    burst(t, 0.12, 0.3, 200); // no ramp: full level from the first millisecond
+    if (v === 0) { burst(t + 0.08, 1.2, 3, 1500); tone(t, 90, 35, 0.7, 'sine', 2.5); }                // glass crash + thud
+    else if (v === 1) { tone(t + 0.05, 600, 1500, 0.5, 'sawtooth'); tone(t + 0.55, 600, 1500, 0.5, 'sawtooth'); } // siren whoop
+    else if (v === 2) { burst(t + 0.25, 0.12, 0.3, 200); burst(t + 0.5, 0.3, 1, 300); }                // gunshot-like triple
+    else { tone(t + 0.02, 1200, 300, 0.6, 'square'); burst(t + 0.1, 0.8, 2, 3000); }                 // shriek
+  } catch { /* no audio */ }
+}
 function boostOverlay(html) { let el = document.getElementById('boostov'); if (!el) { document.body.insertAdjacentHTML('beforeend', '<div class="iat" id="boostov" style="background:#0F1211;color:#E8ECE7;grid-template-rows:1fr"></div>'); el = document.getElementById('boostov'); } el.innerHTML = html; }
 function boostEnd(log) {
   clearTimeout(BO && BO.t); clearInterval(BO && BO.iv); document.getElementById('boostov')?.remove();
-  if (log) { boosts().push({ id: uid(), date: today(), t: Date.now(), type: BO.kind, topic: BO.topic }); if (boosts().length > 300) T.boost = boosts().slice(-300); saveT(); if (BO.kind !== 'ctl') gainXP('boost', 5); }
+  if (log) { boosts().push({ id: uid(), date: today(), t: Date.now(), type: BO.kind, topic: BO.topic, recall: (BO.recall || '').slice(0, 2000) }); if (boosts().length > 300) T.boost = boosts().slice(-300); saveT(); if (BO.kind !== 'ctl') gainXP('boost', 5); }
   BO = null; render();
 }
 const AFTER = `<div class="instr"><span style="font-size:48px">✓</span><h2>Geschafft</h2><p>Jetzt <b>10 Minuten nichts Neues</b>: kein Handy, kein Video. Lieber aus dem Fenster schauen, aufräumen oder kurz gehen. So kann sich das Gelernte setzen.</p><p class="small" style="opacity:.7">Morgen fragt Echo, wie viel noch sitzt.</p><button class="btn primary big" data-act="boost-fin">Fertig</button></div>`;
@@ -330,15 +344,19 @@ function boostStart(kind) {
   if (kind === 'ctl') { boostOverlay(`<div class="instr"><span style="font-size:48px">🎲</span><h2>Heute: Kontrolle</h2><p>Kein Boost diesmal. Mach einfach normal weiter. Morgen vergleicht Echo, wie viel ohne Boost hängen geblieben ist.</p><button class="btn primary big" data-act="boost-fin">Okay</button></div>`); return; }
   if (kind === 'schreck') {
     try { BAC = BAC || new (window.AudioContext || window.webkitAudioContext)(); BAC.resume(); } catch { /* no audio */ } // unlock audio inside the tap
+    if (!T.boostSeen) { T.boostSeen = true; saveT(); boostOverlay(`<div class="instr"><span style="font-size:48px">🔊</span><h2>Einmal vorab</h2><p>Stell den <b>Handylautsprecher laut</b>. Mit Kopfhörern höchstens mittlere Lautstärke, das Geräusch ist bewusst hart.</p><p class="small" style="opacity:.7">Ab dem nächsten Mal geht es ohne diesen Hinweis direkt los.</p><button class="btn primary big" data-act="boost-go" data-v="schreck">Verstanden, los</button><button class="link" data-act="boost-cancel" style="color:#95A09A">Abbrechen</button></div>`); return; }
     const wait = 4000 + Math.min(41000, -Math.log(1 - Math.random()) * 12000), // 4–45 s, about 15 s on average; exponential, so waiting longer never makes it more predictable
-       variant = Math.floor(Math.random() * 4);
-    boostOverlay(`<div class="instr"><div id="breath" style="width:120px;height:120px;border-radius:50%;margin:0 auto;background:rgba(61,194,173,.25);transition:transform 4s ease-in-out"></div><p>Atme ruhig und denk an nichts Bestimmtes.</p><p class="small" style="opacity:.6">Gleich passiert etwas, meist innerhalb von 20 Sekunden, manchmal später. Lautstärke mittel, keine In-Ears auf voll.</p><button class="link" data-act="boost-cancel" style="color:#95A09A">Abbrechen</button></div>`);
-    let big = false; BO.iv = setInterval(() => { const b = document.getElementById('breath'); if (b) { big = !big; b.style.transform = big ? 'scale(1.35)' : 'scale(1)'; } }, 4000);
+      variant = Math.floor(Math.random() * 4);
+    boostOverlay(`<div class="instr" style="text-align:left"><span class="eyebrow" style="color:#95A09A">Abruf</span><h2>Was weißt du noch?</h2><p class="small" style="opacity:.75">Schreib aus dem Kopf auf, was du gerade gelernt hast${BO.topic ? ` (${esc(BO.topic)})` : ''}: Begriffe, Zusammenhänge, alles, was dir einfällt.</p><textarea class="input" id="boostRecall" rows="7" placeholder="…"></textarea><button class="link" data-act="boost-cancel" style="color:#95A09A">Abbrechen</button></div>`);
+    setTimeout(() => document.getElementById('boostRecall')?.focus(), 50);
     BO.t = setTimeout(() => {
-      clearInterval(BO.iv); boom(variant); try { navigator.vibrate && navigator.vibrate([250, 60, 350, 60, 200]); } catch { /* none */ }
-      const el = document.getElementById('boostov'); el.style.background = variant % 2 ? '#FF7647' : '#FFFFFF';
-      el.innerHTML = `<div class="instr"><span style="font-size:96px">${['💥', '📢', '⚡', '🚨'][variant]}</span></div>`;
-      setTimeout(() => { el.style.background = '#0F1211'; el.innerHTML = AFTER; }, 700);
+      BO.recall = (document.getElementById('boostRecall') || {}).value || '';
+      startle(variant); try { navigator.vibrate && navigator.vibrate([400, 40, 400, 40, 600]); } catch { /* none */ }
+      const el = document.getElementById('boostov'); el.style.background = '#FFFFFF'; el.style.color = '#0F1211';
+      el.innerHTML = `<div class="instr"><span style="font-size:160px;line-height:1">${['💥', '🚨', '🔫', '😱'][variant]}</span></div>`;
+      el.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-18px,8px)' }, { transform: 'translate(16px,-10px)' }, { transform: 'translate(-10px,-6px)' }, { transform: 'translate(0,0)' }], { duration: 380 });
+      setTimeout(() => { el.style.background = '#D4542A'; }, 140);
+      setTimeout(() => { el.style.background = '#0F1211'; el.style.color = '#E8ECE7'; el.innerHTML = AFTER; }, 900);
     }, wait);
     return;
   }
