@@ -281,7 +281,7 @@ async function rpEnd(r) {
 
 /* ================= Merk-Boost: arousal right after learning, with a self-experiment ================= */
 const BOOSTS = {
-  schreck: ['⚡', 'Überraschungs-Schreck', 'Du entspannst, irgendwann in den nächsten zwei Minuten knallt es: Lichtblitz, Geräusch, Vibration. Wann und wie, weißt du vorher nicht.'],
+  schreck: ['⚡', 'Überraschungs-Schreck', 'Du entspannst, und meist innerhalb von 20 Sekunden knallt es: Lichtblitz, Geräusch, Vibration. Wann und wie, weißt du vorher nicht.'],
   move: ['🏃', '90 Sekunden Vollgas', 'Burpees, Hampelmänner, Treppen hoch: 90 Sekunden so intensiv, wie es sicher geht. Der am besten untersuchte Weg.'],
   kalt: ['🧊', 'Kälte-Reiz', 'Hände bis zum Handgelenk 1 bis 3 Minuten in sehr kaltes Wasser (mit Eiswürfeln). So wird Stress in Studien ausgelöst. Nicht bei Herzproblemen, Raynaud oder offenen Wunden.'],
 };
@@ -330,8 +330,9 @@ function boostStart(kind) {
   if (kind === 'ctl') { boostOverlay(`<div class="instr"><span style="font-size:48px">🎲</span><h2>Heute: Kontrolle</h2><p>Kein Boost diesmal. Mach einfach normal weiter. Morgen vergleicht Echo, wie viel ohne Boost hängen geblieben ist.</p><button class="btn primary big" data-act="boost-fin">Okay</button></div>`); return; }
   if (kind === 'schreck') {
     try { BAC = BAC || new (window.AudioContext || window.webkitAudioContext)(); BAC.resume(); } catch { /* no audio */ } // unlock audio inside the tap
-    const wait = 15000 + Math.random() * 95000, variant = Math.floor(Math.random() * 4);
-    boostOverlay(`<div class="instr"><div id="breath" style="width:120px;height:120px;border-radius:50%;margin:0 auto;background:rgba(61,194,173,.25);transition:transform 4s ease-in-out"></div><p>Atme ruhig und denk an nichts Bestimmtes.</p><p class="small" style="opacity:.6">Irgendwann in den nächsten zwei Minuten passiert etwas. Lautstärke mittel, keine In-Ears auf voll.</p><button class="link" data-act="boost-cancel" style="color:#95A09A">Abbrechen</button></div>`);
+    const wait = 4000 + Math.min(41000, -Math.log(1 - Math.random()) * 12000), // 4–45 s, about 15 s on average; exponential, so waiting longer never makes it more predictable
+       variant = Math.floor(Math.random() * 4);
+    boostOverlay(`<div class="instr"><div id="breath" style="width:120px;height:120px;border-radius:50%;margin:0 auto;background:rgba(61,194,173,.25);transition:transform 4s ease-in-out"></div><p>Atme ruhig und denk an nichts Bestimmtes.</p><p class="small" style="opacity:.6">Gleich passiert etwas, meist innerhalb von 20 Sekunden, manchmal später. Lautstärke mittel, keine In-Ears auf voll.</p><button class="link" data-act="boost-cancel" style="color:#95A09A">Abbrechen</button></div>`);
     let big = false; BO.iv = setInterval(() => { const b = document.getElementById('breath'); if (b) { big = !big; b.style.transform = big ? 'scale(1.35)' : 'scale(1)'; } }, 4000);
     BO.t = setTimeout(() => {
       clearInterval(BO.iv); boom(variant); try { navigator.vibrate && navigator.vibrate([250, 60, 350, 60, 200]); } catch { /* none */ }
