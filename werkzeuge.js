@@ -366,11 +366,35 @@ function boostStart(kind) {
   BO.iv = setInterval(() => { left--; if (left % 30 === 0 && left > 0) boom(2); if (left <= 0) { clearInterval(BO.iv); boom(1); boostOverlay(AFTER); return; } paint(); }, 1000);
 }
 
+/* ================= Erlebnisliste: things to do around Mannheim ================= */
+const BUCKET_SEED = [
+  ['🏒', 'Adler Mannheim live in der SAP Arena', 'Derby Fr 18.12. vs. Frankfurt oder Mi 09.12. vs. München', 'Stehplatz ermäßigt 14,40 € (Studi-Ausweis zeigen), Sitz Kat. 4 ermäßigt 22 €. Abendkasse 90 Min. vor Spielbeginn, wenn nicht ausverkauft.'],
+  ['⚽', 'Waldhof Mannheim gegen Hansa Rostock', '29.–31.01.2027 (genauer Tag folgt)', 'Vorher daheim: Sa 28.11. 14 Uhr vs. VfB Stuttgart II, 11.–13.12. vs. Jahn Regensburg.'],
+  ['⚽', 'Hoffenheim gegen Sturm Graz (Europa League)', 'Do 26.11., 21 Uhr, Sinsheim', 'Das Ticket gilt als Fahrkarte im VRN. Rückfahrt vorher in der DB-App prüfen.'],
+  ['⚽', 'Hoffenheim gegen Bayern: Ticket ergattern', '11.–13.12. (Anstoß folgt)', 'Offizielle TSG-Ticketbörse täglich checken, kurz vor dem Spiel kommen oft Karten zurück. Keine überteuerten Drittanbieter.'],
+  ['♨️', 'Therme', 'an einem Werktag (günstiger)', 'Miramar Weinheim: Therme + Bad 38,90 €, mit Sauna 43,90 €, am nächsten. Badewelt Sinsheim (Palmen, groß): 4 Std. ab 23 €, Tag ab 39 €, nur mit Online-Ticket für ein festes Datum.'],
+  ['🧗', 'Heidelberg: Himmelsleiter zum Königstuhl', '', 'Rund 1.200 Stufen, runter mit der Bergbahn. Dazu Thingstätte und Heiligenberg, und unterwegs Geocaches oder Adventure Labs mitnehmen.'],
+  ['🇫🇷', 'Frankreich: Wissembourg', 'ein Samstag', 'Mit dem Deutschlandticket bis Wissembourg. Elsass-Städtchen, im Advent mit Weihnachtsmarkt.'],
+  ['🎄', 'Straßburg im Advent', 'ein Wochenende', 'Bis Kehl mit dem Deutschlandticket. Für das letzte Stück ein eigenes Ticket oder am Wochenende das Ticketplus Alsace.'],
+  ['🏙️', 'Frankfurt', '', 'Main Tower, Kleinmarkthalle, Apfelwein in Sachsenhausen, Senckenberg-Museum, Dialogmuseum (im Dunkeln), oder ein Löwen-Frankfurt-Spiel.'],
+  ['👨‍👩‍👧', 'Speyer mit der Familie: Technik-Museum + Dom', '', 'Raumfähre Buran, Flugzeuge, U-Boot.'],
+];
+const bucket = () => { if (!T.bucket) { T.bucket = BUCKET_SEED.map(([em, t, when, note]) => ({ id: uid(), em, t, when, note, done: null })); saveT(); } return T.bucket; };
+function viewBucket() {
+  const L = bucket(), open = L.filter(x => !x.done), done = L.filter(x => x.done);
+  const row = x => `<div class="card" style="gap:6px"><div class="row spread" style="align-items:flex-start"><button class="link" data-act="bk-toggle" data-v="${x.id}" style="text-align:left;white-space:normal;color:inherit;padding:0;display:flex;gap:10px;align-items:flex-start"><span style="font-size:22px">${x.done ? '✅' : '⬜'}</span><span class="stack" style="gap:2px"><b style="${x.done ? 'text-decoration:line-through;opacity:.6' : ''}">${x.em ? esc(x.em) + ' ' : ''}${esc(x.t)}</b>${x.when ? `<span class="small" style="color:var(--gold)">${esc(x.when)}</span>` : ''}${x.note ? `<span class="small muted">${esc(x.note)}</span>` : ''}${x.done ? `<span class="small muted">erledigt am ${fmtDay(x.done)}</span>` : ''}</span></button><button class="link" data-act="bk-del" data-v="${x.id}" aria-label="Löschen">✕</button></div></div>`;
+  return `${topBar()}<div class="stack"><span class="eyebrow">Werkzeug</span><h1>🗺️ Erlebnisliste</h1><p class="muted">Was du in Mannheim und Umgebung noch erleben willst. Antippen hakt ab.</p></div>
+  ${open.map(row).join('')}
+  <div class="card"><b>+ Neuer Eintrag</b><input class="input" id="bkT" placeholder="Was?"><input class="input" id="bkW" placeholder="Wann? (optional)"><input class="input" id="bkN" placeholder="Notiz, Preis, Link (optional)"><button class="btn primary" data-act="bk-add">Hinzufügen</button></div>
+  ${done.length ? `<h3>Erlebt (${done.length})</h3>${done.map(row).join('')}` : ''}`;
+}
+
 /* ================= Hub ================= */
 function viewHub() {
   const due = T.dec.filter(d => d.decided && !d.reviewed && d.due <= today()).length, L = T.soc.lvl || 1, iats = T.iat.filter(r => r.valid).length;
   const card = (v, em, t, sub, meta) => `<button class="card hub" data-act="go" data-v="${v}"><div class="row"><span class="em">${em}</span><div class="stack" style="gap:0"><h3>${t}</h3><span class="small muted">${sub}</span></div></div><span class="small muted">${meta}</span></button>`;
   return `${topBar('echo')}<div class="stack"><span class="eyebrow">Echo</span><h1>Werkzeuge</h1><p class="muted">Werkzeuge, die dich im Alltag schärfer machen: eigene Denkmuster erkennen, besser entscheiden, leichter ins Gespräch kommen.</p></div>
+  ${card('liste', '🗺️', 'Erlebnisliste', 'Was du in Mannheim und Umgebung noch erleben willst', bucket().filter(x => !x.done).length + ' offen · ' + bucket().filter(x => x.done).length + ' erlebt')}
   ${card('boost', '⚡', 'Merk-Boost', 'Nach dem Lernen kurz erschrecken oder auspowern, dazu ein Selbstversuch', boosts().filter(x => x.type !== 'ctl').length + ' Boosts')}
   ${card('iat', '🧠', 'Bias-Check (IAT)', 'Implizite Assoziationen messen, sechs Tests', iats ? iats + ' Durchgänge' : 'Noch kein Durchgang')}
   ${card('entscheiden', '🧭', 'Entscheiden', '10 Denkwerkzeuge + Entscheidungstagebuch', due ? '⏰ ' + due + ' Rückblick fällig' : T.dec.length + ' Entscheidungen')}
@@ -379,7 +403,7 @@ function viewHub() {
 }
 function render() {
   const v = view;
-  app.innerHTML = v === 'iat' ? viewIAT() : v.startsWith('iat-') ? viewIATResult(v.slice(4)) : v === 'entscheiden' ? viewDecisions() : v.startsWith('dec-') ? viewDecEdit(v.slice(4)) : v.startsWith('rev-') ? viewDecReview(v.slice(4)) : v === 'sozial' ? viewSocial() : v.startsWith('rp-') ? viewRP(v.slice(3)) : v === 'boost' ? viewBoost() : viewHub();
+  app.innerHTML = v === 'iat' ? viewIAT() : v.startsWith('iat-') ? viewIATResult(v.slice(4)) : v === 'entscheiden' ? viewDecisions() : v.startsWith('dec-') ? viewDecEdit(v.slice(4)) : v.startsWith('rev-') ? viewDecReview(v.slice(4)) : v === 'sozial' ? viewSocial() : v.startsWith('rp-') ? viewRP(v.slice(3)) : v === 'boost' ? viewBoost() : v === 'liste' ? viewBucket() : viewHub();
 }
 
 /* ================= events ================= */
@@ -389,6 +413,9 @@ document.addEventListener('click', e => {
   const d = view.startsWith('dec-') ? decById(view.slice(4)) : view.startsWith('rev-') ? decById(view.slice(4)) : null;
   if (a === 'go') return go(v);
   if (a === 'iat-start') return iatStart(v);
+  if (a === 'bk-toggle') { const x = bucket().find(y => y.id === v); if (x) { x.done = x.done ? null : today(); if (x.done) { gainXP('erlebnis', 20); toast('Erlebt · +20 XP'); } saveT(); render(); } return; }
+  if (a === 'bk-del') { if (!confirm('Eintrag löschen?')) return; T.bucket = bucket().filter(y => y.id !== v); saveT(); render(); return; }
+  if (a === 'bk-add') { const t = document.getElementById('bkT').value.trim(); if (!t) { toast('Was willst du erleben?'); return; } bucket().unshift({ id: uid(), em: '', t, when: document.getElementById('bkW').value.trim(), note: document.getElementById('bkN').value.trim(), done: null }); saveT(); render(); return; }
   if (a === 'boost-go') return boostStart(v);
   if (a === 'boost-coin') return boostStart(Math.random() < 0.5 ? ['schreck', 'move'][Math.floor(Math.random() * 2)] : 'ctl');
   if (a === 'boost-fin') return boostEnd(true);
