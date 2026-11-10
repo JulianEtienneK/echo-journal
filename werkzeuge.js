@@ -379,11 +379,30 @@ const BUCKET_SEED = [
   ['🏙️', 'Frankfurt', '', 'Main Tower, Kleinmarkthalle, Apfelwein in Sachsenhausen, Senckenberg-Museum, Dialogmuseum (im Dunkeln), oder ein Löwen-Frankfurt-Spiel.'],
   ['👨‍👩‍👧', 'Speyer mit der Familie: Technik-Museum + Dom', '', 'Raumfähre Buran, Flugzeuge, U-Boot.'],
 ];
-const bucket = () => { if (!T.bucket) { T.bucket = BUCKET_SEED.map(([em, t, when, note]) => ({ id: uid(), em, t, when, note, done: null })); saveT(); } return T.bucket; };
+const BUCKET_V2 = [ // after Julian's answers: alone, likes doing sport and hiking, comedy under 30 €, in Mannheim until 19.12.
+  ['🧗', 'Bouldern im Studio Bloc Mannheim', '', 'Allein ideal: Routen nach Farbe, Leute kommen von selbst ins Gespräch.'],
+  ['🥾', 'Felsenmeer im Odenwald', 'trockener Tag', 'Ein Hang voller riesiger Felsblöcke zum Klettern, Anfahrt über Bensheim mit Bus. Mit Melibokus und Burgensteig zu einer Tagestour verbinden.'],
+  ['🥾', 'Neckarsteig: Neckargemünd – Dilsberg – Neckarsteinach', '', 'Burgdorf Dilsberg, vier Burgen über dem Neckar, Start und Ziel an der S-Bahn.'],
+  ['⛸️', 'Eislaufen im Eisstadion Herzogenried', '', 'Öffentliche Laufzeiten vorher auf der Seite prüfen.'],
+  ['🤾', 'Rhein-Neckar Löwen (Handball) in der SAP Arena', '', 'Erste Liga, direkt in Mannheim. Termine im Spielplan der Löwen.'],
+  ['🎤', 'Comedy unter 30 €: Open Mic oder Schatzkistl', '', 'Open-Mic-Abende sind oft frei oder sehr günstig. Das Schatzkistl ist eine kleine Kabarettbühne in Mannheim.'],
+];
+const STAR = /Adler|Therme|Heidelberg/;
+const bucket = () => {
+  if (!T.bucket) { T.bucket = BUCKET_SEED.map(([em, t, when, note]) => ({ id: uid(), em, t, when, note, done: null })); saveT(); }
+  if ((T.bucketV || 1) < 2) {
+    T.bucket = T.bucket.filter(x => x.done || !/Sturm Graz/.test(x.t));
+    for (const x of T.bucket) if (/Rostock/.test(x.t) && !x.done) { x.t = 'Waldhof Mannheim im Carl-Benz-Stadion'; x.when = 'Sa 28.11. 14 Uhr vs. VfB Stuttgart II oder 11.–13.12. vs. Jahn Regensburg'; x.note = 'Gegen Rostock (Ende Januar) bist du nicht mehr in Mannheim.'; }
+    for (const x of T.bucket) if (STAR.test(x.t)) { x.star = true; if (/Therme/.test(x.t)) { x.t = 'Therme mit Palmen: Badewelt Sinsheim'; x.note = 'Palmenparadies: 4 Std. ab 23 €, Tag ab 39 €, werktags günstiger. Nur mit Online-Ticket für ein festes Datum. Anreise mit der S5 und dem Bus 771, am Wochenende Ruftaxi. Näher und kleiner: Miramar Weinheim, Therme + Bad 38,90 €.'; } if (/Heidelberg/.test(x.t)) x.t = 'Heidelberg: Geocaching + Himmelsleiter zum Königstuhl'; }
+    const have = new Set(T.bucket.map(x => x.t)); for (const [em, t, when, note] of BUCKET_V2) if (!have.has(t)) T.bucket.push({ id: uid(), em, t, when, note, done: null });
+    T.bucketV = 2; saveT();
+  }
+  return T.bucket;
+};
 function viewBucket() {
-  const L = bucket(), open = L.filter(x => !x.done), done = L.filter(x => x.done);
-  const row = x => `<div class="card" style="gap:6px"><div class="row spread" style="align-items:flex-start"><button class="link" data-act="bk-toggle" data-v="${x.id}" style="text-align:left;white-space:normal;color:inherit;padding:0;display:flex;gap:10px;align-items:flex-start"><span style="font-size:22px">${x.done ? '✅' : '⬜'}</span><span class="stack" style="gap:2px"><b style="${x.done ? 'text-decoration:line-through;opacity:.6' : ''}">${x.em ? esc(x.em) + ' ' : ''}${esc(x.t)}</b>${x.when ? `<span class="small" style="color:var(--gold)">${esc(x.when)}</span>` : ''}${x.note ? `<span class="small muted">${esc(x.note)}</span>` : ''}${x.done ? `<span class="small muted">erledigt am ${fmtDay(x.done)}</span>` : ''}</span></button><button class="link" data-act="bk-del" data-v="${x.id}" aria-label="Löschen">✕</button></div></div>`;
-  return `${topBar()}<div class="stack"><span class="eyebrow">Werkzeug</span><h1>🗺️ Erlebnisliste</h1><p class="muted">Was du in Mannheim und Umgebung noch erleben willst. Antippen hakt ab.</p></div>
+  const L = bucket(), open = L.filter(x => !x.done).sort((a, b) => (b.star ? 1 : 0) - (a.star ? 1 : 0)), done = L.filter(x => x.done);
+  const row = x => `<div class="card" style="gap:6px"><div class="row spread" style="align-items:flex-start"><button class="link" data-act="bk-toggle" data-v="${x.id}" style="text-align:left;white-space:normal;color:inherit;padding:0;display:flex;gap:10px;align-items:flex-start"><span style="font-size:22px">${x.done ? '✅' : '⬜'}</span><span class="stack" style="gap:2px"><b style="${x.done ? 'text-decoration:line-through;opacity:.6' : ''}">${x.em ? esc(x.em) + ' ' : ''}${esc(x.t)}${x.star ? ' <span class="tag challenge">⭐ vorgemerkt</span>' : ''}</b>${x.when ? `<span class="small" style="color:var(--gold)">${esc(x.when)}</span>` : ''}${x.note ? `<span class="small muted">${esc(x.note)}</span>` : ''}${x.done ? `<span class="small muted">erledigt am ${fmtDay(x.done)}</span>` : ''}</span></button><button class="link" data-act="bk-del" data-v="${x.id}" aria-label="Löschen">✕</button></div></div>`;
+  return `${topBar()}<div class="stack"><span class="eyebrow">Werkzeug</span><h1>🗺️ Erlebnisliste</h1><p class="muted">Was du bis zum 19.12. in Mannheim und Umgebung noch erleben willst. Antippen hakt ab, ⭐ steht oben.</p></div>
   ${open.map(row).join('')}
   <div class="card"><b>+ Neuer Eintrag</b><input class="input" id="bkT" placeholder="Was?"><input class="input" id="bkW" placeholder="Wann? (optional)"><input class="input" id="bkN" placeholder="Notiz, Preis, Link (optional)"><button class="btn primary" data-act="bk-add">Hinzufügen</button></div>
   ${done.length ? `<h3>Erlebt (${done.length})</h3>${done.map(row).join('')}` : ''}`;
