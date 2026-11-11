@@ -349,7 +349,7 @@ function boostEnd(log) {
   if (log) { boosts().push({ id: uid(), date: today(), t: Date.now(), type: BO.kind, topic: BO.topic, recall: (BO.recall || '').slice(0, 2000) }); if (boosts().length > 300) T.boost = boosts().slice(-300); saveT(); if (BO.kind !== 'ctl') gainXP('boost', 5); }
   BO = null; render();
 }
-const AFTER = `<div class="instr"><span style="font-size:48px">✓</span><h2>Geschafft</h2><p>Jetzt <b>10 Minuten nichts Neues</b>: kein Handy, kein Video. Lieber aus dem Fenster schauen, aufräumen oder kurz gehen. So kann sich das Gelernte setzen.</p><p class="small" style="opacity:.7">Morgen fragt Echo, wie viel noch sitzt.</p><button class="btn primary big" data-act="boost-fin">Fertig</button></div>`;
+const AFTER = `<div class="instr"><span style="font-size:48px">✓</span><h2>Geschafft</h2><p>Jetzt <b>10 Minuten nichts Neues</b>: kein Handy, kein Video. Lieber aus dem Fenster schauen, aufräumen oder kurz gehen. So kann sich das Gelernte setzen. Noch stärker festigt ein Lern-Nap (Werkzeuge → Ruhen).</p><p class="small" style="opacity:.7">Morgen fragt Echo, wie viel noch sitzt.</p><button class="btn primary big" data-act="boost-fin">Fertig</button></div>`;
 function boostStart(kind) {
   BO = { kind, topic: (document.getElementById('boostTopic') || {}).value || T.boostTopic || '' }; T.boostTopic = BO.topic; saveT();
   if (kind === 'ctl') { boostOverlay(`<div class="instr"><span style="font-size:48px">🎲</span><h2>Heute: Kontrolle</h2><p>Kein Boost diesmal. Mach einfach normal weiter. Morgen vergleicht Echo, wie viel ohne Boost hängen geblieben ist.</p><button class="btn primary big" data-act="boost-fin">Okay</button></div>`); return; }
@@ -420,12 +420,93 @@ function viewBucket() {
   ${done.length ? `<h3>Erlebt (${done.length})</h3>${done.map(row).join('')}` : ''}`;
 }
 
+/* ================= Ruhen & Powernap ================= */
+const REST_INFO = `<details class="card"><summary>Was belegt ist, und was nicht</summary><div class="stack small">
+  <p><b>10 Minuten Nap für Wachheit: gut belegt.</b> Im direkten Vergleich von 5, 10, 20 und 30 Minuten Schlaf war 10 Minuten am besten: sofort wacher, Wirkung hielt rund 2,5 Stunden. 5 Minuten brachten kaum etwas. Nach 20 bis 30 Minuten war man erst eine Weile benommen (Schlaftrunkenheit), danach ähnlich gut (Brooks &amp; Lack, 2006). Gezählt wird die <i>geschlafene</i> Zeit, Einschlafen also einrechnen.</p>
+  <p><b>Warum es wirkt:</b> Im Wachen sammelt sich Adenosin an und erzeugt Schlafdruck. Schon kurzer Schlaf baut etwas davon ab. Darum macht ein Nap wacher, und darum hilft Koffein, das die Adenosin-Rezeptoren blockiert.</p>
+  <p><b>Koffein-Nap: mittel belegt, wenige Studien.</b> Kaffee trinken und sofort 15 bis 20 Minuten hinlegen. Das Koffein wirkt etwa beim Aufwachen, die Kombination war in Studien besser als beides allein (Reyner &amp; Horne, 1997; Hayashi et al., 2003).</p>
+  <p><b>Nap nach dem Lernen: belegt, Effekt klein bis mittel.</b> Schlaf nach dem Lernen verbessert das Behalten, in einer Studie schon wenige Minuten Schlaf (Lahl et al., 2008). Die Aussage „60 Minuten Nap = ganze Nacht“ stammt aus Mednick et al. (2003) und galt für eine bestimmte Sehaufgabe, nicht für Lernstoff allgemein. 60 bis 90 Minuten, ein ganzer Schlafzyklus mit Tiefschlaf, sind für die Festigung am stärksten, und man wacht weniger benommen auf als nach 40 Minuten.</p>
+  <p><b>Nap vor dem Lernen: belegt, aber eher lang.</b> 90 Minuten Mittagsschlaf verbesserten die Lernfähigkeit am Abend (Mander et al., 2011). Eine Stunde Nap war so gut wie eine Stunde zusätzliches Lernen (Cousins et al., 2019). Für genau „30 Minuten vor dem Lernen“ kenne ich keine Studie.</p>
+  <p><b>Nur die Augen schließen: hilft dem Gedächtnis etwas, der Energie weniger.</b> 10 Minuten ruhiges Wachsein nach dem Lernen verbesserten das Behalten, aber nicht in jeder Wiederholungsstudie gleich stark (Dewar et al., 2012). Gegen Müdigkeit wirkt echter Schlaf deutlich stärker als nur ruhen. Schläfst du nicht ein, ist die Pause trotzdem nicht verloren.</p>
+  <p><b>„Reinigung des Gehirns“ über das Nervenwasser: spannend, aber umstritten.</b> Bei Mäusen weitete sich im Schlaf der Raum zwischen den Zellen, und Abfallstoffe wurden schneller ausgespült (Xie et al., 2013). Beim Menschen gibt es nur indirekte Hinweise, nämlich Wellen von Nervenwasser im Tiefschlaf (Fultz et al., 2019). Eine Mausstudie von 2024 fand sogar weniger Ausspülung im Schlaf (Miao et al.). Für einen 10-Minuten-Nap spielt das ohnehin kaum eine Rolle, weil man dabei selten in den Tiefschlaf kommt.</p>
+  <p><b>Bodyscan bis „kein Ich“:</b> Das sind Stufen klassischer Meditation: Körper spüren, dann offenes Gewahrsein, dann Gedanken nicht mehr kommentieren, dann den Beobachter loslassen. Als Erholung entspricht das ruhigem Wachsein. Dass gerade die späten Stufen mehr Energie geben, ist nicht untersucht. Vielen hilft der Ablauf aber, überhaupt abzuschalten oder einzuschlafen.</p></div></details>`;
+const NAPS = [
+  [10, '⚡', 'Energie-Nap', 'Am besten untersucht für Wachheit. Kaum Benommenheit danach.'],
+  [20, '☕', 'Koffein-Nap', 'Vorher einen Kaffee trinken, dann sofort hinlegen.'],
+  [90, '🧠', 'Lern-Nap', 'Nach dem Lernen: ein ganzer Schlafzyklus mit Tiefschlaf zur Festigung.'],
+];
+const rests = () => T.rest || (T.rest = []);
+let RS = null;
+function restScript(min) { // guided: body scan → passive flow → no narrator → no self → silence → return
+  const S = min * 60, f = x => Math.round(S * x), lines = [];
+  const parts = ['die Füße', 'die Unterschenkel und die Knie', 'die Oberschenkel', 'das Becken und den unteren Rücken', 'den Bauch, wie er sich mit dem Atem hebt und senkt', 'die Brust', 'die Hände und die Arme', 'die Schultern. Lass sie sinken', 'den Nacken', 'das Gesicht. Lös den Kiefer, die Stirn wird weich', 'den ganzen Körper auf einmal'];
+  lines.push([0, 'Leg oder setz dich bequem hin und schließe die Augen. Du musst jetzt nichts leisten.']);
+  lines.push([8, 'Atme einmal tief aus.']);
+  parts.forEach((p, i) => lines.push([18 + Math.round(i * (f(0.32) - 18) / parts.length), 'Spür ' + p + '.']));
+  lines.push([f(0.34), 'Hör jetzt auf, irgendetwas zu tun. Geräusche, Empfindungen und Gedanken dürfen kommen und gehen, wie Wolken. Nichts festhalten.']);
+  lines.push([f(0.46), 'Du musst nicht steuern. Es atmet von selbst.']);
+  lines.push([f(0.55), 'Wenn ein Gedanke kommt, bemerk ihn kurz: denken. Und lass ihn weiterziehen. Kein Kommentar nötig.']);
+  lines.push([f(0.65), 'Kein Erzähler. Nur das, was gerade da ist.']);
+  lines.push([f(0.74), 'Lass jetzt auch den Beobachter los. Empfindungen geschehen von selbst. Niemand muss sie machen.']);
+  lines.push([f(0.92), 'Langsam zurückkommen. Bewege Finger und Zehen.']);
+  lines.push([S - 6, 'Atme tief ein. Und öffne die Augen, wenn du bereit bist.']);
+  return lines;
+}
+function chime(n = 1, vol = 0.25) {
+  try {
+    BAC = BAC || new (window.AudioContext || window.webkitAudioContext)(); const ac = BAC;
+    for (let k = 0; k < n; k++) for (const [f, d] of [[528, 0], [792, 0.02], [1056, 0.04]]) { const t = ac.currentTime + k * 1.6 + d, o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.4); o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + 2.5); }
+  } catch { /* no audio */ }
+}
+function speak(t) { try { if (!RS || !RS.voice || !window.speechSynthesis) return; const u = new SpeechSynthesisUtterance(t); u.lang = 'de-DE'; u.rate = 0.82; u.pitch = 0.95; const v = speechSynthesis.getVoices().find(x => /^de/i.test(x.lang)); if (v) u.voice = v; speechSynthesis.speak(u); } catch { /* none */ } }
+async function wake(on) { try { if (on && navigator.wakeLock) RS.lock = await navigator.wakeLock.request('screen'); else if (!on && RS && RS.lock) { RS.lock.release(); RS.lock = null; } } catch { /* not allowed */ } }
+const mmss = s => Math.floor(s / 60) + ':' + String(Math.max(0, Math.floor(s % 60))).padStart(2, '0');
+function viewRest() {
+  const L = rests(), done = L.filter(x => x.after != null), gain = done.length ? mean(done.map(x => x.after - x.before)) : null, buf = T.napBuf == null ? 5 : T.napBuf, voice = T.restVoice !== false;
+  return `${topBar()}<div class="stack"><span class="eyebrow">Werkzeug</span><h1>😴 Ruhen & Powernap</h1><p class="muted">Für Energie zwischendurch und zum Festigen nach dem Lernen. Echo hält den Bildschirm wach und weckt dich sanft.</p></div>
+  <div class="card"><label class="lab">Wie wach bist du gerade? <b class="mono" id="enV">${T.enDraft || 5}</b> / 10</label><input type="range" class="range" min="1" max="10" id="enB" value="${T.enDraft || 5}"></div>
+  <h3>Powernap</h3>
+  ${NAPS.map(([m, em, t, d]) => `<button class="card hub" data-act="nap" data-v="${m}"><div class="row"><span style="font-size:24px">${em}</span><div class="stack" style="gap:2px"><b>${t} · ${m} Min. Schlaf</b><span class="small muted">${d}</span></div></div></button>`).join('')}
+  <div class="card"><label class="lab">Einschlafzeit dazurechnen: <b class="mono" id="bufV">${buf} Min.</b></label><input type="range" class="range" min="0" max="15" id="napBuf" value="${buf}"><span class="small muted">Der Wecker klingelt nach Schlafdauer plus Einschlafzeit. Die meisten brauchen 5 bis 10 Minuten.</span></div>
+  <h3>Geführtes Ruhen</h3>
+  <div class="card"><p class="small">Bodyscan → passives Fließen → kein Erzähler → kein Ich → zurückkommen. Für die Pause zwischen Lernblöcken, oder um in den Nap zu gleiten.</p>
+    <div class="chips">${[10, 15, 20].map(m => `<button class="chip" data-act="rest" data-v="${m}">${m} Min.</button>`).join('')}</div>
+    <label class="check small"><input type="checkbox" id="restVoice" ${voice ? 'checked' : ''}> Mit Stimme (sonst nur Text und Klang)</label></div>
+  ${done.length ? `<div class="card"><h3>📈 Dein Effekt</h3><p class="small">Im Schnitt <b>${gain > 0 ? '+' : ''}${gain.toFixed(1)}</b> Punkte wacher nach ${done.length} Pausen.${done.filter(x => x.kind === 'nap').length >= 3 && done.filter(x => x.kind === 'rest').length >= 3 ? ` Nap: ${mean(done.filter(x => x.kind === 'nap').map(x => x.after - x.before)).toFixed(1)}, geführtes Ruhen: ${mean(done.filter(x => x.kind === 'rest').map(x => x.after - x.before)).toFixed(1)}.` : ''}</p>
+    <details><summary class="small muted" style="cursor:pointer">Verlauf</summary><div class="stack small" style="margin-top:8px">${done.slice().reverse().slice(0, 20).map(x => `<span>${fmtDay(x.date)} · ${x.kind === 'nap' ? 'Nap ' : 'Ruhen '}${x.min} Min.${x.slept ? ' · eingeschlafen' : x.slept === false ? ' · nur geruht' : ''} · ${x.before} → <b>${x.after}</b></span>`).join('')}</div></details></div>` : ''}
+  ${REST_INFO}`;
+}
+function restStart(kind, min) {
+  try { BAC = BAC || new (window.AudioContext || window.webkitAudioContext)(); BAC.resume(); } catch { /* none */ }
+  const buf = kind === 'nap' ? (T.napBuf == null ? 5 : T.napBuf) : 0, total = (min + buf) * 60;
+  RS = { kind, min, total, t0: Date.now(), before: T.enDraft || 5, voice: kind === 'rest' && T.restVoice !== false, script: kind === 'rest' ? restScript(min) : [], next: 0, ring: null };
+  wake(true); restPaint(); RS.iv = setInterval(restTick, 500);
+  if (kind === 'nap') speak('Schlaf gut.');
+}
+function restPaint() {
+  const left = Math.max(0, RS.total - (Date.now() - RS.t0) / 1000), cur = RS.script.filter(l => l[0] <= (Date.now() - RS.t0) / 1000).slice(-1)[0];
+  boostOverlay(RS.ring ? `<div class="instr"><span style="font-size:56px">🌅</span><h2>Aufwachen</h2><p style="opacity:.7">Kurz strecken, Licht an, ein Glas Wasser. Die Benommenheit vergeht in ein paar Minuten.</p><button class="btn primary big" data-act="rest-up">Ich bin wach</button></div>`
+    : `<div class="instr" style="opacity:.55"><span style="font-size:40px">${RS.kind === 'nap' ? '🌙' : '🫶'}</span><div class="big-num mono" id="restT" style="font-weight:500">${mmss(left)}</div><p id="restL" style="min-height:3em">${cur ? esc(cur[1]) : RS.kind === 'nap' ? 'Augen zu. Wenn du nicht einschläfst, ist das in Ordnung: Ruhen hilft auch.' : ''}</p><button class="link" data-act="rest-stop" style="color:#95A09A">Beenden</button></div>`);
+}
+function restTick() {
+  if (!RS) return; const el = (Date.now() - RS.t0) / 1000;
+  while (RS.next < RS.script.length && RS.script[RS.next][0] <= el) { const l = RS.script[RS.next++]; speak(l[1]); const p = document.getElementById('restL'); if (p) p.textContent = l[1]; if (RS.next === 1 || RS.next === RS.script.length) chime(1, 0.12); }
+  const t = document.getElementById('restT'); if (t) t.textContent = mmss(Math.max(0, RS.total - el));
+  if (el >= RS.total && !RS.ring) { RS.ring = 1; restPaint(); chime(2, 0.15); RS.rv = setInterval(() => { RS.ring = Math.min(6, RS.ring + 1); chime(2, 0.1 + RS.ring * 0.06); try { navigator.vibrate && navigator.vibrate([300, 200, 300]); } catch { /* none */ } }, 9000); } // gentle, then louder until you tap
+}
+function restEnd(ok) {
+  clearInterval(RS && RS.iv); clearInterval(RS && RS.rv); try { speechSynthesis.cancel(); } catch { /* none */ } wake(false);
+  if (!ok) { document.getElementById('boostov')?.remove(); RS = null; render(); return; }
+  const r = RS; boostOverlay(`<div class="instr"><h2>Wie wach bist du jetzt?</h2><div class="chips" style="justify-content:center">${[2, 4, 5, 6, 7, 8, 10].map(n => `<button class="chip" data-act="rest-rate" data-v="${n}">${n}</button>`).join('')}</div>${r.kind === 'nap' ? `<p class="small" style="opacity:.7">Bist du eingeschlafen?</p><div class="chips" style="justify-content:center"><button class="chip" data-act="rest-slept" data-v="1" aria-pressed="${r.slept === true}">Ja</button><button class="chip" data-act="rest-slept" data-v="0" aria-pressed="${r.slept === false}">Nein, nur geruht</button></div>` : ''}<p class="small" style="opacity:.6">Vergleich mit vorher: ${r.before} / 10</p></div>`);
+}
+
 /* ================= Hub ================= */
 function viewHub() {
   const due = T.dec.filter(d => d.decided && !d.reviewed && d.due <= today()).length, L = T.soc.lvl || 1, iats = T.iat.filter(r => r.valid).length;
   const card = (v, em, t, sub, meta) => `<button class="card hub" data-act="go" data-v="${v}"><div class="row"><span class="em">${em}</span><div class="stack" style="gap:0"><h3>${t}</h3><span class="small muted">${sub}</span></div></div><span class="small muted">${meta}</span></button>`;
   return `${topBar('echo')}<div class="stack"><span class="eyebrow">Echo</span><h1>Werkzeuge</h1><p class="muted">Werkzeuge, die dich im Alltag schärfer machen: eigene Denkmuster erkennen, besser entscheiden, leichter ins Gespräch kommen.</p></div>
   ${card('liste', '🗺️', 'Erlebnisliste', 'Was du in Mannheim und Umgebung noch erleben willst', bucket().filter(x => !x.done).length + ' offen · ' + bucket().filter(x => x.done).length + ' erlebt')}
+  ${card('ruhe', '😴', 'Ruhen & Powernap', 'Geführtes Ruhen, Energie-, Koffein- und Lern-Nap mit sanftem Wecker', rests().filter(x => x.after != null).length + ' Pausen')}
   ${card('boost', '⚡', 'Merk-Boost', 'Nach dem Lernen kurz erschrecken oder auspowern, dazu ein Selbstversuch', boosts().filter(x => x.type !== 'ctl').length + ' Boosts')}
   ${card('iat', '🧠', 'Bias-Check (IAT)', 'Implizite Assoziationen messen, sechs Tests', iats ? iats + ' Durchgänge' : 'Noch kein Durchgang')}
   ${card('entscheiden', '🧭', 'Entscheiden', '10 Denkwerkzeuge + Entscheidungstagebuch', due ? '⏰ ' + due + ' Rückblick fällig' : T.dec.length + ' Entscheidungen')}
@@ -434,7 +515,7 @@ function viewHub() {
 }
 function render() {
   const v = view;
-  app.innerHTML = v === 'iat' ? viewIAT() : v.startsWith('iat-') ? viewIATResult(v.slice(4)) : v === 'entscheiden' ? viewDecisions() : v.startsWith('dec-') ? viewDecEdit(v.slice(4)) : v.startsWith('rev-') ? viewDecReview(v.slice(4)) : v === 'sozial' ? viewSocial() : v.startsWith('rp-') ? viewRP(v.slice(3)) : v === 'boost' ? viewBoost() : v === 'liste' ? viewBucket() : viewHub();
+  app.innerHTML = v === 'iat' ? viewIAT() : v.startsWith('iat-') ? viewIATResult(v.slice(4)) : v === 'entscheiden' ? viewDecisions() : v.startsWith('dec-') ? viewDecEdit(v.slice(4)) : v.startsWith('rev-') ? viewDecReview(v.slice(4)) : v === 'sozial' ? viewSocial() : v.startsWith('rp-') ? viewRP(v.slice(3)) : v === 'boost' ? viewBoost() : v === 'liste' ? viewBucket() : v === 'ruhe' ? viewRest() : viewHub();
 }
 
 /* ================= events ================= */
@@ -447,6 +528,12 @@ document.addEventListener('click', e => {
   if (a === 'bk-toggle') { const x = bucket().find(y => y.id === v); if (x) { x.done = x.done ? null : today(); if (x.done) { gainXP('erlebnis', 20); toast('Erlebt · +20 XP'); } saveT(); render(); } return; }
   if (a === 'bk-del') { if (!confirm('Eintrag löschen?')) return; T.bucket = bucket().filter(y => y.id !== v); saveT(); render(); return; }
   if (a === 'bk-add') { const t = document.getElementById('bkT').value.trim(); if (!t) { toast('Was willst du erleben?'); return; } bucket().unshift({ id: uid(), em: '', t, when: document.getElementById('bkW').value.trim(), note: document.getElementById('bkN').value.trim(), done: null }); saveT(); render(); return; }
+  if (a === 'nap') return restStart('nap', +v);
+  if (a === 'rest') return restStart('rest', +v);
+  if (a === 'rest-stop') { const el = RS ? (Date.now() - RS.t0) / 1000 : 0; return restEnd(el > 120); }
+  if (a === 'rest-up') return restEnd(true);
+  if (a === 'rest-slept') { if (RS) { RS.slept = v === '1'; restEnd(true); } return; }
+  if (a === 'rest-rate') { if (!RS) return; rests().push({ id: uid(), date: today(), kind: RS.kind, min: RS.min, before: RS.before, after: +v, slept: RS.slept }); if (rests().length > 300) T.rest = rests().slice(-300); saveT(); gainXP('rest', 5); toast('Notiert · +5 XP'); document.getElementById('boostov')?.remove(); RS = null; render(); return; }
   if (a === 'boost-go') return boostStart(v);
   if (a === 'boost-coin') return boostStart(Math.random() < 0.5 ? ['schreck', 'move'][Math.floor(Math.random() * 2)] : 'ctl');
   if (a === 'boost-fin') return boostEnd(true);
@@ -492,6 +579,9 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('input', e => {
   const el = e.target, d = view.startsWith('dec-') ? decById(view.slice(4)) : view.startsWith('rev-') ? decById(view.slice(4)) : null;
+  if (el.id === 'enB') { T.enDraft = +el.value; document.getElementById('enV').textContent = el.value; saveT(); return; }
+  if (el.id === 'napBuf') { T.napBuf = +el.value; document.getElementById('bufV').textContent = el.value + ' Min.'; saveT(); return; }
+  if (el.id === 'restVoice') { T.restVoice = el.checked; saveT(); return; }
   if (el.id === 'socPre') { T.soc.preDraft = +el.value; document.getElementById('prev').textContent = el.value; saveT(); return; }
   if (el.id === 'socPost') { T.soc.postDraft = +el.value; document.getElementById('postv').textContent = el.value; saveT(); return; }
   if (!d) return;
