@@ -183,6 +183,8 @@ function viewDecisions() {
 }
 
 /* ================= Social ================= */
+// real-life missions cost real courage, so they pay far more than a quiz round: 360 XP at level 1, +90 per level
+const socXP = L => 360 + 90 * (L - 1);
 const MISSIONS = [
   ['Blickkontakt und ein kurzes Lächeln bei drei Fremden', 'Jemanden nach der Uhrzeit oder dem Weg fragen', 'An der Kasse „Danke“ plus einen Satz mehr sagen', 'Den Busfahrer oder die Person am Empfang grüßen und „Schönen Tag noch“ sagen'],
   ['Der Bedienung oder dem Barista eine echte Frage stellen („Was empfehlen Sie?“)', 'Jemandem ein Kompliment für etwas machen, das er ausgewählt hat (Jacke, Buch, Hund)', 'In einer Schlange einen Satz zur gemeinsamen Situation sagen', 'Im Supermarkt jemanden um einen Tipp bitten („Kennen Sie die?“)'],
@@ -225,7 +227,7 @@ function viewSocial() {
     ${cur ? `<span class="eyebrow">Deine Mission läuft</span><p class="q">${esc(cur.m)}</p><span class="small muted">Vorher erwartet: ${cur.pre} / 10</span>
       <label class="lab">Wie angenehm war es wirklich? <b class="mono" id="postv">${T.soc.postDraft || 6}</b></label><input type="range" class="range" min="1" max="10" id="socPost" value="${T.soc.postDraft || 6}">
       <textarea class="input" id="socNote" rows="2" placeholder="Was ist passiert? (optional)"></textarea>
-      <div class="row wrap"><button class="btn primary" data-act="soc-done">Geschafft · +12 XP</button><button class="btn ghost" data-act="soc-skip">Hat heute nicht geklappt</button></div>`
+      <div class="row wrap"><button class="btn primary" data-act="soc-done">Geschafft · +${socXP(T.soc.lvl || 1)} XP</button><button class="btn ghost" data-act="soc-skip">Hat heute nicht geklappt</button></div>`
     : `<span class="eyebrow">Mission für heute</span><p class="q">${esc(mi.m)}</p>
       <label class="lab">Wie angenehm wird es wohl? <b class="mono" id="prev">${T.soc.preDraft || 5}</b></label><input type="range" class="range" min="1" max="10" id="socPre" value="${T.soc.preDraft || 5}">
       <div class="row wrap"><button class="btn primary" data-act="soc-go">Mission annehmen</button><button class="btn ghost" data-act="soc-other">Andere Mission</button>${L > 1 ? '<button class="link" data-act="soc-down">Stufe runter</button>' : ''}</div>`}</div>
@@ -497,7 +499,7 @@ document.addEventListener('click', e => {
   const d = view.startsWith('dec-') ? decById(view.slice(4)) : view.startsWith('rev-') ? decById(view.slice(4)) : null;
   if (a === 'go') return go(v);
   if (a === 'iat-start') return iatStart(v);
-  if (a === 'bk-toggle') { const x = bucket().find(y => y.id === v); if (x) { x.done = x.done ? null : today(); if (x.done) { gainXP('erlebnis', 20); toast('Erlebt · +20 XP'); } saveT(); render(); } return; }
+  if (a === 'bk-toggle') { const x = bucket().find(y => y.id === v); if (x) { x.done = x.done ? null : today(); if (x.done) { gainXP('erlebnis', 600); toast('Erlebt · +600 XP'); } saveT(); render(); } return; }
   if (a === 'bk-del') { if (!confirm('Eintrag löschen?')) return; T.bucket = bucket().filter(y => y.id !== v); saveT(); render(); return; }
   if (a === 'bk-add') { const t = document.getElementById('bkT').value.trim(); if (!t) { toast('Was willst du erleben?'); return; } bucket().unshift({ id: uid(), em: '', t, when: document.getElementById('bkW').value.trim(), note: document.getElementById('bkN').value.trim(), done: null }); saveT(); render(); return; }
   if (a === 'nap') return restStart('nap', +v);
@@ -524,7 +526,7 @@ document.addEventListener('click', e => {
       const c = T.soc.cur; if (!c) return; const ok = a === 'soc-done';
       socLog().push({ id: uid(), date: today(), lvl: c.lvl, m: c.m, pre: c.pre, post: ok ? +document.getElementById('socPost').value : null, note: (document.getElementById('socNote') || {}).value || '' });
       T.soc.cur = null; T.soc.pick = (T.soc.pick || 0) + 1;
-      if (ok) { gainXP('smalltalk', 12); const L = T.soc.lvl || 1; if (L < 5 && socLog().filter(x => x.post != null && x.lvl === L).length >= 3) { T.soc.lvl = L + 1; toast('🎉 Stufe ' + (L + 1) + ': ' + LVL_NAME[L]); } else toast('Stark · +12 XP'); }
+      if (ok) { const L = T.soc.lvl || 1, mxp = socXP(L); gainXP('smalltalk', mxp); if (L < 5 && socLog().filter(x => x.post != null && x.lvl === L).length >= 3) { T.soc.lvl = L + 1; toast('🎉 Stufe ' + (L + 1) + ': ' + LVL_NAME[L]); } else toast('Stark · +' + mxp + ' XP'); }
       else toast('Kein Problem. Morgen ist eine neue Mission.');
       saveT(); render(); return;
     }

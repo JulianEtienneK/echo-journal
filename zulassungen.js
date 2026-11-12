@@ -130,6 +130,18 @@
       ${v[2]()}`;
   };
 
+  // Plain-language block at the top of the detail sheet: what the drug does, how well it works, and an optional deeper
+  // explanation of the drug class plus a glossary of the terms that appear in this candidate's trial data.
+  const laie = (k) => {
+    const Z = window.ZL || {}, d = (Z.d || {})[k.id]; if (!d) return '';
+    const [was, gut, tief] = d, kl = (Z.k || {})[tief], text = kl ? kl[1] : tief, titel = kl ? kl[0] : 'So funktioniert es';
+    const hay = [k.kerndaten, k.risiken, k.p_begruendung, k.status].join(' ');
+    const gl = (Z.g || []).filter(([w]) => new RegExp('(^|[^A-Za-zÄÖÜäöü])' + w.replace(/[()]/g, '\\$&') + '([^A-Za-zÄÖÜäöü]|$)').test(hay));
+    return `<div class="laie"><h4>Kurz erklärt</h4><p><b>Was es macht:</b> ${esc(was)}</p><p><b>Wie gut es wirkt:</b> ${esc(gut)}</p>
+      <details><summary>Genauer erklärt</summary><div class="tief"><h4>${esc(titel)}</h4><p>${esc(text)}</p>
+      ${gl.length ? `<h4>Begriffe in den Studiendaten</h4>${gl.map(([w, x]) => `<p><b>${esc(w === 'Cohen' ? 'Cohen’s d' : w)}:</b> ${esc(x)}</p>`).join('')}` : ''}
+      <p class="muted">Vereinfachte Erklärung zum Verständnis, keine Behandlungsempfehlung. Die genauen Zahlen stehen unten unter „Studiendaten“.</p></div></details></div>`;
+  };
   const sheet = (id) => {
     const k = byId.get(id);
     if (!k) return;
@@ -139,6 +151,7 @@
     $('#sheet-panel').innerHTML = `<div class="row spread"><span class="eyebrow"><span class="dot" style="display:inline-block;background:${farbe(k.gruppe)}"></span> ${esc(k.gruppe)} · ${esc(k.subbereich)}</span><button class="link" data-close>Schließen</button></div>
       <div style="display:grid;gap:4px"><h2>${esc(k.wirkstoff)}</h2><p class="small muted">${esc(k.sponsor)} · ${esc(k.indikation)}</p></div>
       <div class="row" style="flex-wrap:wrap;gap:6px">${tags(k)}${k.modalitaet ? `<span class="tag">${esc(k.modalitaet)}</span>` : ''}</div>
+      ${laie(k)}
       <div class="nums"><div>P(Zulassung)<b>${esc(k.p_zulassung)} %</b></div><div>Impact<b>${k.impact}</b></div><div>Erwartet<b>${k.erwartet}</b></div><div>Kosten/Jahr<b>${usd(k.kosten_jahr_usd)}</b></div><div>Patienten<b>${k.patienten ? new Intl.NumberFormat('de-DE', { notation: 'compact' }).format(+k.patienten) : '—'}</b></div><div>Peak Sales<b>${mrd(k.peak_sales_mrd)}</b></div></div>
       ${pbar(k)}
       <div class="agencies">${ag.map(([n, t, s]) => `<div><span class="muted">${esc(n)}</span><b>${esc(t || '—')}</b><span class="muted">${esc(s || 'kein Antrag bekannt')}</span></div>`).join('')}</div>

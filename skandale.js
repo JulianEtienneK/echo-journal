@@ -11,6 +11,7 @@ const skCase = id => skCases().find(c => c.id === id);
 const skBox = id => (skData().c[id] || {}).b || 0;
 const skState = id => { const b = skBox(id); return !skData().read[id] && !skData().c[id] ? 'neu' : b >= 3 ? 'sicher' : 'lernend'; };
 const skKind = c => c.k.split(/ & | \(/)[0];
+const skLabel = c => /^Unbekannt/.test(c.who) ? c.t : c.who; // what a case is called in answer options: the person or institution, not the descriptive title
 function skDay() { const k = today(), arr = skCases(); let h = 0; for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return arr[h % arr.length]; }
 function skRedact(c, text) {
   let out = text; const names = (c.who + ' ' + c.t).split(/[\s\-–,]+/).filter(w => w.length > 3 && /^[A-ZÄÖÜ]/.test(w) && !['Studie', 'Medizin', 'Service', 'Public', 'Health', 'Hospital', 'Research', 'Foundation', 'Chemie', 'Therapeutics', 'Unbekannter', 'Fälscher'].includes(w));
@@ -22,15 +23,15 @@ function skRedact(c, text) {
 function skQuestion(c) {
   const others = shuffle(skCases().filter(x => x.id !== c.id));
   const opts = (right, pool) => { const seen = new Set([right]); const o = [right]; for (const v of pool) { if (o.length >= 4) break; if (v && !seen.has(v)) { seen.add(v); o.push(v); } } return shuffle(o); };
+  // Hand-written questions (skandale-quiz.js) carry the quiz: their wrong options belong to the same case, so nothing
+  // can be solved by matching keywords. They rotate per case; every fourth question or so is a cross-case recall of
+  // the person or the year, where the options are names or numbers and give nothing away.
+  const own = (window.SK_Q || {})[c.id] || [], st = skData().c[c.id] || {};
+  if (own.length && Math.random() < 0.78) { const k = (st.qi || 0) % own.length, [q, o] = own[k]; return { q, a: o[0], o: shuffle(o), id: c.id, qi: k }; }
   const types = [
-    () => ({ q: `Wer steht im Zentrum von „${c.t}“?`, a: c.who, o: opts(c.who, others.map(x => x.who)) }),
-    () => ({ q: `Welcher Fall ist das?\n${skRedact(c, c.what)}`, a: c.t, o: opts(c.t, others.map(x => x.t)) }),
-    () => ({ q: `Wie flog „${c.t}“ auf?`, a: c.found, o: opts(c.found, others.map(x => x.found)) }),
-    () => ({ q: `Welche Lehre gehört zu „${c.t}“?`, a: c.lesson, o: opts(c.lesson, others.map(x => x.lesson)) }),
-    () => ({ q: `Was folgte auf „${c.t}“?`, a: c.out, o: opts(c.out, others.map(x => x.out)) }),
-    () => ({ q: `In welchem Jahr wurde „${c.t}“ bekannt? (± ein paar Jahre)`, a: String(c.y), o: opts(String(c.y), shuffle(others.filter(x => Math.abs(x.y - c.y) >= 5).map(x => String(x.y)))) }),
-    () => ({ q: `Wo spielte „${c.t}“?`, a: c.c, o: opts(c.c, others.map(x => x.c)) }),
-    () => ({ q: `Worum ging es im Kern bei „${c.t}“?`, a: skKind(c), o: opts(skKind(c), others.map(skKind)) }),
+    () => ({ q: `Wer steht im Zentrum von „${c.t}“?`, a: skLabel(c), o: opts(skLabel(c), others.map(skLabel)) }),
+    () => ({ q: `Um wen geht es?\n${skRedact(c, c.what)}`, a: skLabel(c), o: opts(skLabel(c), others.filter(x => x.f !== c.f || Math.random() < 0.5).map(skLabel)) }),
+    () => ({ q: `In welchem Jahr wurde „${c.t}“ bekannt?`, a: String(c.y), o: opts(String(c.y), shuffle([-9, -6, -4, 4, 6, 9, 13, -13]).map(d => String(c.y + d)).filter(y => +y <= new Date().getFullYear())) }),
   ];
   for (let i = 0; i < 6; i++) { const q = types[Math.floor(Math.random() * types.length)](); if (q.o.length === 4) return Object.assign(q, { id: c.id }); }
   return Object.assign(types[0](), { id: c.id });
@@ -50,6 +51,7 @@ function skQuizStart() {
 function skAnswer(i) {
   const q = SK.seq[SK.i]; if (SK.ans != null) return;
   SK.ans = q.o[i]; const ok = SK.ans === q.a, d = skData(), st = d.c[q.id] || (d.c[q.id] = { b: 0, d: 0, n: 0, w: 0 });
+  if (q.qi != null) st.qi = q.qi + 1; // next time this case comes up, ask its next question
   if (ok) { st.n++; st.b = Math.min(SK_IV.length - 1, st.b + 1); st.d = Date.now() + SK_IV[st.b] * 864e5; SK.ok++; SK.xp += 8; }
   else { st.w++; st.b = 0; st.d = Date.now() + 10 * 60e3; SK.wrong.push(q.id); }
   q.ok = ok; beep(ok); save(); render(); document.getElementById('sknext')?.focus();
@@ -60,12 +62,12 @@ function skNext() { SK.i++; SK.ans = null; if (SK.i >= SK.seq.length) gain('skan
 function skDetStart() {
   const d = skData(), all = skCases();
   const known = all.filter(c => d.read[c.id] || d.c[c.id]), pool = shuffle(known.length >= 5 ? known : all);
-  SK.mode = 'det'; SK.list = pool.slice(0, 5).map(c => ({ id: c.id, opts: shuffle([c.t, ...shuffle(all.filter(x => x.id !== c.id)).slice(0, 3).map(x => x.t)]) })); SK.i = 0; SK.k = 1; SK.done = false; SK.xp = 0; SK.tries = [];
+  SK.mode = 'det'; SK.list = pool.slice(0, 5).map(c => ({ id: c.id, opts: shuffle([skLabel(c), ...shuffle(all.filter(x => x.id !== c.id && skLabel(x) !== skLabel(c))).slice(0, 5).map(skLabel)]) })); SK.i = 0; SK.k = 1; SK.done = false; SK.xp = 0; SK.tries = [];
   view = 'skandale'; render();
 }
 function skDetGuess(t) {
   const cur = SK.list[SK.i], c = skCase(cur.id); if (SK.done) return;
-  if (t === c.t) { const pts = Math.max(1, 6 - SK.k); SK.xp += pts * 2; cur.pts = pts; SK.done = true; beep(true); const st = skData().c[c.id]; if (st && st.b < 2) { st.b++; st.d = Date.now() + SK_IV[st.b] * 864e5; } save(); }
+  if (t === skLabel(c)) { const pts = Math.max(1, 6 - SK.k); SK.xp += pts * 2; cur.pts = pts; SK.done = true; beep(true); const st = skData().c[c.id]; if (st && st.b < 2) { st.b++; st.d = Date.now() + SK_IV[st.b] * 864e5; } save(); }
   else { SK.tries.push(t); beep(false); if (SK.k < 5) SK.k++; else { SK.done = true; cur.pts = 0; } }
   render();
 }
@@ -116,7 +118,7 @@ function viewSk() {
     const cur = SK.list[SK.i], c = skCase(cur.id);
     return `${back}<div class="row spread"><span class="eyebrow">🔎 Fall ${SK.i + 1} von ${SK.list.length}</span><span class="small mono muted">Hinweis ${SK.k}/5 · ${Math.max(1, 6 - SK.k) * 2} XP</span></div>
       <section class="card" style="gap:8px">${c.clues.slice(0, SK.k).map((cl, i) => `<div class="row" style="align-items:flex-start"><span class="mono muted">${i + 1}</span><span>${esc(cl)}</span></div>`).join('')}</section>
-      <div class="opts" style="grid-template-columns:1fr">${cur.opts.map(o => { const cls = SK.done && o === c.t ? 'ok' : SK.tries.includes(o) ? 'bad' : ''; return `<button class="opt ${cls}" data-act="sk-guess" data-v="${esc(o)}" ${SK.done || SK.tries.includes(o) ? 'disabled' : ''}><span>${esc(o)}</span></button>`; }).join('')}</div>
+      <div class="opts" style="grid-template-columns:1fr">${cur.opts.map(o => { const cls = SK.done && o === skLabel(c) ? 'ok' : SK.tries.includes(o) ? 'bad' : ''; return `<button class="opt ${cls}" data-act="sk-guess" data-v="${esc(o)}" ${SK.done || SK.tries.includes(o) ? 'disabled' : ''}><span>${esc(o)}</span></button>`; }).join('')}</div>
       ${SK.done ? `${skCard(c, false)}<button class="btn primary big" data-act="sk-detnext" id="sknext">${SK.i + 1 >= SK.list.length ? 'Ergebnis' : 'Nächster Fall'}</button>` : SK.k < 5 ? `<button class="btn" data-act="sk-clue">Nächster Hinweis</button>` : ''}`;
   }
   if (SK.mode === 'time') {
