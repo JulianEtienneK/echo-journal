@@ -281,7 +281,7 @@ async function rpEnd(r) {
 
 /* ================= Merk-Boost: arousal right after learning, with a self-experiment ================= */
 const BOOSTS = {
-  schreck: ['⚡', 'Überraschungs-Schreck', 'Du schreibst aus dem Kopf auf, was du gerade gelernt hast, und irgendwann mitten im Schreiben knallt es. Abrufen und Schreck in einem.'],
+  schreck: ['⚡', 'Überraschungs-Schreck', 'Du schreibst aus dem Kopf auf, was du gerade gelernt hast, und irgendwann mitten im Schreiben passiert etwas: eines von acht Szenarien. Wann und welches, weißt du vorher nicht.'],
   move: ['🏃', '90 Sekunden Vollgas', 'Burpees, Hampelmänner, Treppen hoch: 90 Sekunden so intensiv, wie es sicher geht. Der am besten untersuchte Weg.'],
   kalt: ['🧊', 'Kälte-Reiz', 'Hände bis zum Handgelenk 1 bis 3 Minuten in sehr kaltes Wasser (mit Eiswürfeln). So wird Stress in Studien ausgelöst. Nicht bei Herzproblemen, Raynaud oder offenen Wunden.'],
 };
@@ -303,6 +303,7 @@ function viewBoost() {
     <span class="small muted">Für einen fairen Vergleich lost Echo aus. Bei „Kontrolle“ lernst du ganz normal ohne Boost weiter. Am nächsten Tag fragt Echo bei beiden, wie viel noch sitzt.</span></div>
   ${done.length ? `<div class="card"><h3>🧪 Dein Selbstversuch</h3><div class="stats"><div class="stat"><span class="small muted">Mit Boost</span><b class="mono">${g('b').length ? mb.toFixed(1) : '–'}</b><span class="small muted">${g('b').length}×</span></div><div class="stat"><span class="small muted">Ohne</span><b class="mono">${g('ctl').length ? mc.toFixed(1) : '–'}</b><span class="small muted">${g('ctl').length}×</span></div><div class="stat"><span class="small muted">Unterschied</span><b class="mono">${g('b').length && g('ctl').length ? (mb - mc > 0 ? '+' : '') + (mb - mc).toFixed(1) : '–'}</b></div></div>
     <p class="small">${g('b').length >= 5 && g('ctl').length >= 5 ? (Math.abs(mb - mc) < 0.8 ? 'Bisher kein klarer Unterschied. Bei so wenigen Durchgängen ist das gut möglich, auch wenn ein kleiner Effekt da ist.' : mb > mc ? 'Mit Boost erinnerst du dich im Schnitt besser. Bei so wenigen Durchgängen ist das noch ein Hinweis, kein Beweis.' : 'Ohne Boost lief es bisher besser. Vielleicht stört dich der Boost, oder es ist Zufall.') : 'Ab je 5 Durchgängen mit und ohne Boost lohnt ein erster Blick. Gleiche Lernmenge und Tageszeit machen den Vergleich fairer.'}</p></div>` : ''}
+  <details class="card"><summary>Szenarien einzeln ansehen (nimmt die Überraschung)</summary><div class="stack small"><p class="muted">Im echten Durchgang lost Echo aus und meidet die letzten vier. Hier kannst du jedes sofort abspielen, mit Ton.</p><div class="chips">${SCARE.list.map(k => `<button class="chip" data-act="boost-demo" data-v="${k}">${SCARE.names[k]}</button>`).join('')}</div></div></details>
   ${BOOST_INFO}`;
 }
 // ---- sounds: short, varied, loud enough to surprise but capped (never at full volume on headphones)
@@ -318,35 +319,10 @@ function boom(kind) {
     else { tone(900, 1400, 0.15, 'square'); setTimeout(() => boom(2), 160); }              // double alarm
   } catch { /* no audio */ }
 }
-function startle(v) {
-  try {
-    BAC = BAC || new (window.AudioContext || window.webkitAudioContext)(); const ac = BAC, t = ac.currentTime + 0.01;
-    const comp = ac.createDynamicsCompressor(); comp.threshold.value = -24; comp.knee.value = 0; comp.ratio.value = 12; comp.attack.value = 0; comp.release.value = 0.1;
-    const out = ac.createGain(); out.gain.value = 1; comp.connect(out); out.connect(ac.destination);
-    const burst = (at, dur, decay, hp) => { const n = ac.createBufferSource(), len = Math.floor(ac.sampleRate * dur), buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay); n.buffer = buf; const f = ac.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = hp; const g = ac.createGain(); g.gain.value = 2.5; n.connect(f); f.connect(g); g.connect(comp); n.start(at); };
-    const tone = (at, f1, f2, dur, type, vol = 1.6) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.setValueAtTime(f1, at); o.frequency.exponentialRampToValueAtTime(f2, at + dur); g.gain.setValueAtTime(vol, at); g.gain.exponentialRampToValueAtTime(0.001, at + dur); o.connect(g); g.connect(comp); o.start(at); o.stop(at + dur); };
-    burst(t, 0.12, 0.3, 200); // no ramp: full level from the first millisecond
-    if (v === 0) { burst(t + 0.08, 1.2, 3, 1500); tone(t, 90, 35, 0.7, 'sine', 2.5); }                // glass crash + thud
-    else if (v === 1) { tone(t + 0.05, 600, 1500, 0.5, 'sawtooth'); tone(t + 0.55, 600, 1500, 0.5, 'sawtooth'); } // siren whoop
-    else if (v === 2) { burst(t + 0.25, 0.12, 0.3, 200); burst(t + 0.5, 0.3, 1, 300); }                // gunshot-like triple
-    else { tone(t + 0.02, 1200, 300, 0.6, 'square'); burst(t + 0.1, 0.8, 2, 3000); }                 // shriek
-  } catch { /* no audio */ }
-}
-// original procedural scare faces (SVG): grainy, slightly warped, filling the screen
-function scareSVG(v) {
-  const seed = Math.floor(Math.random() * 999), defs = `<defs><filter id="sw" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="${seed}" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="${18 + v * 4}"/></filter><filter id="gr"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="${seed}"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 0"/><feComposite in2="SourceGraphic" operator="in"/></filter><radialGradient id="sk" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#d9d6cc"/><stop offset=".7" stop-color="#8f8a7d"/><stop offset="1" stop-color="#2a2622"/></radialGradient><radialGradient id="vg" r="75%"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000"/></radialGradient></defs>`;
-  const teeth = (x0, x1, y, h, n) => { let d = ''; const w = (x1 - x0) / n; for (let i = 0; i < n; i++) d += `M${x0 + i * w},${y} L${x0 + i * w + w / 2},${y + h * (0.6 + ((i * 7 + seed) % 5) / 10)} L${x0 + (i + 1) * w},${y} Z `; return `<path d="${d}" fill="#e8e2cf"/>`; };
-  let face;
-  if (v === 0) face = `<g filter="url(#sw)"><ellipse cx="200" cy="230" rx="130" ry="185" fill="url(#sk)"/><ellipse cx="148" cy="190" rx="34" ry="48" fill="#050505"/><ellipse cx="252" cy="190" rx="34" ry="48" fill="#050505"/><circle cx="150" cy="198" r="4" fill="#f4f1e6"/><circle cx="250" cy="198" r="4" fill="#f4f1e6"/><path d="M110,300 Q200,${420} 290,300 Q200,350 110,300 Z" fill="#070303"/>${teeth(122, 278, 306, 26, 9)}<path d="M200,40 L190,120 L206,170" stroke="#3b3530" stroke-width="3" fill="none"/></g>`;
-  else if (v === 1) face = `<g filter="url(#sw)">${Array.from({ length: 14 }, (_, i) => { const x = 40 + ((i * 97 + seed) % 320), y = 60 + ((i * 53 + seed * 3) % 420), r = 10 + (i % 4) * 7; return `<ellipse cx="${x}" cy="${y}" rx="${r * 1.6}" ry="${r}" fill="#e9e4d6"/><circle cx="${x + ((i % 3) - 1) * 4}" cy="${y}" r="${r * 0.62}" fill="#5a0e0e"/><circle cx="${x + ((i % 3) - 1) * 4}" cy="${y}" r="${r * 0.3}" fill="#000"/>`; }).join('')}</g>`;
-  else if (v === 2) face = `<g filter="url(#sw)"><path d="M40,250 Q200,120 360,250 Q200,520 40,250 Z" fill="#120606"/><path d="M60,255 Q200,160 340,255" fill="none" stroke="#c9c2ad" stroke-width="6"/>${teeth(70, 330, 225, 95, 12)}${teeth(95, 305, 375, -80, 10)}<circle cx="120" cy="110" r="18" fill="#fff"/><circle cx="280" cy="110" r="18" fill="#fff"/><circle cx="122" cy="112" r="6" fill="#000"/><circle cx="278" cy="112" r="6" fill="#000"/></g>`;
-  else face = `<g filter="url(#sw)"><path d="M70,520 Q70,300 120,250 Q90,150 200,90 Q310,150 280,250 Q330,300 330,520 Z" fill="#050505"/><path d="M200,90 Q110,60 95,0 M200,90 Q290,60 305,0" stroke="#050505" stroke-width="22" fill="none"/><ellipse cx="160" cy="190" rx="16" ry="7" fill="#f2f0e0"/><ellipse cx="240" cy="190" rx="16" ry="7" fill="#f2f0e0"/><circle cx="160" cy="190" r="3" fill="#b30000"/><circle cx="240" cy="190" r="3" fill="#b30000"/><path d="M165,250 Q200,268 235,250" stroke="#2b0000" stroke-width="3" fill="none"/></g>`;
-  return `<svg viewBox="0 0 400 520" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true">${defs}<rect width="400" height="520" fill="${v === 3 ? '#7a0000' : '#000'}"/>${face}<rect width="400" height="520" fill="#888" filter="url(#gr)"/><rect width="400" height="520" fill="url(#vg)"/></svg>`;
-}
 function boostOverlay(html) { let el = document.getElementById('boostov'); if (!el) { document.body.insertAdjacentHTML('beforeend', '<div class="iat" id="boostov" style="background:#0F1211;color:#E8ECE7;grid-template-rows:1fr"></div>'); el = document.getElementById('boostov'); } el.innerHTML = html; }
 function boostEnd(log) {
-  clearTimeout(BO && BO.t); clearInterval(BO && BO.iv); document.getElementById('boostov')?.remove();
-  if (log) { boosts().push({ id: uid(), date: today(), t: Date.now(), type: BO.kind, topic: BO.topic, recall: (BO.recall || '').slice(0, 2000) }); if (boosts().length > 300) T.boost = boosts().slice(-300); saveT(); if (BO.kind !== 'ctl') gainXP('boost', 5); }
+  clearTimeout(BO && BO.t); clearInterval(BO && BO.iv); SCARE.cancel(); document.getElementById('boostov')?.remove();
+  if (log) { boosts().push({ id: uid(), date: today(), t: Date.now(), type: BO.kind, sc: BO.sc, topic: BO.topic, recall: (BO.recall || '').slice(0, 2000) }); if (boosts().length > 300) T.boost = boosts().slice(-300); saveT(); if (BO.kind !== 'ctl') gainXP('boost', 5); }
   BO = null; render();
 }
 const AFTER = `<div class="instr"><span style="font-size:48px">✓</span><h2>Geschafft</h2><p>Jetzt <b>10 Minuten nichts Neues</b>: kein Handy, kein Video. Lieber aus dem Fenster schauen, aufräumen oder kurz gehen. So kann sich das Gelernte setzen. Noch stärker festigt ein Lern-Nap (Werkzeuge → Ruhen).</p><p class="small" style="opacity:.7">Morgen fragt Echo, wie viel noch sitzt.</p><button class="btn primary big" data-act="boost-fin">Fertig</button></div>`;
@@ -355,20 +331,16 @@ function boostStart(kind) {
   if (kind === 'ctl') { boostOverlay(`<div class="instr"><span style="font-size:48px">🎲</span><h2>Heute: Kontrolle</h2><p>Kein Boost diesmal. Mach einfach normal weiter. Morgen vergleicht Echo, wie viel ohne Boost hängen geblieben ist.</p><button class="btn primary big" data-act="boost-fin">Okay</button></div>`); return; }
   if (kind === 'schreck') {
     try { BAC = BAC || new (window.AudioContext || window.webkitAudioContext)(); BAC.resume(); } catch { /* no audio */ } // unlock audio inside the tap
+    SCARE.unlock();
     if (!T.boostSeen) { T.boostSeen = true; saveT(); boostOverlay(`<div class="instr"><span style="font-size:48px">🔊</span><h2>Einmal vorab</h2><p>Stell den <b>Handylautsprecher laut</b>. Mit Kopfhörern höchstens mittlere Lautstärke, das Geräusch ist bewusst hart.</p><p class="small" style="opacity:.7">Ab dem nächsten Mal geht es ohne diesen Hinweis direkt los.</p><button class="btn primary big" data-act="boost-go" data-v="schreck">Verstanden, los</button><button class="link" data-act="boost-cancel" style="color:#95A09A">Abbrechen</button></div>`); return; }
-    const wait = 4000 + Math.min(41000, -Math.log(1 - Math.random()) * 12000), // 4–45 s, about 15 s on average; exponential, so waiting longer never makes it more predictable
-      variant = Math.floor(Math.random() * 4);
+    const wait = 4000 + Math.min(41000, -Math.log(1 - Math.random()) * 12000); // 4–45 s, about 15 s on average; exponential, so waiting longer never makes it more predictable
     boostOverlay(`<div class="instr" style="text-align:left"><span class="eyebrow" style="color:#95A09A">Abruf</span><h2>Was weißt du noch?</h2><p class="small" style="opacity:.75">Schreib aus dem Kopf auf, was du gerade gelernt hast${BO.topic ? ` (${esc(BO.topic)})` : ''}: Begriffe, Zusammenhänge, alles, was dir einfällt.</p><textarea class="input" id="boostRecall" rows="7" placeholder="…"></textarea><button class="link" data-act="boost-cancel" style="color:#95A09A">Abbrechen</button></div>`);
     setTimeout(() => document.getElementById('boostRecall')?.focus(), 50);
     BO.t = setTimeout(() => {
       BO.recall = (document.getElementById('boostRecall') || {}).value || '';
-      startle(variant); try { navigator.vibrate && navigator.vibrate([400, 40, 400, 40, 600]); } catch { /* none */ }
-      const el = document.getElementById('boostov'); el.style.background = '#FFFFFF'; el.style.color = '#0F1211';
-      el.innerHTML = `<div id="scare" style="position:absolute;inset:0;opacity:0">${scareSVG(variant)}</div>`; // white flash first, then the face
-      setTimeout(() => { const sc = document.getElementById('scare'); if (sc) { sc.style.opacity = 1; sc.animate([{ transform: 'scale(.55)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'ease-out' }); } }, 70);
-      el.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-18px,8px)' }, { transform: 'translate(16px,-10px)' }, { transform: 'translate(-10px,-6px)' }, { transform: 'translate(0,0)' }], { duration: 380 });
-      setTimeout(() => { el.style.background = '#000'; }, 70);
-      setTimeout(() => { el.style.background = '#0F1211'; el.style.color = '#E8ECE7'; el.innerHTML = AFTER; }, 1500);
+      const el = document.getElementById('boostov'); if (!el) return;
+      BO.sc = SCARE.choose(T.boostHist); T.boostHist = [...(T.boostHist || []), BO.sc].slice(-4); saveT();
+      SCARE.run(BO.sc, el, () => { if (!BO) return; el.style.background = '#0F1211'; el.style.color = '#E8ECE7'; el.innerHTML = AFTER; });
     }, wait);
     return;
   }
@@ -535,6 +507,7 @@ document.addEventListener('click', e => {
   if (a === 'rest-slept') { if (RS) { RS.slept = v === '1'; restEnd(true); } return; }
   if (a === 'rest-rate') { if (!RS) return; rests().push({ id: uid(), date: today(), kind: RS.kind, min: RS.min, before: RS.before, after: +v, slept: RS.slept }); if (rests().length > 300) T.rest = rests().slice(-300); saveT(); gainXP('rest', 5); toast('Notiert · +5 XP'); document.getElementById('boostov')?.remove(); RS = null; render(); return; }
   if (a === 'boost-go') return boostStart(v);
+  if (a === 'boost-demo') { BO = { kind: 'demo' }; boostOverlay(`<div class="instr" style="text-align:left"><span class="eyebrow" style="color:#95A09A">Abruf</span><h2>Was weißt du noch?</h2><p class="small" style="opacity:.75">Vorschau: So sieht der Bildschirm aus, kurz bevor es passiert.</p><textarea class="input" id="boostRecall" rows="7">Glykolyse, Citratzyklus, Atmungskette …</textarea><button class="link" data-act="boost-cancel" style="color:#95A09A">Abbrechen</button></div>`); SCARE.unlock(); BO.t = setTimeout(() => { const el = document.getElementById('boostov'); if (el) SCARE.run(v, el, () => boostEnd(false)); }, 900); return; }
   if (a === 'boost-coin') return boostStart(Math.random() < 0.5 ? ['schreck', 'move'][Math.floor(Math.random() * 2)] : 'ctl');
   if (a === 'boost-fin') return boostEnd(true);
   if (a === 'boost-cancel') return boostEnd(false);
