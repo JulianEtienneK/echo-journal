@@ -1,0 +1,54 @@
+/* Echo · Nacht-Studio: the dark look, shared by every page. Loaded last, so it wins over the page's own tokens.
+   theme.js always sets data-theme explicitly, so one selector is enough. Light theme stays as each page defines it. */
+:root[data-theme="dark"] {
+  --bg: #06090A; --surface: #0E1513; --surface-2: #18221F; --ink: #F1F5F3; --muted: #8B9995; --line: #202B28;
+  --rec: #FF6A3D; --rec-soft: rgba(255,106,61,.16);
+  --calm: #3BE3C6; --calm-soft: rgba(59,227,198,.14);
+  --gold: #FFC857; --gold-soft: rgba(255,200,87,.14);
+  --shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 14px 34px rgba(0,0,0,.38);
+  --r: 22px;
+  color-scheme: dark;
+}
+/* glow at the top of every page; sits behind the content and does not scroll */
+:root[data-theme="dark"] body::before { content: ""; position: fixed; inset: 0 0 auto 0; height: 62vh; z-index: -1; pointer-events: none;
+  background: radial-gradient(120% 100% at 50% -18%, rgba(34,120,104,.55) 0, rgba(16,44,39,.45) 42%, rgba(6,9,10,0) 78%); }
+
+:root[data-theme="dark"] h1 { letter-spacing: -.025em; color: #EEF6F3; } /* no gradient-clipped text: it turns emoji in headings into white blobs */
+:root[data-theme="dark"] .eyebrow { letter-spacing: .1em; }
+
+:root[data-theme="dark"] .card,
+:root[data-theme="dark"] .stat,
+:root[data-theme="dark"] .gcard,
+:root[data-theme="dark"] .memo { background: linear-gradient(180deg, #121B18, #0C1311); border-color: rgba(255,255,255,.075); box-shadow: var(--shadow); }
+:root[data-theme="dark"] .card.flat { box-shadow: inset 0 1px 0 rgba(255,255,255,.05); }
+:root[data-theme="dark"] .hero { border-radius: 30px; border-color: rgba(59,227,198,.16); background: linear-gradient(180deg, #10302A 0, #0E1A17 46%, #0C1311 100%); box-shadow: var(--shadow); }
+:root[data-theme="dark"] .hero canvas { opacity: .4; }
+:root[data-theme="dark"] .stat { border-radius: 18px; }
+:root[data-theme="dark"] .stat b { font-family: var(--f-mono); font-weight: 600; font-size: 20px; }
+
+:root[data-theme="dark"] .micbtn { background: radial-gradient(circle at 35% 28%, #FFA277, #FF5A2A 58%, #C2380F); box-shadow: inset 0 0 0 1px rgba(255,255,255,.18), 0 0 70px rgba(255,106,61,.55), 0 10px 30px rgba(0,0,0,.5); }
+:root[data-theme="dark"] .micwrap::before, :root[data-theme="dark"] .micwrap::after { background: rgba(255,106,61,.13); }
+
+:root[data-theme="dark"] .btn { border-color: rgba(255,255,255,.1); background: #151E1B; }
+:root[data-theme="dark"] .btn:hover { background: #1C2724; }
+:root[data-theme="dark"] .btn.primary { background: var(--calm); border-color: var(--calm); color: #03120F; font-weight: 700; box-shadow: 0 0 26px rgba(59,227,198,.22); }
+:root[data-theme="dark"] .btn.rec { background: var(--rec); border-color: var(--rec); color: #fff; }
+:root[data-theme="dark"] .btn.ghost { background: transparent; border-color: transparent; box-shadow: none; }
+:root[data-theme="dark"] .chip { background: #131C19; border-color: rgba(255,255,255,.09); }
+:root[data-theme="dark"] .chip[aria-pressed="true"] { background: var(--calm-soft); border-color: var(--calm); color: var(--calm); }
+:root[data-theme="dark"] .tag { background: #18221F; }
+:root[data-theme="dark"] .input, :root[data-theme="dark"] textarea.input, :root[data-theme="dark"] select.input { background: #090E0D; border-color: rgba(255,255,255,.1); color: var(--ink); }
+:root[data-theme="dark"] .input:focus { outline: none; border-color: var(--calm); box-shadow: 0 0 0 3px var(--calm-soft); }
+
+:root[data-theme="dark"] .bar { background: #1A2421; }
+:root[data-theme="dark"] .bar > i { box-shadow: 0 0 12px rgba(59,227,198,.6); }
+:root[data-theme="dark"] .bar.gold > i { box-shadow: 0 0 12px rgba(255,200,87,.5); }
+:root[data-theme="dark"] .xp { border: 1px solid rgba(255,200,87,.22); }
+:root[data-theme="dark"] .ring span { background: #0E1513; }
+:root[data-theme="dark"] .quest.done .qdot, :root[data-theme="dark"] .day.on, :root[data-theme="dark"] .gcard.complete .gnum, :root[data-theme="dark"] .pcal button.ok { color: #03120F; }
+:root[data-theme="dark"] .playbtn { background: var(--calm); color: #03120F; }
+:root[data-theme="dark"] .toast.ok { color: #03120F; }
+
+:root[data-theme="dark"] #tabs { background: rgba(8,12,12,.9); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-top-color: rgba(255,255,255,.08); }
+:root[data-theme="dark"] #tabs button[aria-current="page"] { color: var(--calm); }
+:root[data-theme="dark"] #tabs button[aria-current="page"] svg.i { stroke: var(--calm); filter: drop-shadow(0 0 7px rgba(59,227,198,.8)); }
