@@ -9,7 +9,7 @@
   const KEY = 'echo-kurator', DOWN_LIMIT = 4;
   const F = { // id → [emoji, de, en, href | null (handled by a data-act on index), part of the daily mix?]
     laender: ['🌍', 'Atlas', 'Atlas', 'laender.html', 1], xw: ['🧩', 'Kreuzworträtsel', 'Crosswords', null, 1], medizin: ['🩺', 'Medizin-Atlas', 'Medicine atlas', 'medizin.html', 1],
-    boerse: ['📈', 'Börsen-Akademie', 'Stock market academy', 'boerse.html', 1], zulassungen: ['💊', 'Zulassungs-Radar', 'Approval radar', 'zulassungen.html', 0],
+    boerse: ['📈', 'Börsen-Akademie', 'Stock market academy', 'boerse.html', 1], kompass: ['🧭', 'Kompass', 'Compass', 'kompass.html', 1], zulassungen: ['💊', 'Zulassungs-Radar', 'Approval radar', 'zulassungen.html', 0],
     'spiele#skandale': ['🕵️', 'Skandal-Akten', 'Scandal files', 'spiele.html#skandale', 1], duell: ['⚔️', 'Atlas-Duell', 'Atlas duel', 'duell.html', 1],
     'spiele#stb': ['⚖️', 'Steuer-Akademie', 'Tax academy', 'spiele.html#stb', 1], 'spiele#rechnen': ['🧮', 'Kopfrechnen', 'Mental maths', 'spiele.html#rechnen', 1],
     'spiele#quiz-ernmed': ['🥗', 'Ernmed-Quiz', 'Nutrition quiz', 'spiele.html#quiz-ernmed', 1], 'spiele#quiz-steuer': ['🧾', 'Steuer-Fallquiz', 'Tax case quiz', 'spiele.html#quiz-steuer', 1],
@@ -74,6 +74,14 @@
     ${just ? `<span class="small" style="color:var(--gold)">${L('Alle drei erledigt: +30 XP.', 'All three done: +30 XP.')}</span>` : ''}</section>`;
   }
 
+  // one line on the start page: has today had a step toward the person's values yet?
+  function compassCard() {
+    let c; try { c = JSON.parse(localStorage.getItem('echo-kompass') || 'null'); } catch { c = null; }
+    if (!c || !c.values || !Object.values(c.values).some(v => (v || '').trim()) || load().arch.kompass) return '';
+    const n = (c.steps || []).filter(s => s.date === dk()).length;
+    return `<a class="card" href="kompass.html" style="text-decoration:none;color:inherit;flex-direction:row;display:flex;align-items:center;gap:12px;padding:14px 16px"><span style="font-size:24px">${n ? '✅' : '🧭'}</span><div style="display:grid;gap:0;flex:1"><b>${n ? L('Heute schon ein Werte-Schritt', 'Value step done today') : L('Heute ein Schritt in Richtung deiner Werte?', 'A step toward your values today?')}</b><span class="small muted">${n ? L('Noch einer geht immer.', 'There is always room for one more.') : L('Kurz eintragen im Kompass · +40 XP', 'Log it in the compass · +40 XP')}</span></div></a>`;
+  }
+
   /* ---------- one question per day ---------- */
   function askCard() {
     const k = load(), today = dk(); if (k.asked === today) return '';
@@ -108,7 +116,7 @@
   const fid = el => { if (el.matches('a[href]')) { const id = el.getAttribute('href').replace('.html', ''); return F[id] ? id : null; } const a = el.dataset.act; return a === 'geo-open' ? 'laender' : a === 'xw-hub' ? 'xw' : null; };
   function apply(tab) {
     const app = document.getElementById('app'); if (!app) return;
-    if (tab === 'today') { const hero = app.querySelector('.hero'); if (hero) hero.insertAdjacentHTML('afterend', mixCard()); return; }
+    if (tab === 'today') { const hero = app.querySelector('.hero'); if (hero) hero.insertAdjacentHTML('afterend', mixCard() + compassCard()); return; }
     if (tab !== 'games') return;
     const k = load(), cards = [...app.children].filter(el => el.classList.contains('card') && fid(el));
     // hide archived, then put 👍 first and 👎 last within the games block and within the tools block
