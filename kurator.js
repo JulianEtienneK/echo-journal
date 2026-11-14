@@ -9,7 +9,7 @@
   const KEY = 'echo-kurator', DOWN_LIMIT = 4;
   const F = { // id → [emoji, de, en, href | null (handled by a data-act on index), part of the daily mix?]
     laender: ['🌍', 'Atlas', 'Atlas', 'laender.html', 1], xw: ['🧩', 'Kreuzworträtsel', 'Crosswords', null, 1], medizin: ['🩺', 'Medizin-Atlas', 'Medicine atlas', 'medizin.html', 1],
-    boerse: ['📈', 'Börsen-Akademie', 'Stock market academy', 'boerse.html', 1], kompass: ['🧭', 'Kompass', 'Compass', 'kompass.html', 1], zulassungen: ['💊', 'Zulassungs-Radar', 'Approval radar', 'zulassungen.html', 0],
+    boerse: ['📈', 'Börsen-Akademie', 'Stock market academy', 'boerse.html', 1], kompass: ['🧭', 'Kompass', 'Compass', 'kompass.html', 1], stammbaum: ['🌳', 'Stammbaum', 'Family tree', 'stammbaum.html', 0], zulassungen: ['💊', 'Zulassungs-Radar', 'Approval radar', 'zulassungen.html', 0],
     'spiele#skandale': ['🕵️', 'Skandal-Akten', 'Scandal files', 'spiele.html#skandale', 1], duell: ['⚔️', 'Atlas-Duell', 'Atlas duel', 'duell.html', 1],
     'spiele#stb': ['⚖️', 'Steuer-Akademie', 'Tax academy', 'spiele.html#stb', 1], 'spiele#rechnen': ['🧮', 'Kopfrechnen', 'Mental maths', 'spiele.html#rechnen', 1],
     'spiele#quiz-ernmed': ['🥗', 'Ernmed-Quiz', 'Nutrition quiz', 'spiele.html#quiz-ernmed', 1], 'spiele#quiz-steuer': ['🧾', 'Steuer-Fallquiz', 'Tax case quiz', 'spiele.html#quiz-steuer', 1],
