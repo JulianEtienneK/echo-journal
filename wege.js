@@ -78,19 +78,57 @@ function runTimer(min, onEnd) {
 }
 function chime() { try { const c = new (window.AudioContext || window.webkitAudioContext)(), o = c.createOscillator(), g = c.createGain(); o.frequency.value = 528; g.gain.setValueAtTime(.0001, c.currentTime); g.gain.exponentialRampToValueAtTime(.25, c.currentTime + .05); g.gain.exponentialRampToValueAtTime(.0001, c.currentTime + 2.5); o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 2.6); } catch { /* no audio */ } }
 
-/* Yoga Nidra: the browser reads the script with pauses; without speech it shows the text and keeps the same timing. */
+/* Yoga Nidra: ElevenLabs voice (Leon or Amy, generated once with the person's own key and kept on this device in IndexedDB),
+   otherwise the browser's speech. The key lives only in localStorage 'echo-eleven' – it is not part of Echo's backups. */
+const VOICES = { leon: ['Leon', 'MJ0RnG71ty4LH3dvNfSd'], amy: ['Amy', 'xTXZTtb6MuzG0jJR05Y9'] };
+const EL = () => Object.assign({ key: '', voice: 'leon' }, LS.get('echo-eleven', {}));
+// short body-scan lines are merged into one clip with breaks, so the scan needs a handful of requests instead of sixty
+const SEGS = (() => { const out = []; for (const [t, p] of NIDRA) { const last = out[out.length - 1]; if (p <= 2 && last && last.short) { last.el += ' <break time="1.5s" /> ' + t; last.txt += ' · ' + t; last.pause = p; } else out.push({ el: t, txt: t, pause: p, short: p <= 2 }); } return out; })();
+const hash = s => { let h = 0; for (const c of s) h = (h * 31 + c.codePointAt(0)) | 0; return (h >>> 0).toString(36); };
+const clipId = (v, seg) => v + ':' + hash(seg.el);
+function idb() { return new Promise((res, rej) => { const r = indexedDB.open('echo-audio', 1); r.onupgradeneeded = () => r.result.createObjectStore('clips'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function clipGet(id) { const db = await idb(); return new Promise(res => { const q = db.transaction('clips').objectStore('clips').get(id); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); }
+async function clipPut(id, blob) { const db = await idb(); return new Promise((res, rej) => { const t = db.transaction('clips', 'readwrite'); t.objectStore('clips').put(blob, id); t.oncomplete = res; t.onerror = () => rej(t.error); }); }
+async function readyCount(v) { let n = 0; for (const sg of SEGS) if (await clipGet(clipId(v, sg))) n++; return n; }
+
 function viewNidra() {
+  const e = EL();
   return `${topBar(1)}<div class="stack" style="text-align:center;gap:18px;padding-top:24px"><span class="eyebrow">Yoga Nidra · ca. 10 Minuten</span>
-  <p id="ntext" style="font-size:20px;line-height:1.5;min-height:120px">Leg dich hin und tippe auf Start. Bildschirm kann aus bleiben, der Ton läuft weiter, solange die Seite offen ist.</p>
+  <p id="ntext" style="font-size:20px;line-height:1.5;min-height:120px">Leg dich hin und tippe auf Start. Der Bildschirm darf aus bleiben, solange die Seite offen ist.</p>
   <div class="bar" style="height:4px;border-radius:9px;background:var(--surface-2);overflow:hidden"><i id="nbar" style="display:block;height:100%;width:0;background:var(--calm)"></i></div>
-  <div class="row" style="gap:8px;justify-content:center"><button class="btn primary" data-act="nidra-start">▶ Start</button><button class="btn ghost" data-act="stop">Beenden</button></div></div>`;
+  <div class="row" style="gap:8px;justify-content:center"><button class="btn primary" data-act="nidra-start">▶ Start</button><button class="btn ghost" data-act="stop">Beenden</button></div></div>
+  <details class="card" style="margin-top:18px"${e.key ? '' : ' open'}><summary class="small" style="cursor:pointer"><b>Stimme</b> · <span id="vstate">${e.key ? VOICES[e.voice][0] + ' (ElevenLabs)' : 'Browser-Stimme'}</span></summary>
+  <div class="chips">${Object.entries(VOICES).map(([k, v]) => `<button class="chip" data-act="voice" data-v="${k}" aria-pressed="${e.voice === k}">${v[0]}</button>`).join('')}</div>
+  <input class="input mono" id="elkey" type="password" autocomplete="off" placeholder="ElevenLabs-API-Schlüssel" value="${esc(e.key)}">
+  <span class="small muted">Bleibt nur auf diesem Gerät und ist nicht Teil der Echo-Sicherung. Einmal erzeugen kostet rund 3.000 Zeichen Kontingent, danach läuft alles offline.</span>
+  <button class="btn" data-act="el-gen">Stimme erzeugen</button><span class="small muted" id="elmsg"></span></details>`;
 }
-function startNidra() {
-  stopAll(); const tts = 'speechSynthesis' in window, voice = tts ? (speechSynthesis.getVoices().find(v => /^de/i.test(v.lang)) || null) : null; let i = 0, alive = true; nidra = { stop: () => { alive = false; if (tts) speechSynthesis.cancel(); clearTimeout(nidra.t); } };
-  const step = () => { if (!alive) return; if (i >= NIDRA.length) { chime(); logSurf('nidra'); nidra = null; toast('Welle gesurft 🌊 +' + XP.surf + ' XP'); go(''); return; }
-    const [txt, pause] = NIDRA[i++], el = document.getElementById('ntext'), bar = document.getElementById('nbar'); if (el) el.textContent = txt; if (bar) bar.style.width = Math.round(i / NIDRA.length * 100) + '%';
-    const next = () => { nidra && (nidra.t = setTimeout(step, pause * 1000)); };
-    if (tts) { const u = new SpeechSynthesisUtterance(txt); u.lang = 'de-DE'; u.rate = .82; u.pitch = .95; if (voice) u.voice = voice; u.onend = next; u.onerror = next; speechSynthesis.speak(u); } else nidra.t = setTimeout(step, (pause + Math.max(2, txt.length / 14)) * 1000); };
+async function genVoice() {
+  const msg = t => { const m = document.getElementById('elmsg'); if (m) m.textContent = t; };
+  const key = (document.getElementById('elkey').value || '').trim(), e = EL(); if (!key) return msg('Bitte zuerst den Schlüssel einfügen.');
+  LS.set('echo-eleven', { key, voice: e.voice }); const vid = VOICES[e.voice][1];
+  for (const [i, sg] of SEGS.entries()) {
+    const id = clipId(e.voice, sg); if (await clipGet(id)) continue; msg(`Erzeuge ${i + 1} / ${SEGS.length} …`);
+    try {
+      const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}?output_format=mp3_44100_128`, { method: 'POST', headers: { 'xi-api-key': key, 'content-type': 'application/json', accept: 'audio/mpeg' },
+        body: JSON.stringify({ text: sg.el, model_id: 'eleven_multilingual_v2', voice_settings: { stability: .82, similarity_boost: .75, style: .05, use_speaker_boost: true } }) });
+      if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error((j.detail && (j.detail.message || j.detail.status)) || 'HTTP ' + r.status); }
+      await clipPut(id, await r.blob());
+    } catch (err) { return msg('Abgebrochen: ' + err.message + '. Bereits erzeugte Teile bleiben gespeichert, erneut tippen setzt fort.'); }
+  }
+  msg('Fertig. ' + VOICES[e.voice][0] + ' liest ab jetzt vor, auch offline.'); const v = document.getElementById('vstate'); if (v) v.textContent = VOICES[e.voice][0] + ' (ElevenLabs)';
+}
+async function startNidra() {
+  stopAll(); const e = EL(), useEl = !!e.key && (await readyCount(e.voice)) === SEGS.length;
+  const tts = !useEl && 'speechSynthesis' in window, voice = tts ? (speechSynthesis.getVoices().find(v => /^de/i.test(v.lang)) || null) : null;
+  const audio = useEl ? new Audio() : null, list = useEl ? SEGS : NIDRA.map(([t, p]) => ({ txt: t, el: t, pause: p }));
+  let i = 0, alive = true, url = null; nidra = { stop: () => { alive = false; if (tts) speechSynthesis.cancel(); if (audio) audio.pause(); clearTimeout(nidra && nidra.t); if (url) URL.revokeObjectURL(url); } };
+  const step = async () => { if (!alive) return; if (i >= list.length) { chime(); logSurf('nidra'); nidra = null; toast('Welle gesurft 🌊 +' + XP.surf + ' XP'); go(''); return; }
+    const sg = list[i++], el = document.getElementById('ntext'), bar = document.getElementById('nbar'); if (el) el.textContent = sg.txt; if (bar) bar.style.width = Math.round(i / list.length * 100) + '%';
+    const next = () => { if (nidra) nidra.t = setTimeout(step, sg.pause * 1000); };
+    if (useEl) { const b = await clipGet(clipId(e.voice, sg)); if (!alive) return; if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(b); audio.src = url; audio.onended = next; audio.onerror = next; audio.play().catch(next); }
+    else if (tts) { const u = new SpeechSynthesisUtterance(sg.txt); u.lang = 'de-DE'; u.rate = .82; u.pitch = .95; if (voice) u.voice = voice; u.onend = next; u.onerror = next; speechSynthesis.speak(u); }
+    else nidra.t = setTimeout(step, (sg.pause + Math.max(2, sg.txt.length / 14)) * 1000); };
   step();
 }
 function stopAll() { clearInterval(timer); timer = null; if (nidra) { nidra.stop(); nidra = null; } }
@@ -134,6 +172,8 @@ app.addEventListener('click', e => {
       break;
     case 'tea-save': { const t = document.getElementById('tea').value.trim(); if (t) W.writes.push({ ts: Date.now(), date: today(), text: t }); logSurf('tea'); toast('Welle gesurft 🌊 +' + XP.surf + ' XP'); go(''); break; }
     case 'nidra-start': startNidra(); break;
+    case 'voice': { const k = document.getElementById('elkey'); LS.set('echo-eleven', Object.assign(EL(), { voice: v }, k ? { key: k.value.trim() } : {})); document.querySelectorAll('[data-act=voice]').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === v)); break; }
+    case 'el-gen': genVoice(); break;
     case 'stop': stopAll(); go(''); break;
     case 'lapse-start': { const w = document.getElementById('lwhy').value.trim(); W.lapses.push({ ts: Date.now(), date: today(), why: w }); save();
       app.innerHTML = viewTimer(10, 'Noch 10 Minuten', 'Wenn es klingelt: Laptop zu, aufstehen, Wasser.'); history.replaceState(null, '', '#timer');
