@@ -165,7 +165,7 @@ function render() {
   if (!D) { app.innerHTML = '<p class="muted">Lade …</p>'; return; }
   const p = parseP(location.hash.slice(1)) ? location.hash.slice(1) : defaultP(), P = parseP(p), s = stats(p), pv = stats(prevP(P));
   const nx = nextP(P), canNext = range(parseP(nx))[0] <= today();
-  app.innerHTML = `<div class="topbar"><a class="link" href="index.html#games">← Echo</a><span class="xp">${LS.get('echo-games', {}).xp || 0} XP</span></div>
+  app.innerHTML = `<div class="topbar"><a class="link" href="index.html#tracking">← Tracking</a><span class="xp">${LS.get('echo-games', {}).xp || 0} XP</span></div>
   <div class="stack"><span class="eyebrow">Rückblick</span>
     <div class="row spread"><button class="btn ghost sm" data-act="go" data-v="${prevP(P)}" aria-label="Vorheriger Zeitraum">‹</button><h1 style="margin:0;text-align:center">${title(P)}</h1><button class="btn ghost sm" data-act="go" data-v="${nx}" ${canNext ? '' : 'disabled'} aria-label="Nächster Zeitraum">›</button></div>
     <div class="chips" style="justify-content:center"><button class="chip" data-act="go" data-v="${P.kind === 'm' ? p : defaultP().slice(0, 4) === String(P.y) ? defaultP() : P.y + '-12'}" aria-pressed="${P.kind === 'm'}">Monat</button><button class="chip" data-act="go" data-v="${P.y}" aria-pressed="${P.kind === 'y'}">Jahr</button></div>

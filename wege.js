@@ -14,7 +14,7 @@ const go = h => { if (route() === h) render(); else location.hash = h; };
 const PATHS = { budd: ['☸️', 'Buddhismus', 'Durst, Vergänglichkeit, Achtsamkeit, Mitgefühl'], stoa: ['🏛️', 'Stoa', 'Was in deiner Hand liegt – und Ruhe bei allem anderen'] };
 const nextIdx = p => { const i = WEGE[p].findIndex((_, j) => !W.done[p + j]); return i < 0 ? null : i; };
 const daysLeft = () => Math.ceil((new Date(REWARD.date + 'T23:59') - new Date()) / 864e5);
-const topBar = back => `<div class="topbar"><a class="link" href="${back ? '#' : 'index.html#games'}">← ${back ? 'Wege' : 'Echo'}</a><span class="xp">${LS.get('echo-games', {}).xp || 0} XP</span></div>`;
+const topBar = back => `<div class="topbar"><a class="link" href="${back ? '#' : 'index.html#path'}">← ${back ? 'Wege' : 'Echo'}</a><span class="xp">${LS.get('echo-games', {}).xp || 0} XP</span></div>`;
 let A = { energy: null, why: '' }, timer = null, nidra = null;
 
 /* ---------- hub ---------- */

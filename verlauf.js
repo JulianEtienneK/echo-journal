@@ -85,8 +85,8 @@ function summary() {
 function viewMain() {
   const day = ciDay || checkinDay(), done = V.days[day], base0 = checkinDay();
   const last7 = Array.from({ length: 7 }, (_, i) => addDays(-i, new Date(base0 + 'T12:00')));
-  return `<div class="topbar"><a class="link" href="wege.html">← Wege</a><span class="xp">${LS.get('echo-games', {}).xp || 0} XP</span></div>
-  <div class="stack"><span class="eyebrow">Echo</span><h1>📈 Verlauf</h1><p class="muted">${esc(summary())}</p></div>
+  return `<div class="topbar"><a class="link" href="index.html#tracking">← Tracking</a><span class="xp">${LS.get('echo-games', {}).xp || 0} XP</span></div>
+  <div class="stack"><span class="eyebrow">Echo</span><h1>📈 Tracking</h1><p class="muted">${esc(summary())}</p></div>
 
   <section class="card" id="drang"><div class="row spread"><h3>Drang jetzt</h3><span class="small muted">${now()} Uhr</span></div>
     <label class="stack" style="gap:2px"><span class="small muted">Stärke: <b id="sv">${draft.strength}</b> / 10</span><input type="range" id="str" min="1" max="10" value="${draft.strength}"></label>
@@ -195,6 +195,7 @@ function drawHours() {
   rows.forEach((r, i) => { const z = mk('rect', { x: x(i) - bw / 2, y: f.m.t, width: bw, height: f.h - f.m.t - f.m.b, fill: 'transparent' }, f.svg); const show = () => { f.tip.hidden = false; f.tip.textContent = `${r.h}–${r.h + 1} Uhr: ${r.c}`; f.tip.style.left = Math.max(0, Math.min(x(i) / f.W * f.svg.clientWidth - 40, f.svg.clientWidth - 110)) + 'px'; }; z.addEventListener('mousemove', show); z.addEventListener('click', show); });
 }
 function render() { app.innerHTML = viewMain(); drawAll(); drawUrges(); drawHours(); }
+const jumpTo = location.hash.replace(/^#/, '');
 
 /* ---------- events ---------- */
 app.addEventListener('input', e => {
@@ -243,4 +244,5 @@ app.addEventListener('click', e => {
 })();
 let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawAll(); drawUrges(); drawHours(); }, 150); });
 render();
+if (/^(drang|abend|alles)$/.test(jumpTo)) setTimeout(() => { const el = document.getElementById(jumpTo); if (el) el.scrollIntoView({ block: 'start' }); }, 60);
 window.VERLAUF_TEST = { V, dailyRows, scaled, allUrges };
