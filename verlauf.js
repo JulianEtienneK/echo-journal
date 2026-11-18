@@ -100,9 +100,9 @@ function viewMain() {
     <div class="chips">${last7.map((k, i) => `<button class="chip" data-act="ciday" data-v="${k}" aria-pressed="${k === day}">${dayLabel(k, i)}${V.days[k] ? ' ✓' : ''}</button>`).join('')}</div>
     <label class="row small muted" style="gap:8px">Älterer Tag: <input class="input" type="date" id="ciold" max="${base0}" value="${last7.includes(day) ? '' : day}" style="width:auto;padding:6px 10px"></label>
     <div class="vgrid">${NUMS.map(([k, l, u, st]) => `<label class="stack" style="gap:2px"><span class="small muted">${l} (${u})</span><input class="input" type="text" inputmode="decimal" id="n-${k}" value="${done && done[k] != null ? String(Math.round(done[k] * 100) / 100).replace('.', ',') : ''}" placeholder="–"></label>`).join('')}</div>
-    ${PCT.map(([k, l]) => { const v = done && done[k] != null ? done[k] : null; return `<label class="stack" style="gap:2px"><span class="small muted">${l}: <b id="pv-${k}">${v === null ? 'nicht erfasst' : v}</b></span><input type="range" id="p-${k}" min="0" max="100" step="5" value="${v === null ? 50 : v}" data-set="${v === null ? 0 : 1}"></label>`; }).join('')}
+    ${PCT.map(([k, l]) => { const v = done && done[k] != null ? done[k] : null; return `<div class="stack" style="gap:2px"><div class="row spread"><label class="small muted" for="p-${k}">${l}: <b id="pv-${k}">${v === null ? 'nicht erfasst' : v}</b></label><button class="btn ghost sm vreset" data-act="preset" data-v="${k}" aria-label="${l} zurücksetzen" title="Zurücksetzen">↺</button></div><input type="range" id="p-${k}" min="0" max="100" step="5" value="${v === null ? 50 : v}" data-set="${v === null ? 0 : 1}"></div>`; }).join('')}
     <button class="btn primary" data-act="ci">${done ? 'Aktualisieren' : 'Speichern'}</button>
-    <span class="small muted">Leer gelassene Felder bleiben „nicht erfasst“. Regler zählen erst, wenn du sie bewegst.</span></section>
+    <span class="small muted">Leere Felder und unberührte Regler bleiben „nicht erfasst“ und erscheinen nicht im Verlauf. ↺ setzt einen Regler zurück.</span></section>
 
   <section class="card" id="alles"><div class="row spread" style="flex-wrap:wrap;gap:8px"><h3>Alles im Verlauf</h3><div class="chips">${[14, 30, 90].map(n => `<button class="chip" data-act="range" data-v="${n}" aria-pressed="${V.range === n}">${n} T</button>`).join('')}</div></div>
     <div class="chips">${SERIES.map(([k, l, , , c]) => `<button class="chip" data-act="ser" data-v="${k}" aria-pressed="${!!V.show[k]}"><i class="dot" style="background:${c}"></i>${l}</button>`).join('')}</div>
@@ -217,9 +217,10 @@ app.addEventListener('click', e => {
     case 'ci': {
       const day = ciDay || checkinDay(), first = !V.days[day], d = Object.assign({}, V.days[day]);
       for (const [k] of NUMS) { const val = num(document.getElementById('n-' + k).value.replace(',', '.')); if (val === null) delete d[k]; else d[k] = val; }
-      for (const [k] of PCT) { const el = document.getElementById('p-' + k); if (el.dataset.set === '1') d[k] = +el.value; }
+      for (const [k] of PCT) { const el = document.getElementById('p-' + k); if (el.dataset.set === '1') d[k] = +el.value; else delete d[k]; }
       V.days[day] = d; save(); if (first) gainXP('verlauf-checkin', 30); toast(first ? 'Check-in gespeichert · +30 XP' : 'Aktualisiert'); render(); break;
     }
+    case 'preset': { const el = document.getElementById('p-' + v); el.dataset.set = '0'; el.value = 50; document.getElementById('pv-' + v).textContent = 'nicht erfasst'; break; }
     case 'ciday': ciDay = v === checkinDay() ? null : v; render(); document.getElementById('abend').scrollIntoView({ block: 'start' }); break;
     case 'ser': V.show[v] = !V.show[v]; save(); b.setAttribute('aria-pressed', !!V.show[v]); drawAll(); break;
     case 'range': V.range = +v; save(); render(); break;
