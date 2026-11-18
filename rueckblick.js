@@ -177,14 +177,14 @@ function render() {
     ${tile('Aktive Tage', s.active, `von ${s.days.length}`, delta(s.active, pv.active))}
     ${tile('XP', s.xp.toLocaleString('de-DE'), 'gesammelt', delta(s.xp, pv.xp))}
     ${tile('Drang widerstanden', s.urges ? pct(s.resisted, s.urges) + ' %' : '–', s.urges ? `${s.resisted} von ${s.urges}` : 'nichts eingetragen', delta(s.urges ? pct(s.resisted, s.urges) : null, pv.urges ? pct(pv.resisted, pv.urges) : null, true, ' Pkt.'))}
-    ${tile('Ø Stimmung', s.mood === null ? '–' : String(s.mood).replace('.', ','), s.checkins ? `${s.checkins} Check-ins` : 'kein Check-in', delta(s.mood, pv.mood))}
+    ${tile('Ø Zufriedenheit', s.happy === null ? '–' : String(s.happy).replace('.', ','), s.checkins ? `${s.checkins} Check-ins` : 'kein Check-in', delta(s.happy, pv.happy))}
   </section>
 
   <section class="card" id="kalender"><h3>Wann du da warst</h3>${heatmap(s)}<div class="row small muted" style="gap:6px">weniger <span class="cd l1 lg"></span><span class="cd l2 lg"></span><span class="cd l3 lg"></span><span class="cd l4 lg"></span> mehr · Memos, XP und Check-ins zusammen</div></section>
 
   <section class="card" id="ziele"><h3>Ziele</h3>${goalBars(s)}${bigGoals(s)}</section>
 
-  ${(() => { const sp = [spark(s, 'mood', 'Stimmung', '', true), spark(s, 'sleep', 'Schlaf', '', true), spark(s, 'focus', 'Konzentration', '', true), spark(s, 'happy', 'Zufriedenheit', '', true), spark(s, 'phone_h', 'Handyzeit', '', false), spark(s, 'work_h', 'Arbeitszeit', '', true)].filter(Boolean); return sp.length ? `<section class="card" id="trends"><h3>Trends</h3><p class="small muted">Wochenmittel aus deinem Abend-Check-in, erste → letzte Woche</p><div class="sps">${sp.join('')}</div></section>` : ''; })()}
+  ${(() => { const sp = [spark(s, 'sleep', 'Schlaf', '', true), spark(s, 'focus', 'Konzentration', '', true), spark(s, 'happy', 'Zufriedenheit', '', true), spark(s, 'phone_h', 'Handyzeit', '', false), spark(s, 'work_h', 'Arbeitszeit', '', true)].filter(Boolean); return sp.length ? `<section class="card" id="trends"><h3>Trends</h3><p class="small muted">Wochenmittel aus deinem Abend-Check-in, erste → letzte Woche</p><div class="sps">${sp.join('')}</div></section>` : ''; })()}
 
   <section class="card" id="echo"><h3>Was du in Echo gemacht hast</h3>${activities(s)}</section>
 

@@ -13,7 +13,6 @@ const SERIES = [
   ['strength', 'Drang-Stärke', 'pct10', '/10', '#E07A5F', 0],
   ['phone_h', 'Handyzeit', 'unit', 'h', '#5B8DEF', 0.5],
   ['sleep', 'Schlaf', 'pct', '', '#8E7CC3', 0],
-  ['mood', 'Stimmung', 'pct', '', '#3BA99C', 0],
   ['energy', 'Energie', 'pct', '', '#D4A017', 0],
   ['focus', 'Konzentration', 'pct', '', '#2A9D8F', 0],
   ['happy', 'Zufriedenheit', 'pct', '', '#6C9A3B', 0],
@@ -22,8 +21,11 @@ const SERIES = [
   ['med_min', 'Meditation', 'unit', 'min', '#9C6ADE', 5],
 ];
 const S = Object.fromEntries(SERIES.map(s => [s[0], s]));
-if (!V.show) V.show = { urges: true, phone_h: true, sleep: true, mood: true };
-const PCT = [['sleep', 'Schlaf (inkl. Einschlafen, Aufstehen, wie erholt)'], ['mood', 'Stimmung'], ['energy', 'Energie'], ['focus', 'Konzentration'], ['happy', 'Zufriedenheit']];
+if (!V.show) V.show = { urges: true, phone_h: true, sleep: true, happy: true };
+// Stimmung was dropped (same as Zufriedenheit): old values move over where Zufriedenheit is empty
+for (const d of Object.values(V.days)) if (d && typeof d.mood === 'number') { if (typeof d.happy !== 'number') d.happy = d.mood; delete d.mood; }
+if (V.show.mood) { delete V.show.mood; V.show.happy = true; }
+const PCT = [['sleep', 'Schlaf (inkl. Einschlafen, Aufstehen, wie erholt)'], ['energy', 'Energie'], ['focus', 'Konzentration'], ['happy', 'Zufriedenheit']];
 const NUMS = [['phone_h', 'Handyzeit', 'h', 0.25], ['work_h', 'Arbeitszeit', 'h', 0.25], ['move_min', 'Bewegung', 'min', 5], ['med_min', 'Meditation', 'min', 5]];
 const HM = ['phone_h', 'work_h'];
 const hm = h => { const t = Math.round(h * 60); return Math.floor(t / 60) + ' h' + (t % 60 ? ' ' + (t % 60) + ' min' : ''); };
