@@ -23,7 +23,7 @@ const SERIES = [
 ];
 const S = Object.fromEntries(SERIES.map(s => [s[0], s]));
 if (!V.show) V.show = { urges: true, phone_h: true, sleep: true, mood: true };
-const PCT = [['sleep', 'Schlaf'], ['mood', 'Stimmung'], ['energy', 'Energie'], ['focus', 'Konzentration'], ['happy', 'Zufriedenheit']];
+const PCT = [['sleep', 'Schlaf (inkl. Einschlafen, Aufstehen, wie erholt)'], ['mood', 'Stimmung'], ['energy', 'Energie'], ['focus', 'Konzentration'], ['happy', 'Zufriedenheit']];
 const NUMS = [['phone_h', 'Handyzeit', 'h', 0.25], ['work_h', 'Arbeit', 'h', 0.25], ['move_min', 'Bewegung', 'min', 5], ['med_min', 'Meditation', 'min', 5]];
 const num = v => (v === null || v === undefined || v === '' || isNaN(+v)) ? null : +v;
 const gave = o => /nach|gave/i.test(String(o || ''));
