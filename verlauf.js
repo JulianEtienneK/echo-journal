@@ -30,7 +30,9 @@ const gave = o => /nach|gave/i.test(String(o || ''));
 const now = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
 // the evening check-in belongs to the day that is ending: before 5 am it is still yesterday
 const checkinDay = () => new Date().getHours() < 5 ? addDays(-1) : today();
-let draft = { strength: 5, target: 'YouTube', outcome: 'widerstanden', note: '' }, ci = null, tipT = null;
+let draft = { strength: 5, target: 'YouTube', outcome: 'widerstanden', note: '', date: null, time: null }, ciDay = null, tipT = null;
+const WD = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+const dayLabel = (k, i) => i === 0 ? 'Heute' : i === 1 ? 'Gestern' : WD[new Date(k + 'T12:00').getDay()] + ' ' + k.slice(8) + '.';
 
 /* ---------- data ---------- */
 function allUrges() {
@@ -79,7 +81,8 @@ function summary() {
   return `Letzte 7 Tage: ${n} Drangmomente${n ? `, ${Math.round(res / n * 100)} % widerstanden` : ''}${st.length ? `, Ø Stärke ${String(Math.round(mean(st.map(r => r.strength)) * 10) / 10).replace('.', ',')}` : ''}. Heute bisher: ${tdy.urges}.`;
 }
 function viewMain() {
-  const day = checkinDay(), done = V.days[day];
+  const day = ciDay || checkinDay(), done = V.days[day], base0 = checkinDay();
+  const last7 = Array.from({ length: 7 }, (_, i) => addDays(-i, new Date(base0 + 'T12:00')));
   return `<div class="topbar"><a class="link" href="wege.html">← Wege</a><span class="xp">${LS.get('echo-games', {}).xp || 0} XP</span></div>
   <div class="stack"><span class="eyebrow">Echo</span><h1>📈 Verlauf</h1><p class="muted">${esc(summary())}</p></div>
 
@@ -88,10 +91,14 @@ function viewMain() {
     <div class="chips">${['YouTube', 'Handy', 'Anderes'].map(t => `<button class="chip" data-act="tgt" data-v="${t}" aria-pressed="${draft.target === t}">${t}</button>`).join('')}</div>
     <div class="chips">${['widerstanden', 'nachgegeben'].map(t => `<button class="chip" data-act="out" data-v="${t}" aria-pressed="${draft.outcome === t}">${t}</button>`).join('')}</div>
     <input class="input" id="note" placeholder="Zustand oder Grund (optional), z. B. müde nach dem Essen" value="${esc(draft.note)}">
+    <details${draft.date ? ' open' : ''}><summary class="small muted" style="cursor:pointer">Nachtragen: anderer Tag oder andere Uhrzeit</summary>
+      <div class="vgrid" style="margin-top:8px"><input class="input" type="date" id="udate" max="${today()}" value="${draft.date || today()}"><input class="input" type="time" id="utime" value="${draft.time || now()}"></div></details>
     <button class="btn primary" data-act="urge">Drang eintragen</button>
     <span class="small muted">Lieber surfen statt nur notieren? <a class="link" href="wege.html#anker">Zum Anker</a>, der zählt automatisch mit.</span></section>
 
   <section class="card" id="abend"><div class="row spread"><h3>Abend-Check-in</h3><span class="small muted">${fmtDay(day)}${done ? ' · gespeichert ✓' : ''}</span></div>
+    <div class="chips">${last7.map((k, i) => `<button class="chip" data-act="ciday" data-v="${k}" aria-pressed="${k === day}">${dayLabel(k, i)}${V.days[k] ? ' ✓' : ''}</button>`).join('')}</div>
+    <label class="row small muted" style="gap:8px">Älterer Tag: <input class="input" type="date" id="ciold" max="${base0}" value="${last7.includes(day) ? '' : day}" style="width:auto;padding:6px 10px"></label>
     <div class="vgrid">${NUMS.map(([k, l, u, st]) => `<label class="stack" style="gap:2px"><span class="small muted">${l} (${u})</span><input class="input" type="text" inputmode="decimal" id="n-${k}" value="${done && done[k] != null ? String(Math.round(done[k] * 100) / 100).replace('.', ',') : ''}" placeholder="–"></label>`).join('')}</div>
     ${PCT.map(([k, l]) => { const v = done && done[k] != null ? done[k] : null; return `<label class="stack" style="gap:2px"><span class="small muted">${l}: <b id="pv-${k}">${v === null ? 'nicht erfasst' : v}</b></span><input type="range" id="p-${k}" min="0" max="100" step="5" value="${v === null ? 50 : v}" data-set="${v === null ? 0 : 1}"></label>`; }).join('')}
     <button class="btn primary" data-act="ci">${done ? 'Aktualisieren' : 'Speichern'}</button>
@@ -191,6 +198,9 @@ function render() { app.innerHTML = viewMain(); drawAll(); drawUrges(); drawHour
 app.addEventListener('input', e => {
   if (e.target.id === 'str') { draft.strength = +e.target.value; document.getElementById('sv').textContent = draft.strength; }
   if (e.target.id === 'note') draft.note = e.target.value;
+  if (e.target.id === 'udate') draft.date = e.target.value;
+  if (e.target.id === 'utime') draft.time = e.target.value;
+  if (e.target.id === 'ciold' && /^\d{4}-\d\d-\d\d$/.test(e.target.value) && e.target.value <= checkinDay()) { ciDay = e.target.value; render(); document.getElementById('abend').scrollIntoView({ block: 'start' }); }
   const m = e.target.id.match(/^p-(\w+)$/); if (m) { e.target.dataset.set = '1'; document.getElementById('pv-' + m[1]).textContent = e.target.value; }
 });
 app.addEventListener('click', e => {
@@ -199,16 +209,18 @@ app.addEventListener('click', e => {
     case 'tgt': draft.target = v; b.parentNode.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c === b)); break;
     case 'out': draft.outcome = v; b.parentNode.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c === b)); break;
     case 'urge': {
-      V.urges.push({ id: uid(), date: today(), time: now(), strength: draft.strength, target: draft.target, note: draft.note.trim(), outcome: draft.outcome });
+      const ud = document.getElementById('udate'), ut = document.getElementById('utime'), dOk = ud && /^\d{4}-\d\d-\d\d$/.test(ud.value) && ud.value <= today(), tOk = ut && /^\d\d:\d\d$/.test(ut.value);
+      V.urges.push({ id: uid(), date: dOk ? ud.value : today(), time: tOk ? ut.value : now(), strength: draft.strength, target: draft.target, note: draft.note.trim(), outcome: draft.outcome });
       save(); gainXP('verlauf-urge', 10); toast(draft.outcome === 'widerstanden' ? 'Eingetragen · Welle geritten 🌊 +10 XP' : 'Eingetragen · Datenpunkt, kein Rückfall. +10 XP');
-      draft.note = ''; render(); break;
+      draft.note = ''; draft.date = null; draft.time = null; render(); break;
     }
     case 'ci': {
-      const day = checkinDay(), first = !V.days[day], d = Object.assign({}, V.days[day]);
+      const day = ciDay || checkinDay(), first = !V.days[day], d = Object.assign({}, V.days[day]);
       for (const [k] of NUMS) { const val = num(document.getElementById('n-' + k).value.replace(',', '.')); if (val === null) delete d[k]; else d[k] = val; }
       for (const [k] of PCT) { const el = document.getElementById('p-' + k); if (el.dataset.set === '1') d[k] = +el.value; }
       V.days[day] = d; save(); if (first) gainXP('verlauf-checkin', 30); toast(first ? 'Check-in gespeichert · +30 XP' : 'Aktualisiert'); render(); break;
     }
+    case 'ciday': ciDay = v === checkinDay() ? null : v; render(); document.getElementById('abend').scrollIntoView({ block: 'start' }); break;
     case 'ser': V.show[v] = !V.show[v]; save(); b.setAttribute('aria-pressed', !!V.show[v]); drawAll(); break;
     case 'range': V.range = +v; save(); render(); break;
     case 'del': V.urges = V.urges.filter(u => u.id !== v); save(); render(); break;
