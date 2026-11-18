@@ -9,7 +9,7 @@
   const KEY = 'echo-kurator', DOWN_LIMIT = 4;
   const F = { // id → [emoji, de, en, href | null (handled by a data-act on index), part of the daily mix?]
     laender: ['🌍', 'Atlas', 'Atlas', 'laender.html', 1], xw: ['🧩', 'Kreuzworträtsel', 'Crosswords', null, 1], medizin: ['🩺', 'Medizin-Atlas', 'Medicine atlas', 'medizin.html', 1],
-    boerse: ['📈', 'Börsen-Akademie', 'Stock market academy', 'boerse.html', 1], kompass: ['🧭', 'Kompass', 'Compass', 'kompass.html', 1], wege: ['🪷', 'Wege & Anker', 'Paths & anchor', 'wege.html', 1], verlauf: ['📈', 'Verlauf', 'Tracking', 'verlauf.html', 1], klangwerk: ['🎛️', 'Klangwerk', 'Klangwerk', 'klangwerk.html', 1], stammbaum: ['🌳', 'Stammbaum', 'Family tree', 'stammbaum.html', 0], zulassungen: ['💊', 'Zulassungs-Radar', 'Approval radar', 'zulassungen.html', 0],
+    boerse: ['📈', 'Börsen-Akademie', 'Stock market academy', 'boerse.html', 1], kompass: ['🧭', 'Kompass', 'Compass', 'kompass.html', 1], wege: ['🪷', 'Wege & Anker', 'Paths & anchor', 'wege.html', 1], verlauf: ['📈', 'Verlauf', 'Tracking', 'verlauf.html', 1], rueckblick: ['🗓️', 'Rückblick', 'Review', 'rueckblick.html', 1], klangwerk: ['🎛️', 'Klangwerk', 'Klangwerk', 'klangwerk.html', 1], stammbaum: ['🌳', 'Stammbaum', 'Family tree', 'stammbaum.html', 0], zulassungen: ['💊', 'Zulassungs-Radar', 'Approval radar', 'zulassungen.html', 0],
     'spiele#skandale': ['🕵️', 'Skandal-Akten', 'Scandal files', 'spiele.html#skandale', 1], duell: ['⚔️', 'Atlas-Duell', 'Atlas duel', 'duell.html', 1],
     'spiele#stb': ['⚖️', 'Steuer-Akademie', 'Tax academy', 'spiele.html#stb', 1], 'spiele#rechnen': ['🧮', 'Kopfrechnen', 'Mental maths', 'spiele.html#rechnen', 1],
     'spiele#quiz-ernmed': ['🥗', 'Ernmed-Quiz', 'Nutrition quiz', 'spiele.html#quiz-ernmed', 1], 'spiele#quiz-steuer': ['🧾', 'Steuer-Fallquiz', 'Tax case quiz', 'spiele.html#quiz-steuer', 1],
@@ -75,6 +75,15 @@
   }
 
   // one line on the start page: has today had a step toward the person's values yet?
+  // first five days of a month: the review of the month that just ended (January also opens the year)
+  function reviewCard() {
+    const d = new Date(); if (d.getDate() > 5 || load().arch.rueckblick) return '';
+    const pm = d.getMonth() === 0 ? (d.getFullYear() - 1) + '-12' : d.getFullYear() + '-' + String(d.getMonth()).padStart(2, '0');
+    let seen = {}; try { seen = JSON.parse(localStorage.getItem('echo-rueckblick') || '{}') || {}; } catch { /* none */ }
+    if (seen[pm] && seen[pm].at) return '';
+    const mn = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'][+pm.slice(5) - 1];
+    return `<a class="card" href="rueckblick.html#${pm}" style="text-decoration:none;color:inherit;flex-direction:row;display:flex;align-items:center;gap:12px;padding:14px 16px"><span style="font-size:24px">🗓️</span><div style="display:grid;gap:0;flex:1"><b>${L('Dein ' + mn + ' im Rückblick', 'Your ' + mn + ' in review')}</b><span class="small muted">${L('Ziele, Memos, Trends und drei Fragen', 'Goals, memos, trends and three questions')}</span></div></a>`;
+  }
   function compassCard() {
     let c; try { c = JSON.parse(localStorage.getItem('echo-kompass') || 'null'); } catch { c = null; }
     if (!c || !c.values || !Object.values(c.values).some(v => (v || '').trim()) || load().arch.kompass) return '';
@@ -122,7 +131,7 @@
   const fid = el => { if (el.matches('a[href]')) { const id = el.getAttribute('href').replace('.html', ''); return F[id] ? id : null; } const a = el.dataset.act; return a === 'geo-open' ? 'laender' : a === 'xw-hub' ? 'xw' : null; };
   function apply(tab) {
     const app = document.getElementById('app'); if (!app) return;
-    if (tab === 'today') { const hero = app.querySelector('.hero'); if (hero) hero.insertAdjacentHTML('afterend', mixCard() + ankerCard() + compassCard()); return; }
+    if (tab === 'today') { const hero = app.querySelector('.hero'); if (hero) hero.insertAdjacentHTML('afterend', reviewCard() + mixCard() + ankerCard() + compassCard()); return; }
     if (tab !== 'games') return;
     const k = load(), cards = [...app.children].filter(el => el.classList.contains('card') && fid(el));
     // hide archived, then put 👍 first and 👎 last within the games block and within the tools block
