@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Echo Verlauf</title>
+<meta name="theme-color" content="#F2F3EF">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="tools.css">
+<script src="theme.js"></script>
+<script src="kurator.js"></script>
+<link rel="stylesheet" href="theme.css">
+<style>
+.vgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.vchart{position:relative;min-height:200px}
+.vchart svg{display:block;overflow:visible}
+.vax{fill:var(--muted);font-size:11px;font-family:var(--f-mono)}
+.vgridl{stroke:var(--line);stroke-width:1}
+.vtip{position:absolute;top:0;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px;padding:6px 10px;font-size:12px;line-height:1.5;pointer-events:none;z-index:3;min-width:140px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0}
+.vrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.vmain{display:grid;gap:1px;min-width:0}
+.pill{font-size:12px;border:1px solid var(--line);border-radius:99px;padding:1px 9px;color:var(--muted)}
+.pill.ok{color:var(--calm);border-color:var(--calm)}
+.mono{font-family:var(--f-mono)}
+#app input[type=range]{width:100%;accent-color:var(--calm);touch-action:none}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script src="tools-common.js"></script>
+<script src="verlauf.js"></script>
+</body>
+</html>
