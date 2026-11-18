@@ -25,6 +25,7 @@ const S = Object.fromEntries(SERIES.map(s => [s[0], s]));
 if (!V.show) V.show = { urges: true, phone_h: true, sleep: true, mood: true };
 const PCT = [['sleep', 'Schlaf (inkl. Einschlafen, Aufstehen, wie erholt)'], ['mood', 'Stimmung'], ['energy', 'Energie'], ['focus', 'Konzentration'], ['happy', 'Zufriedenheit']];
 const NUMS = [['phone_h', 'Handyzeit', 'h', 0.25], ['work_h', 'Arbeit', 'h', 0.25], ['move_min', 'Bewegung', 'min', 5], ['med_min', 'Meditation', 'min', 5]];
+const hm = h => { const t = Math.round(h * 60); return Math.floor(t / 60) + ' h' + (t % 60 ? ' ' + (t % 60) + ' min' : ''); };
 const num = v => (v === null || v === undefined || v === '' || isNaN(+v)) ? null : +v;
 const gave = o => /nach|gave/i.test(String(o || ''));
 const now = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
@@ -99,7 +100,7 @@ function viewMain() {
   <section class="card" id="abend"><div class="row spread"><h3>Abend-Check-in</h3><span class="small muted">${fmtDay(day)}${done ? ' · gespeichert ✓' : ''}</span></div>
     <div class="chips">${last7.map((k, i) => `<button class="chip" data-act="ciday" data-v="${k}" aria-pressed="${k === day}">${dayLabel(k, i)}${V.days[k] ? ' ✓' : ''}</button>`).join('')}</div>
     <label class="row small muted" style="gap:8px">Älterer Tag: <input class="input" type="date" id="ciold" max="${base0}" value="${last7.includes(day) ? '' : day}" style="width:auto;padding:6px 10px"></label>
-    <div class="vgrid">${NUMS.map(([k, l, u, st]) => `<label class="stack" style="gap:2px"><span class="small muted">${l} (${u})</span><input class="input" type="text" inputmode="decimal" id="n-${k}" value="${done && done[k] != null ? String(Math.round(done[k] * 100) / 100).replace('.', ',') : ''}" placeholder="–"></label>`).join('')}</div>
+    <div class="vgrid">${NUMS.map(([k, l, u, st]) => k === 'phone_h' ? (() => { const t = done && done[k] != null ? Math.round(done[k] * 60) : null; return `<div class="stack" style="gap:2px"><span class="small muted">Handyzeit</span><div class="row" style="gap:6px"><input class="input" type="text" inputmode="numeric" id="n-phone_hh" value="${t === null ? '' : Math.floor(t / 60)}" placeholder="h" aria-label="Handyzeit Stunden"><span class="small muted">h</span><input class="input" type="text" inputmode="numeric" id="n-phone_mm" value="${t === null ? '' : t % 60}" placeholder="min" aria-label="Handyzeit Minuten"><span class="small muted">min</span></div></div>`; })() : `<label class="stack" style="gap:2px"><span class="small muted">${l} (${u})</span><input class="input" type="text" inputmode="decimal" id="n-${k}" value="${done && done[k] != null ? String(Math.round(done[k] * 100) / 100).replace('.', ',') : ''}" placeholder="–"></label>`).join('')}</div>
     ${PCT.map(([k, l]) => { const v = done && done[k] != null ? done[k] : null; return `<div class="stack" style="gap:2px"><div class="row spread"><label class="small muted" for="p-${k}">${l}: <b id="pv-${k}">${v === null ? 'nicht erfasst' : v}</b></label><button class="btn ghost sm vreset" data-act="preset" data-v="${k}" aria-label="${l} zurücksetzen" title="Zurücksetzen">↺</button></div><input type="range" id="p-${k}" min="0" max="100" step="5" value="${v === null ? 50 : v}" data-set="${v === null ? 0 : 1}"></div>`; }).join('')}
     <button class="btn primary" data-act="ci">${done ? 'Aktualisieren' : 'Speichern'}</button>
     <span class="small muted">Leere Felder und unberührte Regler bleiben „nicht erfasst“ und erscheinen nicht im Verlauf. ↺ setzt einen Regler zurück.</span></section>
@@ -160,7 +161,7 @@ function drawAll() {
     vals.forEach((v, i) => { if (v !== null) mk('circle', { cx: x(i), cy: y(v), r: rows.length > 45 ? 1.8 : 3, fill: c }, f.svg); });
   }
   if (!keys.length) { const t = mk('text', { x: f.W / 2, y: f.h / 2, 'text-anchor': 'middle', class: 'vax' }, f.svg); t.textContent = 'Oben Werte auswählen'; }
-  const real = (r, k) => { const v = k === 'urges' ? r.urges : r[k]; if (v === null || v === undefined) return '–'; const s = S[k]; return s[2] === 'pct' ? v : String(v).replace('.', ',') + ' ' + s[3]; };
+  const real = (r, k) => { const v = k === 'urges' ? r.urges : r[k]; if (v === null || v === undefined) return '–'; if (k === 'phone_h') return hm(v); const s = S[k]; return s[2] === 'pct' ? v : String(v).replace('.', ',') + ' ' + s[3]; };
   hoverZones(f, rows, x, r => keys.map(k => `<i class="dot" style="background:${S[k][4]}"></i>${S[k][1]}: ${real(r, k)}`));
 }
 function drawUrges() {
@@ -216,7 +217,7 @@ app.addEventListener('click', e => {
     }
     case 'ci': {
       const day = ciDay || checkinDay(), first = !V.days[day], d = Object.assign({}, V.days[day]);
-      for (const [k] of NUMS) { const val = num(document.getElementById('n-' + k).value.replace(',', '.')); if (val === null) delete d[k]; else d[k] = val; }
+      for (const [k] of NUMS) { let val; if (k === 'phone_h') { const hh = num(document.getElementById('n-phone_hh').value.replace(',', '.')), mm = num(document.getElementById('n-phone_mm').value.replace(',', '.')); val = hh === null && mm === null ? null : Math.round(((hh || 0) + (mm || 0) / 60) * 100) / 100; } else val = num(document.getElementById('n-' + k).value.replace(',', '.')); if (val === null) delete d[k]; else d[k] = val; }
       for (const [k] of PCT) { const el = document.getElementById('p-' + k); if (el.dataset.set === '1') d[k] = +el.value; else delete d[k]; }
       V.days[day] = d; save(); if (first) gainXP('verlauf-checkin', 30); toast(first ? 'Check-in gespeichert · +30 XP' : 'Aktualisiert'); render(); break;
     }
