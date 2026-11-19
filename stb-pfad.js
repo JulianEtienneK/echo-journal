@@ -63,11 +63,29 @@ function checkNorm(given, want) {
 }
 
 /* ---------- time, streak, rank ---------- */
-let lastTick = 0;
-function tick() {
-  const t = Date.now(), d = P.days[today()] || (P.days[today()] = { sec: 0, rev: 0 });
-  if (lastTick && t - lastTick < 180000) d.sec = Math.round((d.sec || 0) + (t - lastTick) / 1000);
-  lastTick = t;
+/* live session clock: runs while a session is open and the page is visible; pauses after 3 minutes without any input
+   (reading counts, walking away does not); stops when you leave the session. Seconds go into P.days[day].sec. */
+let lastInput = Date.now(), CLK = null;
+function tick() { lastInput = Date.now(); }
+['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach(ev => addEventListener(ev, tick, { passive: true }));
+const mmss = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+function clock() {
+  if (SS && !CLK) {
+    const el = document.createElement('div'); el.id = 'clk';
+    el.style.cssText = 'position:fixed;bottom:calc(12px + env(safe-area-inset-bottom));left:12px;z-index:50;background:var(--surface);border:2px solid var(--calm);border-radius:99px;padding:6px 12px;font:600 14px var(--f-mono);box-shadow:0 4px 16px rgba(0,0,0,.15)';
+    document.body.appendChild(el);
+    CLK = { el, sec: 0, iv: setInterval(() => {
+      const idle = Date.now() - lastInput > 180000, hidden = document.visibilityState !== 'visible';
+      if (!idle && !hidden) { CLK.sec++; const d = P.days[today()] || (P.days[today()] = { sec: 0, rev: 0 }); d.sec = (d.sec || 0) + 1; if (CLK.sec % 15 === 0) save(); }
+      const tm = minToday();
+      CLK.el.innerHTML = `${idle || hidden ? '⏸' : '⏱'} ${mmss(CLK.sec)} <span style="color:var(--muted);font-weight:500">· heute ${tm}/30</span>`;
+      CLK.el.style.borderColor = tm >= 30 ? 'var(--gold)' : 'var(--calm)';
+    }, 1000) };
+    CLK.el.innerHTML = `⏱ 0:00 <span style="color:var(--muted);font-weight:500">· heute ${minToday()}/30</span>`;
+  } else if (!SS && CLK) {
+    clearInterval(CLK.iv); CLK.el.remove(); const s = CLK.sec; CLK = null; save();
+    if (s >= 30) toast(`Session: ${mmss(s)} · heute ${minToday()} min`);
+  }
 }
 const act = () => { (P.days[today()] || (P.days[today()] = { sec: 0, rev: 0 })).act = true; };
 function streak() { let n = 0, k = today(); if (!(P.days[k] || {}).act) k = addDays(-1); while ((P.days[k] || {}).act) { n++; k = addDays(-1, new Date(k + 'T12:00')); } return n; }
@@ -271,7 +289,7 @@ function render() {
   else if (h === 'fall' && doneL().length) { startCase(); return; }
   else if (h === 'boss') { startBoss(); if (SS && SS.stage === 'case') return; html = viewHome(); }
   else html = viewHome();
-  app.innerHTML = html; window.scrollTo(0, 0);
+  app.innerHTML = html; window.scrollTo(0, 0); clock();
   const f = app.querySelector('#typed, #nav, #guess, #pre'); if (f && !f.disabled && matchMedia('(pointer:fine)').matches) f.focus();
 }
 const val = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
