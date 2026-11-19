@@ -25,7 +25,7 @@ if (!V.show) V.show = { urges: true, phone_h: true, sleep: true, happy: true };
 // Stimmung was dropped (same as Zufriedenheit): old values move over where Zufriedenheit is empty
 for (const d of Object.values(V.days)) if (d && typeof d.mood === 'number') { if (typeof d.happy !== 'number') d.happy = d.mood; delete d.mood; }
 if (V.show.mood) { delete V.show.mood; V.show.happy = true; }
-const PCT = [['sleep', 'Schlaf (inkl. Einschlafen, Aufstehen, wie erholt)'], ['energy', 'Energie'], ['focus', 'Konzentration'], ['happy', 'Zufriedenheit']];
+const PCT = [['sleep', 'Schlaf letzte Nacht (inkl. Einschlafen, Aufstehen, wie erholt)'], ['energy', 'Energie'], ['focus', 'Konzentration'], ['happy', 'Zufriedenheit']];
 const NUMS = [['phone_h', 'Handyzeit', 'h', 0.25], ['work_h', 'Arbeitszeit', 'h', 0.25], ['move_min', 'Bewegung', 'min', 5], ['med_min', 'Meditation', 'min', 5]];
 const HM = ['phone_h', 'work_h'];
 const hm = h => { const t = Math.round(h * 60); return Math.floor(t / 60) + ' h' + (t % 60 ? ' ' + (t % 60) + ' min' : ''); };
