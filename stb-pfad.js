@@ -10,7 +10,12 @@
 const app = document.getElementById('app');
 const D = window.STB_PFAD;
 const P = Object.assign({ done: {}, cards: {}, days: {}, boss: {}, notes: {}, cal: { n: 0, hit: 0, over: 0 }, caseLast: {}, qa: [], qcards: {} }, LS.get('echo-stbpfad', {}));
-const save = () => { P.updated = Date.now(); LS.set('echo-stbpfad', P); };
+const save = () => {
+  const ms = D.ROADMAP.filter(m => (D.LESSONS[m.id] || []).length), cur = ms.find(m => D.LESSONS[m.id].some(l => !P.done[l.id])) || ms[ms.length - 1];
+  const ls = D.LESSONS[cur.id], n = ls.filter(l => P.done[l.id]).length;
+  P.meta = { mod: D.ROADMAP.indexOf(cur) + 1, mods: D.ROADMAP.length, name: cur.n, lesson: Math.min(n + 1, ls.length), of: ls.length, done: Object.keys(P.done).length, total: ms.reduce((a, m) => a + D.LESSONS[m.id].length, 0) };
+  P.updated = Date.now(); LS.set('echo-stbpfad', P);
+};
 const LADDER = [1, 3, 7, 16, 35, 90, 180];
 const MASTER = 3; // box 3 = the card survived a gap of a week or more
 const LESSONS = []; for (const m of D.ROADMAP) for (const l of (D.LESSONS[m.id] || [])) LESSONS.push(Object.assign({ mod: m.id }, l));
@@ -127,9 +132,9 @@ function viewHome() {
   const todayL = nl && lessonDay() ? `Neue Lektion: ${esc(nl.t)}` : nl ? 'Heute: Wiederholen und ein Fall (neue Lektion morgen)' : 'Alle verfügbaren Lektionen gelernt';
   const sec = (P.days[today()] || {}).sec || 0;
   const h = hoursTotal(), cal = P.cal.n >= 5 ? Math.round(P.cal.hit / P.cal.n * 100) + ' %' : '–';
-  const bossOpen = D.BOSS[m0.id] && (D.LESSONS[m0.id] || []).every(l => P.done[l.id]);
+  const bosses = D.ROADMAP.filter(m => D.BOSS[m.id] && (D.LESSONS[m.id] || []).length && D.LESSONS[m.id].every(l => P.done[l.id])).sort((a, b) => !!P.boss[a.id] - !!P.boss[b.id]);
   const modRow = m => { const ls = D.LESSONS[m.id] || [], n = ls.filter(l => P.done[l.id]).length, cur = m.id === m0.id;
-    return `<div class="mod${ls.length ? '' : ' lock'}"><span class="big">${m.em}</span><div class="stack" style="gap:0;min-width:0"><b>${esc(m.n)}</b><span class="small muted">Woche ${m.w} · ${esc(m.goal)}</span>${cur && ls.length ? `<div class="stack" style="gap:2px;margin-top:6px">${ls.map((l, i) => `<a class="small" href="#l-${l.id}" style="color:${P.done[l.id] ? 'var(--ink)' : 'var(--muted)'};text-decoration:none">${P.done[l.id] ? '✓' : '○'} ${i + 1}. ${esc(l.t)}</a>`).join('')}${D.BOSS[m.id] ? `<span class="small" style="color:${P.boss[m.id] ? 'var(--ink)' : 'var(--muted)'}">${P.boss[m.id] ? '🏆' : '🔒'} Abschlussfall: ${esc(D.BOSS[m.id].t)}</span>` : ''}</div>` : ''}</div><span class="mono small muted">${ls.length ? n + '/' + ls.length : 'bald'}</span></div>`; };
+    return `<div class="mod${ls.length ? '' : ' lock'}"><span class="big">${m.em}</span><div class="stack" style="gap:0;min-width:0"><b>${esc(m.n)}</b><span class="small muted">Woche ${m.w} · ${esc(m.goal)}</span>${!cur && ls.length ? `<details style="margin-top:4px"><summary class="small muted">${ls.length} Lektionen ansehen</summary><div class="stack" style="gap:2px;margin-top:6px">${ls.map((l, i) => `<a class="small" href="#l-${l.id}" style="color:${P.done[l.id] ? 'var(--ink)' : 'var(--muted)'};text-decoration:none">${P.done[l.id] ? '✓' : '○'} ${i + 1}. ${esc(l.t)}</a>`).join('')}</div></details>` : ''}${cur && ls.length ? `<div class="stack" style="gap:2px;margin-top:6px">${ls.map((l, i) => `<a class="small" href="#l-${l.id}" style="color:${P.done[l.id] ? 'var(--ink)' : 'var(--muted)'};text-decoration:none">${P.done[l.id] ? '✓' : '○'} ${i + 1}. ${esc(l.t)}</a>`).join('')}${D.BOSS[m.id] ? `<span class="small" style="color:${P.boss[m.id] ? 'var(--ink)' : 'var(--muted)'}">${P.boss[m.id] ? '🏆' : '🔒'} Abschlussfall: ${esc(D.BOSS[m.id].t)}</span>` : ''}</div>` : ''}</div><span class="mono small muted">${ls.length ? n + '/' + ls.length : 'bald'}</span></div>`; };
   return `<div class="topbar">${back('index.html#games')}<button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button></div>
   <header class="stack" style="gap:4px"><span class="eyebrow">${esc(r.name)}${r.next ? ' · nächster Rang bei ' + r.next[0] + ' sicheren Karten' : ''}</span><h1>⚖️ StB-Pfad</h1></header>
   <section class="card" style="border:2px solid var(--calm)"><div class="row spread"><h3>Heute</h3><span class="mono" style="font-size:20px;font-weight:600">⏱ ${mmss(sec)}</span></div>
@@ -142,7 +147,7 @@ function viewHome() {
     <div class="stack" style="gap:0"><b style="font-size:24px">${cal}</b><span class="small muted">„Sicher“ und richtig</span></div></div>
     <div class="stack" style="gap:4px"><div class="row spread"><span class="small">Jahresziel</span><span class="small muted mono">${h.toFixed(1)} / 180 h · ${weekMin()} min diese Woche</span></div><div class="bar gold"><i style="width:${Math.min(100, h / 180 * 100)}%"></i></div></div></section>
   ${dl.length >= 2 ? `<a class="card" href="#fall" style="text-decoration:none;color:inherit"><div class="row"><span class="big">🧩</span><div class="stack grow" style="gap:0"><h3>Fall-Training</h3><span class="small muted">Gemischter Fall: erst erkennen, welches Thema greift, dann selbst lösen</span></div></div></a>` : ''}
-  ${bossOpen ? `<a class="card" href="#boss" style="text-decoration:none;color:inherit;border:2px solid var(--gold)"><div class="row"><span class="big">${P.boss[m0.id] ? '🏆' : '👹'}</span><div class="stack grow" style="gap:0"><h3>Abschlussfall: ${esc(D.BOSS[m0.id].t)}</h3><span class="small muted">${P.boss[m0.id] ? 'Bestanden, jederzeit wiederholbar' : 'Alle Lektionen des Moduls in einem Fall'}</span></div></div></a>` : ''}
+  ${bosses.map(m => `<a class="card" href="#boss-${m.id}" style="text-decoration:none;color:inherit;${P.boss[m.id] ? '' : 'border:2px solid var(--gold)'}"><div class="row"><span class="big">${P.boss[m.id] ? '🏆' : '👹'}</span><div class="stack grow" style="gap:0"><h3>Abschlussfall: ${esc(D.BOSS[m.id].t)}</h3><span class="small muted">${esc(m.n)} · ${P.boss[m.id] ? 'bestanden, jederzeit wiederholbar' : 'alle Lektionen des Moduls in einem Fall'}</span></div></div></a>`).join('')}
   ${P.qa.length ? `<a class="card" href="#fragen" style="text-decoration:none;color:inherit"><div class="row"><span class="big">❓</span><div class="stack grow" style="gap:0"><h3>Deine Fragen</h3><span class="small muted">${P.qa.length} gestellt · zuletzt: ${esc(P.qa[P.qa.length - 1].q.slice(0, 70))}</span></div></div></a>` : ''}
   <section class="card"><h3>Der rote Faden</h3>${D.ROADMAP.map(modRow).join('')}</section>
   <section class="card"><h3>Ränge</h3><div class="stack" style="gap:2px">${D.RANKS.map(x => `<span class="small" style="color:${r.m >= x[0] ? 'var(--ink)' : 'var(--muted)'}">${r.m >= x[0] ? '●' : '○'} ${esc(x[1])} <span class="muted">· ab ${x[0]} sicheren Karten</span></span>`).join('')}</div><span class="small muted">„Sicher“ heißt: Die Karte wurde nach einer Pause von mindestens einer Woche noch gewusst. Nur das zählt, nicht wie oft du sie gesehen hast.</span></section>
@@ -240,7 +245,7 @@ function viewLesson() {
 /* case training and boss: recognise the topic (interleaving), then solve each step yourself */
 function startCase() {
   // every learned lesson brings its main case plus the extra cases; the one seen longest ago comes next, another topic than last time where possible
-  const pool = []; for (const l of doneL()) [l.case, ...((D.EXTRA || {})[l.id] || [])].forEach((c, i) => pool.push({ l, c, key: l.id + '#' + i, n: 1 + ((D.EXTRA || {})[l.id] || []).length, i }));
+  const pool = []; for (const l of doneL()) { const all = [l.case, ...((D.EXTRA || {})[l.id] || []), ...(l.more || [])]; all.forEach((c, i) => pool.push({ l, c, key: l.id + '#' + i, n: all.length, i })); }
   if (!pool.length) return;
   const seen = P.caseSeen || (P.caseSeen = {});
   pool.sort((a, b) => ((seen[a.key] || 0) - (seen[b.key] || 0)) || ((a.l.id === P.lastCaseL) - (b.l.id === P.lastCaseL)) || Math.random() - 0.5);
@@ -249,16 +254,17 @@ function startCase() {
   SS = Object.assign(SS || { xp: 0 }, { stage: 'case', C: { L: l, key: pick.key, idx: pick.i + 1, of: pick.n, repeat: allToday, steps: cs.steps.map(s => [s[0], s[1], l.id]), sv: cs.sv, res: cs.res, opts: shuffle([l, ...others]), pick: null, s: 0, shown: false, guess: '', miss: 0, boss: false } });
   location.hash = 'fall'; render();
 }
-function startBoss() {
-  const m = D.ROADMAP.find(x => D.BOSS[x.id] && (D.LESSONS[x.id] || []).every(l => P.done[l.id])); if (!m) return;
+function startBoss(mid) {
+  const ok = x => D.BOSS[x.id] && (D.LESSONS[x.id] || []).length && D.LESSONS[x.id].every(l => P.done[l.id]);
+  const m = D.ROADMAP.find(x => x.id === mid && ok(x)) || D.ROADMAP.find(x => ok(x) && !P.boss[x.id]) || D.ROADMAP.find(ok); if (!m) return;
   const b = D.BOSS[m.id];
   SS = Object.assign(SS || { xp: 0 }, { stage: 'case', C: { mod: m.id, title: b.t, steps: b.steps, sv: b.sv, res: b.res, pick: 'skip', s: 0, shown: false, guess: '', miss: 0, boss: true } });
-  location.hash = 'boss'; render();
+  location.hash = 'boss-' + m.id; render();
 }
 function viewCase() {
   const C = SS.C, done = C.s >= C.steps.length;
   const head = `<div class="topbar"><a class="link" href="#" data-act="home">← StB-Pfad</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button><span class="small muted">${C.boss ? 'Abschlussfall' : 'Fall-Training'}</span></div>
-  <header class="stack" style="gap:6px"><h1 style="font-size:26px">${C.boss ? '👹 ' + esc(C.title) : '🧩 Gemischter Fall'}</h1>${C.boss ? '' : `<span class="small muted">${C.repeat ? 'Alle Fälle zu deinen bisherigen Lektionen hast du heute schon gelöst, das hier ist eine Wiederholung. Mit jeder neuen Lektion kommen drei Fälle dazu.' : `Fall ${C.idx} von ${C.of} zu diesem Thema · ${doneL().length * 3} Fälle aus ${doneL().length} Lektion${doneL().length === 1 ? '' : 'en'}`}</span>`}${phase(C.steps.length + (C.boss ? 0 : 1), (C.pick ? 1 : 0) * (C.boss ? 0 : 1) + C.s)}</header>
+  <header class="stack" style="gap:6px"><h1 style="font-size:26px">${C.boss ? '👹 ' + esc(C.title) : '🧩 Gemischter Fall'}</h1>${C.boss ? '' : `<span class="small muted">${C.repeat ? 'Alle Fälle zu deinen bisherigen Lektionen hast du heute schon gelöst, das hier ist eine Wiederholung. Mit jeder neuen Lektion kommen neue Fälle dazu.' : `Fall ${C.idx} von ${C.of} zu diesem Thema · ${doneL().length} Lektion${doneL().length === 1 ? '' : 'en'} im Fallpool`}</span>`}${phase(C.steps.length + (C.boss ? 0 : 1), (C.pick ? 1 : 0) * (C.boss ? 0 : 1) + C.s)}</header>
   <section class="card"><div class="sv">${esc(C.sv)}</div></section>`;
   if (!C.pick) return `${head}<section class="card"><h3>Welches Thema steckt im Kern dieses Falls?</h3><span class="small muted">In der Klausur steht nirgends, welche Norm gefragt ist. Erkennen ist die halbe Lösung.</span>
     <div class="opts">${C.opts.map(o => `<button class="opt" data-act="pick" data-v="${o.id}">${esc(o.t)}</button>`).join('')}</div></section>`;
@@ -370,9 +376,9 @@ function render() {
   if (h.startsWith('l-') && LBY[h.slice(2)]) html = viewRead(LBY[h.slice(2)]);
   else if (h === 'fragen') html = viewQA();
   else if (SS && h === 'heute') html = SS.stage === 'review' ? viewReview() : SS.stage === 'lesson' ? viewLesson() : SS.stage === 'case' ? viewCase() : viewPlan();
-  else if (SS && SS.stage === 'case' && (h === 'fall' || h === 'boss')) html = viewCase();
+  else if (SS && SS.stage === 'case' && (h === 'fall' || h.startsWith('boss'))) html = viewCase();
   else if (h === 'fall' && doneL().length) { startCase(); return; }
-  else if (h === 'boss') { startBoss(); if (SS && SS.stage === 'case') return; html = viewHome(); }
+  else if (h.startsWith('boss')) { startBoss(h.slice(5)); if (SS && SS.stage === 'case') return; html = viewHome(); }
   else html = viewHome();
   app.innerHTML = html; window.scrollTo(0, 0); clock();
   const f = app.querySelector('#typed, #nav, #guess, #pre'); if (f && !f.disabled && matchMedia('(pointer:fine)').matches) f.focus();
@@ -446,6 +452,7 @@ app.addEventListener('keydown', e => {
   if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
   const btn = app.querySelector('[data-act="check"], [data-act="navcheck"], [data-act="conf"][data-v="sure"]'); if (btn) { e.preventDefault(); btn.click(); }
 });
-window.addEventListener('hashchange', () => { if (!/^#(heute|fall|boss)$/.test(location.hash) && !location.hash.startsWith('#l-')) SS = null; render(); });
+window.addEventListener('hashchange', () => { if (!/^#(heute|fall|boss(-\w+)?)$/.test(location.hash) && !location.hash.startsWith('#l-')) SS = null; render(); });
+{ const before = JSON.stringify(P.meta || null); const P0 = P.updated; save(); if (before === JSON.stringify(P.meta)) { P.updated = P0; LS.set('echo-stbpfad', P); } }
 render();
 window.STB_TEST = { P, checkNorm, rate, interleave, LESSONS };
