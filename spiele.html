@@ -227,18 +227,21 @@ function quizStart(bank) {
 }
 function viewQuiz() {
   const bank = QUIZ[Q.bank];
-  if (Q.i >= Q.seq.length) return `${back}<section class="card" style="text-align:center;justify-items:center"><span class="eyebrow">${esc(bank.title)}</span><div class="sum">${Q.ok}/${Q.seq.length}</div><p class="muted" style="margin:0">+${Q.xp} XP</p></section>
+  if (Q.i >= Q.seq.length) return `${back}<section class="card" style="text-align:center;justify-items:center"><span class="eyebrow">${esc(bank.title)}</span><div class="sum">${Q.ok}/${Q.seq.filter(x => !x.retry).length}</div><p class="muted" style="margin:0">+${Q.xp} XP</p></section>
     ${Q.wrong.length ? `<section class="card"><h3>Das solltest du dir merken</h3>${Q.wrong.map(it => `<div style="display:grid;gap:2px"><b>${esc(it[1])}</b><span class="small">→ ${esc(it[2][0])}</span></div>`).join('')}</section>` : ''}
     <button class="btn primary big" data-act="quiz-go" data-v="${Q.bank}">Nächste Runde</button><button class="btn" data-act="home">Übersicht</button>`;
   const cur = Q.seq[Q.i], it = cur.it;
   return `${back}<div class="progress">${Q.seq.map((x, i) => `<i class="${i < Q.i ? (x.ok ? 'ok' : 'bad') : i === Q.i ? 'cur' : ''}"></i>`).join('')}</div>
-    <span class="eyebrow">${bank.icon} ${esc(bank.title)}</span><div class="q">${esc(it[1])}</div>
+    <span class="eyebrow">${bank.icon} ${esc(bank.title)}${cur.retry ? ' · noch einmal, bis es sitzt' : ''}</span><div class="q">${esc(it[1])}</div>
     <div class="opts" style="grid-template-columns:1fr">${cur.opts.map((o, i) => { const cls = Q.ans == null ? '' : o === it[2][0] ? 'ok' : o === Q.ans ? 'bad' : ''; return `<button class="opt ${cls}" data-act="quiz-ans" data-v="${i}" ${Q.ans == null ? '' : 'disabled'}><span class="k">${i + 1}</span><span>${esc(o)}</span></button>`; }).join('')}</div>
     ${Q.ans == null ? '' : `<div class="expl"><b>${Q.ans === it[2][0] ? '✓ Richtig. ' : '✗ '}</b>${esc(it[3])}</div><button class="btn primary big" data-act="quiz-next" id="qnext">Weiter</button>`}`;
 }
 function quizAnswer(i) {
   const cur = Q.seq[Q.i], it = cur.it; if (Q.ans != null) return;
   Q.ans = cur.opts[i]; const ok = Q.ans === it[2][0], s = qs(Q.bank, it[0]); cur.ok = ok;
+  // successive relearning: a missed question returns at the end of the round until it is right once; the retry itself never moves the card further out
+  if (cur.retry) { if (!ok) { s.w++; if (cur.retry < 3) Q.seq.push({ it, opts: shuffle(it[2]), retry: cur.retry + 1 }); } beep(ok); save(); render(); document.getElementById('qnext')?.focus(); return; }
+  if (!ok) Q.seq.push({ it, opts: shuffle(it[2]), retry: 1 });
   if (ok) { s.n++; s.b = Math.min(IV.length - 1, s.b + 1); s.d = Date.now() + IV[s.b]; Q.ok++; Q.xp += 10; } else { s.w++; s.b = 0; s.d = Date.now(); Q.wrong.push(it); }
   beep(ok); save(); render(); document.getElementById('qnext')?.focus();
 }

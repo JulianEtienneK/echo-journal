@@ -7,7 +7,12 @@
 const app = document.getElementById('app');
 const XP = { lesson: 40, answer: 20, surf: 30 };
 const REWARD = { date: '2026-11-30', text: 'Pullover' };
-const W = Object.assign({ done: {}, answers: {}, anker: [], lapses: [], writes: [] }, LS.get('echo-wege', {}));
+const W = Object.assign({ done: {}, answers: {}, anker: [], lapses: [], writes: [], rev: {} }, LS.get('echo-wege', {}));
+// spaced refreshers: a read lesson comes back after 2, 7, 21, 60 and 150 days as a short recall (idea from memory, then compare)
+const REV = [2, 7, 21, 60, 150];
+function lessonById(id) { const m = String(id).match(/^(budd|stoa)(\d+)$/); return m && WEGE[m[1]][+m[2]] ? { p: m[1], i: +m[2], l: WEGE[m[1]][+m[2]] } : null; }
+for (const id of Object.keys(W.done)) if (!W.rev[id]) W.rev[id] = { b: 0, due: addDays(1) };
+const revDue = () => Object.entries(W.rev).filter(([id, r]) => r.due <= today() && r.b < REV.length && lessonById(id)).map(([id]) => id);
 const save = () => { W.updated = Date.now(); LS.set('echo-wege', W); };
 const route = () => location.hash.replace(/^#/, '');
 const go = h => { if (route() === h) render(); else location.hash = h; };
@@ -24,6 +29,7 @@ function viewHub() {
   <button class="card hub" data-act="go" data-v="anker" style="border:2px solid var(--calm)"><div class="row"><span class="em">🌊</span><div class="stack" style="gap:0"><h3>Anker</h3><span class="small muted">Der Affe ruft? Ein Tipp, dann nur eine kleine Sache.</span></div><span class="xp">+${XP.surf}</span></div>
   <span class="small muted">${surfed ? `${surfed}× gesurft` : 'Noch nicht benutzt'}${dl > 0 ? ` · noch ${dl} Tage bis zum ${REWARD.text} (${fmtDay(REWARD.date)})` : ''}</span></button>
   <a class="card hub" href="verlauf.html" style="text-decoration:none;color:inherit"><div class="row"><span class="em">📈</span><div class="stack" style="gap:0"><h3>Verlauf</h3><span class="small muted">Drang eintragen, Abend-Check-in, alles im Zeitverlauf.</span></div></div></a>
+  ${(() => { const d = revDue(); if (!d.length) return ''; const x = lessonById(d[0]); return `<button class="card hub" data-act="go" data-v="r-${d[0]}"><div class="row"><span class="em">🔁</span><div class="stack" style="gap:0"><h3>Auffrischen: ${x.l[0]} ${esc(x.l[1])}</h3><span class="small muted">Aus dem Kopf erinnern, dann vergleichen${d.length > 1 ? ' · ' + d.length + ' fällig' : ''}</span></div><span class="xp">+10</span></div></button>`; })()}
   ${Object.keys(PATHS).map(p => { const n = WEGE[p].filter((_, j) => W.done[p + j]).length, i = nextIdx(p), l = i == null ? null : WEGE[p][i];
     return `<section class="card"><div class="row spread"><div class="stack" style="gap:0"><span class="eyebrow">${PATHS[p][0]} ${PATHS[p][1]} · ${n}/10</span><h3>${l ? l[0] + ' ' + esc(l[1]) : 'Alle Lektionen gelesen ✓'}</h3><span class="small muted">${esc(PATHS[p][2])}</span></div><span class="xp">+${XP.lesson}</span></div>
     <div class="bar" style="height:6px;border-radius:9px;background:var(--surface-2);overflow:hidden"><i style="display:block;height:100%;width:${n * 10}%;background:var(--calm)"></i></div>
@@ -38,7 +44,9 @@ function viewList(p) {
 
 function viewLesson(p, i) {
   const l = WEGE[p][i]; if (!l) return viewHub(); const id = p + i, done = W.done[id], ans = W.answers[id] || '';
+  const prev = i > 0 && !done && W.done[p + (i - 1)] ? WEGE[p][i - 1] : null;
   return `${topBar(1)}<div class="stack"><span class="eyebrow">${PATHS[p][1]} · Lektion ${i + 1}/10</span><h1>${l[0]} ${esc(l[1])}</h1></div>
+  ${prev ? `<details class="card"><summary><b>Erst kurz erinnern:</b> Was war die Kernidee von „${esc(prev[1])}“? Antippen zum Vergleichen.</summary><p class="small" style="line-height:1.5;margin:8px 0 0">${esc(prev[2])}</p></details>` : ''}
   <section class="card"><p style="line-height:1.55">${esc(l[2])}</p><span class="small muted">Quelle: ${esc(l[5])}</span></section>
   <section class="card"><span class="eyebrow">Übung für heute</span><p>${esc(l[3])}</p></section>
   <section class="card"><span class="eyebrow">Frage fürs Journal</span><p><b>${esc(l[4])}</b></p>
@@ -46,6 +54,15 @@ function viewLesson(p, i) {
   <button class="btn" data-act="answer" data-v="${id}">Antwort speichern${ans ? '' : ' · +' + XP.answer + ' XP'}</button></section>
   ${done ? `<p class="small muted">✅ Gelesen am ${fmtDay(done)}</p>` : `<button class="btn primary big" data-act="lesson" data-v="${id}">Gelesen – Übung nehme ich mit · +${XP.lesson} XP</button>`}
   <div class="row spread">${i > 0 ? `<button class="btn ghost sm" data-act="go" data-v="l-${p}-${i - 1}">← Lektion ${i}</button>` : '<span></span>'}${i < 9 ? `<button class="btn ghost sm" data-act="go" data-v="l-${p}-${i + 1}">Lektion ${i + 2} →</button>` : ''}</div>`;
+}
+
+function viewRecall(id, shown) {
+  const x = lessonById(id); if (!x) return viewHub(); const l = x.l;
+  return `${topBar(1)}<div class="stack"><span class="eyebrow">Auffrischen · ${PATHS[x.p][1]} · Lektion ${x.i + 1}</span><h1>${l[0]} ${esc(l[1])}</h1></div>
+  <section class="card"><h3>Was war die Kernidee? Und hast du die Übung seitdem einmal genutzt?</h3><span class="small muted">Erst aus dem Kopf, ein Satz reicht. Sich erinnern festigt mehr als Nachlesen.</span>
+  <textarea class="input" id="rec" rows="3" placeholder="Die Idee war …">${esc((A.rec || {})[id] || '')}</textarea>
+  ${shown ? `<p style="line-height:1.55">${esc(l[2])}</p><p class="small"><b>Übung:</b> ${esc(l[3])}</p><div class="row" style="gap:8px"><button class="btn grow" data-act="rev" data-v="${id}:0">Kaum noch gewusst</button><button class="btn primary grow" data-act="rev" data-v="${id}:1">Wusste ich</button></div>`
+    : `<button class="btn primary" data-act="rev-show" data-v="${id}">Vergleichen</button>`}</section>`;
 }
 
 /* ---------- Anker ---------- */
@@ -157,6 +174,7 @@ function render() {
   else if (r === 'log') app.innerHTML = viewLog();
   else if ((m = r.match(/^list-(budd|stoa)$/))) app.innerHTML = viewList(m[1]);
   else if ((m = r.match(/^l-(budd|stoa)-(\d)$/))) app.innerHTML = viewLesson(m[1], +m[2]);
+  else if ((m = r.match(/^r-((?:budd|stoa)\d+)(-show)?$/))) app.innerHTML = viewRecall(m[1], !!m[2]);
   else app.innerHTML = viewHub();
   window.scrollTo(0, 0);
 }
@@ -179,7 +197,9 @@ app.addEventListener('click', e => {
     case 'lapse-start': { const w = document.getElementById('lwhy').value.trim(); W.lapses.push({ ts: Date.now(), date: today(), why: w }); save();
       app.innerHTML = viewTimer(10, 'Noch 10 Minuten', 'Wenn es klingelt: Laptop zu, aufstehen, Wasser.'); history.replaceState(null, '', '#timer');
       runTimer(10, () => { const m = document.getElementById('tmsg'); if (m) m.textContent = 'Zeit um. Laptop zu, aufstehen, ein Glas Wasser. Der Tag geht normal weiter.'; }); break; }
-    case 'lesson': if (!W.done[v]) { W.done[v] = today(); save(); gainXP('wege-lesson', XP.lesson); toast('+' + XP.lesson + ' XP'); } render(); break;
+    case 'rev-show': A.rec = Object.assign(A.rec || {}, { [v]: document.getElementById('rec').value }); go('r-' + v + '-show'); break;
+    case 'rev': { const [id, ok] = v.split(':'), r = W.rev[id] || (W.rev[id] = { b: 0 }); if (+ok) { r.b++; r.due = addDays(REV[Math.min(r.b, REV.length - 1)]); } else { r.b = 0; r.due = addDays(REV[0]); } save(); gainXP('wege-rev', 10); toast('+10 XP'); go(''); break; }
+    case 'lesson': if (!W.done[v]) { W.done[v] = today(); W.rev[v] = { b: 0, due: addDays(REV[0]) }; save(); gainXP('wege-lesson', XP.lesson); toast('+' + XP.lesson + ' XP'); } render(); break;
     case 'answer': { const t = document.getElementById('ans').value.trim(); if (!t) return; const first = !W.answers[v]; W.answers[v] = t; save(); if (first) gainXP('wege-answer', XP.answer); toast(first ? '+' + XP.answer + ' XP · gespeichert' : 'Gespeichert'); render(); break; }
   }
 });
