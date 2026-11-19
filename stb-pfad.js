@@ -9,7 +9,7 @@
 'use strict';
 const app = document.getElementById('app');
 const D = window.STB_PFAD;
-const P = Object.assign({ done: {}, cards: {}, days: {}, boss: {}, notes: {}, cal: { n: 0, hit: 0, over: 0 }, caseLast: {} }, LS.get('echo-stbpfad', {}));
+const P = Object.assign({ done: {}, cards: {}, days: {}, boss: {}, notes: {}, cal: { n: 0, hit: 0, over: 0 }, caseLast: {}, qa: [], qcards: {} }, LS.get('echo-stbpfad', {}));
 const save = () => { P.updated = Date.now(); LS.set('echo-stbpfad', P); };
 const LADDER = [1, 3, 7, 16, 35, 90, 180];
 const MASTER = 3; // box 3 = the card survived a gap of a week or more
@@ -21,6 +21,7 @@ const doneL = () => LESSONS.filter(l => P.done[l.id]);
 function cardDef(id) {
   const [lid, k] = id.split(':'), l = LBY[lid]; if (!l) return null;
   const i = +k.slice(1);
+  if (k[0] === 'q') { const c = (P.qcards || {})[id]; return c && { id, lid, type: 'recall', q: c.q, a: c.a, own: true }; }
   if (k[0] === 'c') { const c = l.cards[i]; return c && { id, lid, type: 'recall', q: c[0], a: c[1] }; }
   const n = (l.nav || [])[i]; return n && { id, lid, type: 'nav', q: n[0], a: n[1] };
 }
@@ -129,7 +130,7 @@ function viewHome() {
   const bossOpen = D.BOSS[m0.id] && (D.LESSONS[m0.id] || []).every(l => P.done[l.id]);
   const modRow = m => { const ls = D.LESSONS[m.id] || [], n = ls.filter(l => P.done[l.id]).length, cur = m.id === m0.id;
     return `<div class="mod${ls.length ? '' : ' lock'}"><span class="big">${m.em}</span><div class="stack" style="gap:0;min-width:0"><b>${esc(m.n)}</b><span class="small muted">Woche ${m.w} · ${esc(m.goal)}</span>${cur && ls.length ? `<div class="stack" style="gap:2px;margin-top:6px">${ls.map((l, i) => `<a class="small" href="#l-${l.id}" style="color:${P.done[l.id] ? 'var(--ink)' : 'var(--muted)'};text-decoration:none">${P.done[l.id] ? '✓' : '○'} ${i + 1}. ${esc(l.t)}</a>`).join('')}${D.BOSS[m.id] ? `<span class="small" style="color:${P.boss[m.id] ? 'var(--ink)' : 'var(--muted)'}">${P.boss[m.id] ? '🏆' : '🔒'} Abschlussfall: ${esc(D.BOSS[m.id].t)}</span>` : ''}</div>` : ''}</div><span class="mono small muted">${ls.length ? n + '/' + ls.length : 'bald'}</span></div>`; };
-  return `<div class="topbar">${back('index.html#games')}</div>
+  return `<div class="topbar">${back('index.html#games')}<button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button></div>
   <header class="stack" style="gap:4px"><span class="eyebrow">${esc(r.name)}${r.next ? ' · nächster Rang bei ' + r.next[0] + ' sicheren Karten' : ''}</span><h1>⚖️ StB-Pfad</h1></header>
   <section class="card" style="border:2px solid var(--calm)"><div class="row spread"><h3>Heute</h3><span class="small muted mono">~${est} min</span></div>
     <span>${plan} · ${todayL}</span>
@@ -142,6 +143,7 @@ function viewHome() {
     <div class="stack" style="gap:4px"><div class="row spread"><span class="small">Jahresziel</span><span class="small muted mono">${h.toFixed(1)} / 180 h · ${weekMin()} min diese Woche</span></div><div class="bar gold"><i style="width:${Math.min(100, h / 180 * 100)}%"></i></div></div></section>
   ${dl.length >= 2 ? `<a class="card" href="#fall" style="text-decoration:none;color:inherit"><div class="row"><span class="big">🧩</span><div class="stack grow" style="gap:0"><h3>Fall-Training</h3><span class="small muted">Gemischter Fall: erst erkennen, welches Thema greift, dann selbst lösen</span></div></div></a>` : ''}
   ${bossOpen ? `<a class="card" href="#boss" style="text-decoration:none;color:inherit;border:2px solid var(--gold)"><div class="row"><span class="big">${P.boss[m0.id] ? '🏆' : '👹'}</span><div class="stack grow" style="gap:0"><h3>Abschlussfall: ${esc(D.BOSS[m0.id].t)}</h3><span class="small muted">${P.boss[m0.id] ? 'Bestanden, jederzeit wiederholbar' : 'Alle Lektionen des Moduls in einem Fall'}</span></div></div></a>` : ''}
+  ${P.qa.length ? `<a class="card" href="#fragen" style="text-decoration:none;color:inherit"><div class="row"><span class="big">❓</span><div class="stack grow" style="gap:0"><h3>Deine Fragen</h3><span class="small muted">${P.qa.length} gestellt · zuletzt: ${esc(P.qa[P.qa.length - 1].q.slice(0, 70))}</span></div></div></a>` : ''}
   <section class="card"><h3>Der rote Faden</h3>${D.ROADMAP.map(modRow).join('')}</section>
   <section class="card"><h3>Ränge</h3><div class="stack" style="gap:2px">${D.RANKS.map(x => `<span class="small" style="color:${r.m >= x[0] ? 'var(--ink)' : 'var(--muted)'}">${r.m >= x[0] ? '●' : '○'} ${esc(x[1])} <span class="muted">· ab ${x[0]} sicheren Karten</span></span>`).join('')}</div><span class="small muted">„Sicher“ heißt: Die Karte wurde nach einer Pause von mindestens einer Woche noch gewusst. Nur das zählt, nicht wie oft du sie gesehen hast.</span></section>
   <details class="card"><summary>Warum dieser Ablauf?</summary><div class="stack small" style="gap:6px;line-height:1.5;margin-top:8px">
@@ -159,7 +161,7 @@ function viewHome() {
 
 function viewReview() {
   const it = SS.queue[SS.i], c = cardDef(it.id), l = LBY[c.lid];
-  const head = `<div class="topbar"><a class="link" href="#" data-act="home">← StB-Pfad</a><span class="small muted mono">${Math.min(SS.i + 1, SS.queue.length)} / ${SS.queue.length}</span></div>
+  const head = `<div class="topbar"><a class="link" href="#" data-act="home">← StB-Pfad</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button><span class="small muted mono">${Math.min(SS.i + 1, SS.queue.length)} / ${SS.queue.length}</span></div>
   <span class="eyebrow">Wiederholung${it.retry ? ' · noch einmal, bis es sitzt' : ''} · ${esc(l.t)}</span>`;
   if (!SS.shown) {
     return `${head}<section class="card"><h2 style="line-height:1.35">${esc(c.q)}</h2>
@@ -189,7 +191,7 @@ function viewPlan() {
 /* lesson: 0 pre-question · 1 why, core, schema · 2 worked or self-solved case · 3 paragraph navigation · 4 own words and link · 5 immediate recall · 6 done */
 function viewLesson() {
   const l = SS.L, k = SS.k, fading = doneL().length >= 3;
-  const head = `<div class="topbar"><a class="link" href="#" data-act="home">← StB-Pfad</a><span class="small muted">Lektion ${LESSONS.indexOf(l) + 1}</span></div>
+  const head = `<div class="topbar"><a class="link" href="#" data-act="home">← StB-Pfad</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button><span class="small muted">Lektion ${LESSONS.indexOf(l) + 1}</span></div>
   <header class="stack" style="gap:6px"><h1 style="font-size:26px">${esc(l.t)}</h1><div class="row" style="flex-wrap:wrap;gap:6px">${norms(l)}</div>${phase(6, k)}</header>`;
   if (k === 0) return `${head}<section class="card"><span class="eyebrow">Vorab-Frage</span><h2 style="line-height:1.35">${esc(l.cards[0][0])}</h2>
     <span class="small muted">Rate ruhig, bevor du liest. Auch eine falsche Vermutung macht die Antwort danach merkbarer.</span>
@@ -252,7 +254,7 @@ function startBoss() {
 }
 function viewCase() {
   const C = SS.C, done = C.s >= C.steps.length;
-  const head = `<div class="topbar"><a class="link" href="#" data-act="home">← StB-Pfad</a><span class="small muted">${C.boss ? 'Abschlussfall' : 'Fall-Training'}</span></div>
+  const head = `<div class="topbar"><a class="link" href="#" data-act="home">← StB-Pfad</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button><span class="small muted">${C.boss ? 'Abschlussfall' : 'Fall-Training'}</span></div>
   <header class="stack" style="gap:6px"><h1 style="font-size:26px">${C.boss ? '👹 ' + esc(C.title) : '🧩 Gemischter Fall'}</h1>${phase(C.steps.length + (C.boss ? 0 : 1), (C.pick ? 1 : 0) * (C.boss ? 0 : 1) + C.s)}</header>
   <section class="card"><div class="sv">${esc(C.sv)}</div></section>`;
   if (!C.pick) return `${head}<section class="card"><h3>Welches Thema steckt im Kern dieses Falls?</h3><span class="small muted">In der Klausur steht nirgends, welche Norm gefragt ist. Erkennen ist die halbe Lösung.</span>
@@ -269,14 +271,93 @@ function viewCase() {
 }
 
 function viewRead(l) {
-  return `<div class="topbar"><a class="link" href="#">← StB-Pfad</a></div>
+  return `<div class="topbar"><a class="link" href="#">← StB-Pfad</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button></div>
   <header class="stack" style="gap:6px"><h1 style="font-size:26px">${esc(l.t)}</h1><div class="row" style="flex-wrap:wrap;gap:6px">${norms(l)}</div></header>
   ${P.done[l.id] ? '' : '<section class="card"><span class="small muted">Diese Lektion kommt noch. Lies ruhig vor, aber am meisten bringt sie, wenn du sie mit Vorab-Frage und Fall im Tagesablauf lernst.</span></section>'}
   <section class="card"><span class="eyebrow">Roter Faden</span><div class="why">${esc(l.why)}</div></section>
   <section class="card core">${l.core.map(p => `<p>${esc(p)}</p>`).join('')}</section>
   <section class="card"><span class="eyebrow">Prüfschema</span><ol class="schema">${l.schema.map(s => `<li>${esc(s)}</li>`).join('')}</ol></section>
   <details class="card"><summary>Fall mit Lösung</summary><div class="sv" style="margin-top:8px">${esc(l.case.sv)}</div>${l.case.steps.map(([q, a]) => `<div class="step open"><b>${esc(q)}</b><div class="ans">${esc(a)}</div></div>`).join('')}<div class="ans"><b>Ergebnis:</b> ${esc(l.case.res)}</div></details>
+  ${qaList(l.id)}
   ${P.notes[l.id] ? `<section class="card"><span class="eyebrow">Deine eigenen Worte</span><span>${esc(P.notes[l.id])}</span></section>` : ''}`;
+}
+
+/* ---------- questions: ask about whatever is on screen, the answer is saved and can become a card ---------- */
+let ASK = null;
+function ctxNow() {
+  const h = location.hash.replace(/^#/, '');
+  let l = null, item = '';
+  if (h.startsWith('l-')) l = LBY[h.slice(2)];
+  else if (SS && SS.stage === 'lesson') { l = SS.L; if (SS.k === 2 && SS.L.case.steps[SS.step]) item = 'Aktueller Fallschritt: ' + SS.L.case.steps[SS.step][0]; }
+  else if (SS && SS.stage === 'review') { const c = cardDef(SS.queue[SS.i].id); l = LBY[c.lid]; item = 'Aktuelle Karte: ' + c.q + (SS.shown ? ' | Lösung: ' + c.a : ''); }
+  else if (SS && SS.stage === 'case') { const C = SS.C, st = C.steps[C.s]; l = C.L || (st && LBY[st[2]]) || null; item = 'Sachverhalt: ' + C.sv + (st ? ' | Aktueller Schritt: ' + st[0] + (C.shown ? ' | Lösung: ' + st[1] : '') : ''); }
+  return { l, item };
+}
+function ctxText(l, item) {
+  const done = doneL().map(x => x.t).join('; ');
+  return [l ? `Lektion „${l.t}“ (${l.norms.join(', ')}).\nRoter Faden: ${l.why}\nKern: ${l.core.join(' ')}\nPrüfschema: ${l.schema.join(' → ')}\nFall: ${l.case.sv} Ergebnis: ${l.case.res}` : 'Keine bestimmte Lektion offen.', item, done ? 'Bereits gelernt: ' + done : ''].filter(Boolean).join('\n\n');
+}
+const SYS = 'Du bist ein erfahrener Tutor für die deutsche Steuerberaterprüfung. Rechtsstand 2026. Der Lernende arbeitet sich mit einem Lernpfad ins Steuerrecht ein und stellt eine Verständnisfrage. ' +
+  'Antworte auf Deutsch, präzise und knapp (höchstens etwa 200 Wörter), mit Fundstellen (Gesetz, Paragraf, Absatz, Satz; ggf. R/H der Richtlinien oder BFH). Erkläre zuerst das Warum: die Systematik und den Zweck der Regel, dann die Folge, gern mit einem Mini-Beispiel. ' +
+  'Erfinde keine Beträge, Fristen oder Urteile. Wenn du dir bei einer Zahl oder einem aktuellen Rechtsstand nicht sicher bist, sag das ausdrücklich und nenne, wo man es nachprüft. ' +
+  'Beende die Antwort mit einer eigenen letzten Zeile im Format „KARTE: <kurze Abruffrage> || <Antwort in ein bis zwei Sätzen>“, die den Kern deiner Erklärung als Lernkarte festhält. Kein Markdown außer Absätzen.';
+function askOpen() {
+  const { l, item } = ctxNow();
+  ASK = { lid: l ? l.id : null, ctx: ctxText(l, item), msgs: [], busy: false, err: '', card: null, saved: false, title: l ? l.t : 'Steuerrecht allgemein' };
+  askDraw();
+}
+function askDraw() {
+  let o = document.getElementById('askov');
+  if (!ASK) { if (o) o.remove(); return; }
+  if (!o) { o = document.createElement('div'); o.id = 'askov'; o.className = 'askov'; document.body.appendChild(o); o.addEventListener('click', askClick); }
+  const thread = ASK.msgs.map(m => m.role === 'user' ? `<div class="askq">${esc(m.content.split('\n\nFrage: ').pop())}</div>` : `<div class="aska">${esc(m.shown || m.content).replace(/\n/g, '<br>')}</div>`).join('');
+  const key = hasAI();
+  o.innerHTML = `<div class="askbox"><div class="row spread"><span class="eyebrow">❓ Frage · ${esc(ASK.title)}</span><button class="link" data-q="close" style="background:none;border:0;font:inherit;cursor:pointer">Schließen</button></div>
+    ${thread || '<span class="small muted">Frag, was dir unklar ist, z. B. warum etwas an dieser Stelle im Schema steht. Die Antwort kennt die Lektion, die gerade offen ist, und wird gespeichert.</span>'}
+    ${ASK.busy ? '<span class="small muted">Denkt nach …</span>' : ''}${ASK.err ? `<span class="small" style="color:var(--warn,#b45309)">${esc(ASK.err)}</span>` : ''}
+    ${ASK.card && !ASK.saved ? `<div class="card flat" style="gap:6px"><span class="eyebrow">Als Lernkarte übernehmen?</span><b class="small">${esc(ASK.card[0])}</b><span class="small muted">${esc(ASK.card[1])}</span><button class="btn" data-q="card">＋ In die Wiederholungen</button></div>` : ASK.saved ? '<span class="small muted">✓ Karte ist in deinen Wiederholungen, zum ersten Mal morgen.</span>' : ''}
+    ${key ? `<textarea id="askin" placeholder="${ASK.msgs.length ? 'Nachfrage …' : 'Deine Frage …'}" rows="3"></textarea><div class="row" style="gap:8px"><button class="btn" data-q="mic" aria-label="Diktieren">🎤</button><button class="btn primary grow" data-q="send" ${ASK.busy ? 'disabled' : ''}>Fragen</button></div>`
+      : `<span class="small">Für Antworten braucht Echo deinen Anthropic-Schlüssel (Echo → Einstellungen). Bis dahin kannst du die Frage hier notieren; sie wird gespeichert und du kannst sie später stellen.</span><textarea id="askin" placeholder="Deine Frage …" rows="3"></textarea><button class="btn primary" data-q="note">Frage notieren</button>`}</div>`;
+  const ta = o.querySelector('#askin'); if (ta && !ASK.busy) setTimeout(() => ta.focus(), 30);
+  const box = o.querySelector('.askbox'); box.scrollTop = box.scrollHeight;
+}
+async function askSend(text) {
+  ASK.busy = true; ASK.err = '';
+  const first = !ASK.msgs.length;
+  ASK.msgs.push({ role: 'user', content: first ? 'Kontext aus dem Lernpfad:\n' + ASK.ctx + '\n\nFrage: ' + text : text });
+  askDraw();
+  try {
+    const s = LS.get('echo-settings', {});
+    const ans = await askAI(SYS, ASK.msgs.map(m => ({ role: m.role, content: m.content })), 900, s.model || s.fastModel);
+    const m = ans.match(/\n?\s*KARTE:\s*(.+?)\s*\|\|\s*([\s\S]+?)\s*$/);
+    const shown = m ? ans.slice(0, m.index).trim() : ans;
+    ASK.msgs.push({ role: 'assistant', content: ans, shown });
+    if (m) { ASK.card = [m[1].trim(), m[2].trim()]; ASK.saved = false; }
+    P.qa.push({ d: today(), lid: ASK.lid, q: text, a: shown }); save(); gainXP('stbpfad-frage', 5);
+    window.EULE && EULE.push({ src: 'stb', q: m ? ASK.card[0] : text, a: m ? ASK.card[1] : shown.slice(0, 600) });
+  } catch (e) { ASK.err = 'Keine Antwort: ' + e.message; ASK.msgs.pop(); }
+  ASK.busy = false; askDraw();
+}
+function askClick(e) {
+  if (e.target.id === 'askov') { ASK = null; askDraw(); return; }
+  const b = e.target.closest("[data-q]"); if (!b) return; const k = b.dataset.q;
+  const ta = document.getElementById('askin'), text = ta ? ta.value.trim() : '';
+  if (k === 'close') { ASK = null; askDraw(); render(); }
+  else if (k === 'send') { if (text && !ASK.busy) askSend(text); }
+  else if (k === 'note') { if (!text) return; P.qa.push({ d: today(), lid: ASK.lid, q: text, a: '' }); save(); toast('Frage notiert'); ASK = null; askDraw(); render(); }
+  else if (k === 'mic') dictate('de-DE', t => { const el = document.getElementById('askin'); if (el) el.value = (el.value ? el.value + ' ' : '') + t; });
+  else if (k === 'card' && ASK.card) {
+    const lid = ASK.lid || (doneL()[0] || LESSONS[0]).id, id = lid + ':q' + uid();
+    P.qcards[id] = { q: ASK.card[0], a: ASK.card[1], d: today() }; P.cards[id] = { b: 0, due: addDays(1), n: 0, lapses: 0, last: today() };
+    ASK.saved = true; save(); askDraw();
+  }
+}
+function qaList(lid) {
+  const xs = P.qa.filter(x => !lid || x.lid === lid); if (!xs.length) return '';
+  return `<section class="card"><span class="eyebrow">Deine Fragen</span>${xs.slice().reverse().map(x => `<details><summary class="small">${esc(x.q)}</summary><div class="ans small" style="margin-top:6px">${x.a ? esc(x.a).replace(/\n/g, '<br>') : '<span class="muted">Noch keine Antwort gespeichert.</span>'}</div>${!lid && x.lid && LBY[x.lid] ? `<a class="small muted" href="#l-${x.lid}">${esc(LBY[x.lid].t)}</a>` : ''}</details>`).join('')}</section>`;
+}
+function viewQA() {
+  return `<div class="topbar"><a class="link" href="#">← StB-Pfad</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button></div><header class="stack" style="gap:4px"><h1>❓ Deine Fragen</h1><span class="small muted">Gespeichert mit Antwort. Was als Karte übernommen wurde, kommt in den Wiederholungen.</span></header>${qaList(null) || '<section class="card"><span class="muted">Noch keine Fragen.</span></section>'}`;
 }
 
 /* ---------- render and actions ---------- */
@@ -284,6 +365,7 @@ function render() {
   const h = location.hash.replace(/^#/, '');
   let html;
   if (h.startsWith('l-') && LBY[h.slice(2)]) html = viewRead(LBY[h.slice(2)]);
+  else if (h === 'fragen') html = viewQA();
   else if (SS && h === 'heute') html = SS.stage === 'review' ? viewReview() : SS.stage === 'lesson' ? viewLesson() : SS.stage === 'case' ? viewCase() : viewPlan();
   else if (SS && SS.stage === 'case' && (h === 'fall' || h === 'boss')) html = viewCase();
   else if (h === 'fall' && doneL().length) { startCase(); return; }
@@ -302,6 +384,7 @@ function finishLesson() {
 app.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, v = b.dataset.v; tick();
+  if (a === 'ask') { askOpen(); return; }
   if (a === 'home') { e.preventDefault(); SS = null; history.replaceState(null, '', location.pathname); save(); render(); return; }
   if (a === 'today') { startToday(); return; }
   if (a === 'plan') { SS.stage = 'plan'; SS.total = 0; render(); return; }

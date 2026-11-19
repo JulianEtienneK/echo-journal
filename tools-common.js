@@ -20,13 +20,13 @@ function gainXP(key, xp) {
   d[key] = (d[key] || 0) + 1; d.xp = (d.xp || 0) + xp; G.xp = (G.xp || 0) + xp; G.updated = Date.now(); LS.set('echo-games', G);
 }
 const hasAI = () => !!(LS.get('echo-settings', {}).anthropicKey || '').trim();
-async function askAI(system, messages, maxTokens = 900) {
+async function askAI(system, messages, maxTokens = 900, model) {
   const s = LS.get('echo-settings', {}), key = (s.anthropicKey || '').trim();
   if (!key) throw new Error('Kein Anthropic-Schlüssel in den Echo-Einstellungen');
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-    body: JSON.stringify({ model: s.fastModel || s.model || 'claude-haiku-5-5', max_tokens: maxTokens, system, messages }),
+    body: JSON.stringify({ model: model || s.fastModel || s.model || 'claude-haiku-5-5', max_tokens: maxTokens, system, messages }),
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error((j.error && j.error.message) || ('HTTP ' + r.status));
