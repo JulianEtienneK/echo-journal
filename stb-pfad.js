@@ -66,7 +66,7 @@ function checkNorm(given, want) {
 /* ---------- time, streak, rank ---------- */
 /* live session clock: runs while a session is open and the page is visible; pauses after 3 minutes without any input
    (reading counts, walking away does not); stops when you leave the session. Seconds go into P.days[day].sec. */
-let lastInput = Date.now(), CLK = null;
+let lastInput = Date.now(), CLK = null, RESET = false;
 function tick() { lastInput = Date.now(); }
 ['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach(ev => addEventListener(ev, tick, { passive: true }));
 const mmss = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
@@ -125,16 +125,16 @@ function viewHome() {
   const r = rank(), due = dueIds().length, nl = nextLesson(), dl = doneL(), st = streak(), m0 = D.ROADMAP.find(m => (D.LESSONS[m.id] || []).some(l => !P.done[l.id])) || D.ROADMAP[0];
   const plan = due ? `${due} Karte${due === 1 ? '' : 'n'} fällig` : 'Keine Karte fällig';
   const todayL = nl && lessonDay() ? `Neue Lektion: ${esc(nl.t)}` : nl ? 'Heute: Wiederholen und ein Fall (neue Lektion morgen)' : 'Alle verfügbaren Lektionen gelernt';
-  const est = Math.round(due * 0.5 + (nl && lessonDay() ? 15 : 8));
+  const sec = (P.days[today()] || {}).sec || 0;
   const h = hoursTotal(), cal = P.cal.n >= 5 ? Math.round(P.cal.hit / P.cal.n * 100) + ' %' : '–';
   const bossOpen = D.BOSS[m0.id] && (D.LESSONS[m0.id] || []).every(l => P.done[l.id]);
   const modRow = m => { const ls = D.LESSONS[m.id] || [], n = ls.filter(l => P.done[l.id]).length, cur = m.id === m0.id;
     return `<div class="mod${ls.length ? '' : ' lock'}"><span class="big">${m.em}</span><div class="stack" style="gap:0;min-width:0"><b>${esc(m.n)}</b><span class="small muted">Woche ${m.w} · ${esc(m.goal)}</span>${cur && ls.length ? `<div class="stack" style="gap:2px;margin-top:6px">${ls.map((l, i) => `<a class="small" href="#l-${l.id}" style="color:${P.done[l.id] ? 'var(--ink)' : 'var(--muted)'};text-decoration:none">${P.done[l.id] ? '✓' : '○'} ${i + 1}. ${esc(l.t)}</a>`).join('')}${D.BOSS[m.id] ? `<span class="small" style="color:${P.boss[m.id] ? 'var(--ink)' : 'var(--muted)'}">${P.boss[m.id] ? '🏆' : '🔒'} Abschlussfall: ${esc(D.BOSS[m.id].t)}</span>` : ''}</div>` : ''}</div><span class="mono small muted">${ls.length ? n + '/' + ls.length : 'bald'}</span></div>`; };
   return `<div class="topbar">${back('index.html#games')}<button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button></div>
   <header class="stack" style="gap:4px"><span class="eyebrow">${esc(r.name)}${r.next ? ' · nächster Rang bei ' + r.next[0] + ' sicheren Karten' : ''}</span><h1>⚖️ StB-Pfad</h1></header>
-  <section class="card" style="border:2px solid var(--calm)"><div class="row spread"><h3>Heute</h3><span class="small muted mono">~${est} min</span></div>
+  <section class="card" style="border:2px solid var(--calm)"><div class="row spread"><h3>Heute</h3><span class="mono" style="font-size:20px;font-weight:600">⏱ ${mmss(sec)}</span></div>
     <span>${plan} · ${todayL}</span>
-    <div class="bar"><i style="width:${Math.min(100, Math.round(minToday() / 30 * 100))}%"></i></div><span class="small muted">${minToday()} von 30 min heute</span>
+    <div class="bar"><i style="width:${Math.min(100, Math.round(sec / 1800 * 100))}%"></i></div><div class="row spread"><span class="small muted">${mmss(sec)} von 30:00 heute${sec >= 1800 ? ' ✓' : ''}</span>${sec ? `<button class="link small" data-act="resetday" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--muted)">${RESET ? 'Wirklich auf 0:00?' : '↺ Zeit zurücksetzen'}</button>` : ''}</div>
     <button class="btn primary big" data-act="today">${minToday() ? 'Weitermachen' : 'Starten'}</button></section>
   <section class="card"><div class="row" style="justify-content:space-around;text-align:center">
     <div class="stack" style="gap:0"><b style="font-size:24px">🔥 ${st}</b><span class="small muted">Tage am Stück</span></div>
@@ -385,6 +385,7 @@ app.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, v = b.dataset.v; tick();
   if (a === 'ask') { askOpen(); return; }
+  if (a === 'resetday') { if (!RESET) { RESET = true; render(); setTimeout(() => { RESET = false; if (!SS) render(); }, 4000); return; } RESET = false; const d = P.days[today()]; if (d) { d.sec = 0; save(); } toast('Zeit für heute auf 0:00'); render(); return; }
   if (a === 'home') { e.preventDefault(); SS = null; history.replaceState(null, '', location.pathname); save(); render(); return; }
   if (a === 'today') { startToday(); return; }
   if (a === 'plan') { SS.stage = 'plan'; SS.total = 0; render(); return; }
