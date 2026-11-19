@@ -128,7 +128,8 @@
   function say(msg) { document.getElementById('kToast')?.remove(); const el = document.createElement('div'); el.id = 'kToast'; el.textContent = msg; el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 90px);z-index:70;background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:14px;font-size:14.5px;max-width:90vw;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.3)'; document.body.appendChild(el); setTimeout(() => el.remove(), 3200); }
 
   /* ---------- hook into the start page ---------- */
-  const fid = el => { if (el.matches('a[href]')) { const id = el.getAttribute('href').replace('.html', ''); return F[id] ? id : null; } const a = el.dataset.act; return a === 'geo-open' ? 'laender' : a === 'xw-hub' ? 'xw' : null; };
+  // the StB-Pfad is pinned to the top of the games tab: the curator neither moves nor archives it
+  const fid = el => { if (el.matches('a[href]')) { const id = el.getAttribute('href').replace('.html', ''); return F[id] && id !== 'stb-pfad' ? id : null; } const a = el.dataset.act; return a === 'geo-open' ? 'laender' : a === 'xw-hub' ? 'xw' : null; };
   function apply(tab) {
     const app = document.getElementById('app'); if (!app) return;
     if (tab === 'today') { const hero = app.querySelector('.hero'); if (hero) hero.insertAdjacentHTML('afterend', reviewCard() + mixCard() + ankerCard() + compassCard()); return; }
