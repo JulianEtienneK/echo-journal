@@ -239,11 +239,14 @@ function viewLesson() {
 
 /* case training and boss: recognise the topic (interleaving), then solve each step yourself */
 function startCase() {
-  const pool = doneL(); if (!pool.length) return;
-  pool.sort((a, b) => (P.caseLast[a.id] || '').localeCompare(P.caseLast[b.id] || '') || Math.random() - 0.5);
-  const l = pool[Math.floor(Math.random() * Math.min(3, pool.length))];
+  // every learned lesson brings its main case plus the extra cases; the one seen longest ago comes next, another topic than last time where possible
+  const pool = []; for (const l of doneL()) [l.case, ...((D.EXTRA || {})[l.id] || [])].forEach((c, i) => pool.push({ l, c, key: l.id + '#' + i, n: 1 + ((D.EXTRA || {})[l.id] || []).length, i }));
+  if (!pool.length) return;
+  const seen = P.caseSeen || (P.caseSeen = {});
+  pool.sort((a, b) => ((seen[a.key] || 0) - (seen[b.key] || 0)) || ((a.l.id === P.lastCaseL) - (b.l.id === P.lastCaseL)) || Math.random() - 0.5);
+  const pick = pool[0], l = pick.l, cs = pick.c, allToday = pool.every(x => seen[x.key] && new Date(seen[x.key]).toDateString() === new Date().toDateString());
   const others = shuffle(LESSONS.filter(x => x.id !== l.id && x.mod === l.mod)).slice(0, 3);
-  SS = Object.assign(SS || { xp: 0 }, { stage: 'case', C: { L: l, steps: l.case.steps.map(s => [s[0], s[1], l.id]), sv: l.case.sv, res: l.case.res, opts: shuffle([l, ...others]), pick: null, s: 0, shown: false, guess: '', miss: 0, boss: false } });
+  SS = Object.assign(SS || { xp: 0 }, { stage: 'case', C: { L: l, key: pick.key, idx: pick.i + 1, of: pick.n, repeat: allToday, steps: cs.steps.map(s => [s[0], s[1], l.id]), sv: cs.sv, res: cs.res, opts: shuffle([l, ...others]), pick: null, s: 0, shown: false, guess: '', miss: 0, boss: false } });
   location.hash = 'fall'; render();
 }
 function startBoss() {
@@ -255,7 +258,7 @@ function startBoss() {
 function viewCase() {
   const C = SS.C, done = C.s >= C.steps.length;
   const head = `<div class="topbar"><a class="link" href="#" data-act="home">← StB-Pfad</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button><span class="small muted">${C.boss ? 'Abschlussfall' : 'Fall-Training'}</span></div>
-  <header class="stack" style="gap:6px"><h1 style="font-size:26px">${C.boss ? '👹 ' + esc(C.title) : '🧩 Gemischter Fall'}</h1>${phase(C.steps.length + (C.boss ? 0 : 1), (C.pick ? 1 : 0) * (C.boss ? 0 : 1) + C.s)}</header>
+  <header class="stack" style="gap:6px"><h1 style="font-size:26px">${C.boss ? '👹 ' + esc(C.title) : '🧩 Gemischter Fall'}</h1>${C.boss ? '' : `<span class="small muted">${C.repeat ? 'Alle Fälle zu deinen bisherigen Lektionen hast du heute schon gelöst, das hier ist eine Wiederholung. Mit jeder neuen Lektion kommen drei Fälle dazu.' : `Fall ${C.idx} von ${C.of} zu diesem Thema · ${doneL().length * 3} Fälle aus ${doneL().length} Lektion${doneL().length === 1 ? '' : 'en'}`}</span>`}${phase(C.steps.length + (C.boss ? 0 : 1), (C.pick ? 1 : 0) * (C.boss ? 0 : 1) + C.s)}</header>
   <section class="card"><div class="sv">${esc(C.sv)}</div></section>`;
   if (!C.pick) return `${head}<section class="card"><h3>Welches Thema steckt im Kern dieses Falls?</h3><span class="small muted">In der Klausur steht nirgends, welche Norm gefragt ist. Erkennen ist die halbe Lösung.</span>
     <div class="opts">${C.opts.map(o => `<button class="opt" data-act="pick" data-v="${o.id}">${esc(o.t)}</button>`).join('')}</div></section>`;
@@ -433,7 +436,7 @@ app.addEventListener('click', e => {
   if (a === 'casedone') {
     const C = SS.C, xp = C.boss ? (C.miss <= 1 ? 150 : 80) : 25 + (C.pick === (C.L || {}).id ? 10 : 0);
     if (C.boss && C.miss <= 1) P.boss[C.mod] = today();
-    if (!C.boss) P.caseLast[C.L.id] = today();
+    if (!C.boss) { P.caseLast[C.L.id] = today(); (P.caseSeen || (P.caseSeen = {}))[C.key] = Date.now(); P.lastCaseL = C.L.id; }
     act(); save(); gainXP('stbpfad', xp); toast('+' + xp + ' XP');
     if (SS.kind === 'today') { SS.stage = 'plan'; SS.total = 0; location.hash = 'heute'; } else { SS = null; history.replaceState(null, '', location.pathname); }
     render(); return;
