@@ -309,6 +309,7 @@ function grade(ok) {
     R.xp += 1;
     if (!R.retry.has(cur.it.id)) { R.retry.add(cur.it.id); R.seq.push({ it: cur.it, q: null, ok: null, again: true }); }
   }
+  if ((!ok || firstEver) && cur.q && cur.q.type === 'mc' && window.EULE) { const right = (cur.q.opts.find(o => o.ok) || {}).label; if (right) EULE.push({ src: 'med', q: [cur.q.eyebrow, cur.q.prompt, cur.q.sub].filter(Boolean).join(' · '), a: right, ref: cur.it.id }); }
   if (firstEver) { const d = today(); M.nd = M.nd && M.nd.day === d ? M.nd : { day: d, n: 0 }; M.nd.n++; }
   saveM(); beep(ok);
 }

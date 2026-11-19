@@ -278,6 +278,7 @@ const val = id => { const el = document.getElementById(id); return el ? el.value
 function finishLesson() {
   const l = SS.L; P.done[l.id] = today(); if (SS.note) P.notes[l.id] = SS.note;
   for (const id of lessonCards(l)) if (!P.cards[id]) P.cards[id] = { b: 0, due: addDays(1), n: 1, lapses: 0, last: today() };
+  for (const id of lessonCards(l)) { const c = cardDef(id); if (c) window.EULE && EULE.push({ src: 'stb', q: c.q, a: c.a, ref: id }); }
   act(); save(); gainXP('stbpfad', 60); SS.xp += 60; SS.k = 6;
 }
 app.addEventListener('click', e => {
@@ -300,6 +301,7 @@ app.addEventListener('click', e => {
     rate(it.id, r, it.retry);
     if (SS.conf === 'sure' && !it.retry) { P.cal.n++; if (r === 2) P.cal.hit++; else P.cal.over++; }
     if (r === 0) SS.queue.push({ id: it.id, retry: true }); // successive relearning: back into this session
+    if (r < 2 && !it.retry) { const c = cardDef(it.id); window.EULE && EULE.push({ src: 'stb', q: c.q, a: c.a, ref: it.id }); }
     if (!it.retry) { const d = P.days[today()] || (P.days[today()] = { sec: 0, rev: 0 }); d.rev = (d.rev || 0) + 1; gainXP('stbpfad', r === 2 ? 4 : 2); }
     act(); save(); SS.i++; SS.shown = false; SS.typed = ''; SS.conf = null; SS.navRes = null;
     if (SS.i >= SS.queue.length) afterReviews(); else render(); return;
@@ -325,7 +327,7 @@ app.addEventListener('click', e => {
   // case training and boss
   if (a === 'pick') { SS.C.pick = v; render(); return; }
   if (a === 'sreveal') { SS.C.guess = val('guess'); SS.C.shown = true; render(); return; }
-  if (a === 'step') { const C = SS.C; if (+v === 0) { C.miss++; refresh(C.steps[C.s][2] || C.L.id); } C.s++; C.shown = false; C.guess = ''; render(); return; }
+  if (a === 'step') { const C = SS.C; if (+v === 0) { C.miss++; refresh(C.steps[C.s][2] || C.L.id); window.EULE && EULE.push({ src: 'stb', q: 'Fall: ' + C.sv.slice(0, 220) + (C.sv.length > 220 ? ' …' : '') + '\n→ ' + C.steps[C.s][0], a: C.steps[C.s][1] }); } C.s++; C.shown = false; C.guess = ''; render(); return; }
   if (a === 'casedone') {
     const C = SS.C, xp = C.boss ? (C.miss <= 1 ? 150 : 80) : 25 + (C.pick === (C.L || {}).id ? 10 : 0);
     if (C.boss && C.miss <= 1) P.boss[C.mod] = today();

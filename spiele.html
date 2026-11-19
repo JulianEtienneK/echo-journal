@@ -159,6 +159,7 @@ h3 { font-size: 17px; font-weight: 700; }
 </style>
 <script src="theme.js"></script>
 <script src="kurator.js"></script>
+<script src="eule.js" defer></script>
 <link rel="stylesheet" href="theme.css">
 </head>
 <body>
@@ -238,7 +239,8 @@ function viewQuiz() {
 }
 function quizAnswer(i) {
   const cur = Q.seq[Q.i], it = cur.it; if (Q.ans != null) return;
-  Q.ans = cur.opts[i]; const ok = Q.ans === it[2][0], s = qs(Q.bank, it[0]); cur.ok = ok;
+  Q.ans = cur.opts[i]; const fresh = !((G.quiz[Q.bank] || {})[it[0]]), ok = Q.ans === it[2][0], s = qs(Q.bank, it[0]); cur.ok = ok;
+  if (!cur.retry && (!ok || fresh)) window.EULE && EULE.push({ src: 'quiz:' + Q.bank, q: it[1], a: it[2][0] + (it[3] ? '\n' + it[3] : ''), ref: it[0] });
   // successive relearning: a missed question returns at the end of the round until it is right once; the retry itself never moves the card further out
   if (cur.retry) { if (!ok) { s.w++; if (cur.retry < 3) Q.seq.push({ it, opts: shuffle(it[2]), retry: cur.retry + 1 }); } beep(ok); save(); render(); document.getElementById('qnext')?.focus(); return; }
   if (!ok) Q.seq.push({ it, opts: shuffle(it[2]), retry: 1 });

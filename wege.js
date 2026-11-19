@@ -199,7 +199,7 @@ app.addEventListener('click', e => {
       runTimer(10, () => { const m = document.getElementById('tmsg'); if (m) m.textContent = 'Zeit um. Laptop zu, aufstehen, ein Glas Wasser. Der Tag geht normal weiter.'; }); break; }
     case 'rev-show': A.rec = Object.assign(A.rec || {}, { [v]: document.getElementById('rec').value }); go('r-' + v + '-show'); break;
     case 'rev': { const [id, ok] = v.split(':'), r = W.rev[id] || (W.rev[id] = { b: 0 }); if (+ok) { r.b++; r.due = addDays(REV[Math.min(r.b, REV.length - 1)]); } else { r.b = 0; r.due = addDays(REV[0]); } save(); gainXP('wege-rev', 10); toast('+10 XP'); go(''); break; }
-    case 'lesson': if (!W.done[v]) { W.done[v] = today(); W.rev[v] = { b: 0, due: addDays(REV[0]) }; save(); gainXP('wege-lesson', XP.lesson); toast('+' + XP.lesson + ' XP'); } render(); break;
+    case 'lesson': if (!W.done[v]) { W.done[v] = today(); W.rev[v] = { b: 0, due: addDays(REV[0]) }; save(); { const x = lessonById(v); if (x) window.EULE && EULE.push({ src: 'wege', q: 'Kernidee von „' + x.l[1] + '“? Und die Übung?', a: x.l[2] + '\n\nÜbung: ' + x.l[3], ref: v }); } gainXP('wege-lesson', XP.lesson); toast('+' + XP.lesson + ' XP'); } render(); break;
     case 'answer': { const t = document.getElementById('ans').value.trim(); if (!t) return; const first = !W.answers[v]; W.answers[v] = t; save(); if (first) gainXP('wege-answer', XP.answer); toast(first ? '+' + XP.answer + ' XP · gespeichert' : 'Gespeichert'); render(); break; }
   }
 });
