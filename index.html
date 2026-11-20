@@ -2996,6 +2996,19 @@ if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListen
       LS.set(rf, true);
     }
   }
+  // Standing goals: added once to every week (the current one when Echo opens), unless that week already has a goal for them.
+  // Deleting one in a week keeps it deleted for that week; the next week gets it again.
+  {
+    const STANDING = [[/StB|Steuerberat/i, '+ ⚖️ StB-Pfad · 30 min täglich'], [/Eule/i, '+ 🦉 Eule-Wiederholung · 10 min täglich'],
+      [/\bNM\b|Nutrition/i, '+ 🥗 NM · 30 min täglich'], [/Meditation/i, '+ 🧘 Meditation · täglich']];
+    const wk = weekStart(), sf = 'echo-standing-' + wk;
+    if (!LS.get(sf, false)) {
+      const w = S.goals[wk] || (S.goals[wk] = { week: wk, items: [] });
+      const add = STANDING.filter(([re]) => !w.items.some(x => re.test(x.text))).map(([, line]) => line);
+      if (add.length) { w.items.push(...parseGoalsText(add.join('\n'))); await DB.put('goals', w); }
+      LS.set(sf, true);
+    }
+  }
   // Reopen today's unfinished round after a reload instead of losing it.
   const open = S.dialogs.filter(d => !d.completed && d.day === today() && d.messages.some(m => m.role === 'assistant')).sort((a, b) => b.createdAt - a.createdAt)[0];
   if (open) S.activeDialog = open.id;
