@@ -224,11 +224,11 @@ function viewLesson() {
       ${res == null ? '<button class="btn primary" data-act="navcheck">Prüfen</button>' : `<b>${['❌ Nicht ganz', '🟡 Richtige Norm, die Fundstelle weicht ab', '✅ Genau'][res]}</b><div class="ans">${esc(n[1])}</div><button class="btn primary" data-act="navnext">Weiter</button>`}</section>`;
   }
   if (k === 4) {
-    const ln = l.link && LBY[l.link];
+    const lk = (D.LINKS || {})[l.id], ln = lk && LBY[lk[0]];
     return `${head}<section class="card"><span class="eyebrow">In eigenen Worten</span><h3>Was ist der Kern dieser Lektion, und warum ist das so geregelt?</h3>
       <span class="small muted">Ein, zwei Sätze. Wer sich etwas selbst erklärt, behält es länger.</span><textarea id="note" placeholder="Der Kern ist …, weil …">${esc(SS.note)}</textarea></section>
-      ${ln ? `<section class="card"><span class="eyebrow">Verknüpfen · ${esc(ln.t)}</span><h3>Wie hängt das mit „${esc(ln.t)}“ zusammen?</h3><span class="small muted">Erst denken, dann zur Erinnerung die Kernfrage von damals:</span>
-        ${SS.linkShown ? `<span class="small">${esc(ln.cards[0][0])}</span><div class="ans">${esc(ln.cards[0][1])}</div>` : `<button class="btn" data-act="linkshow">${esc(ln.cards[0][0])} · aufdecken</button>`}</section>` : ''}
+      ${ln ? `<section class="card"><span class="eyebrow">Verknüpfen · ${esc(ln.t)}</span><h3>${esc(lk[1])}</h3><span class="small muted">Erst selbst überlegen (gern in das Feld oben), dann vergleichen.</span>
+        ${SS.linkShown ? `<div class="ans">${esc(lk[2])}</div>` : `<button class="btn" data-act="linkshow">Antwort zeigen</button>`}</section>` : ''}
       <button class="btn primary big" data-act="next">Zum Abruf</button>`;
   }
   if (k === 5) {
@@ -342,7 +342,7 @@ async function askSend(text) {
     const shown = m ? ans.slice(0, m.index).trim() : ans;
     ASK.msgs.push({ role: 'assistant', content: ans, shown });
     if (m) { ASK.card = [m[1].trim(), m[2].trim()]; ASK.saved = false; }
-    P.qa.push({ d: today(), lid: ASK.lid, q: text, a: shown }); save(); gainXP('stbpfad-frage', 5);
+    P.qa.push({ d: today(), lid: ASK.lid, q: text, a: shown }); save(); gainXP('stbpfad-frage', 10);
     window.EULE && EULE.push({ src: 'stb', q: m ? ASK.card[0] : text, a: m ? ASK.card[1] : shown.slice(0, 600) });
   } catch (e) { ASK.err = 'Keine Antwort: ' + e.message; ASK.msgs.pop(); }
   ASK.busy = false; askDraw();
@@ -388,7 +388,7 @@ function finishLesson() {
   const l = SS.L; P.done[l.id] = today(); if (SS.note) P.notes[l.id] = SS.note;
   for (const id of lessonCards(l)) if (!P.cards[id]) P.cards[id] = { b: 0, due: addDays(1), n: 1, lapses: 0, last: today() };
   for (const id of lessonCards(l)) { const c = cardDef(id); if (c) window.EULE && EULE.push({ src: 'stb', q: c.q, a: c.a, ref: id }); }
-  act(); save(); gainXP('stbpfad', 60); SS.xp += 60; SS.k = 6;
+  act(); save(); gainXP('stbpfad', 120); SS.xp += 120; SS.k = 6;
 }
 app.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
@@ -413,7 +413,7 @@ app.addEventListener('click', e => {
     if (SS.conf === 'sure' && !it.retry) { P.cal.n++; if (r === 2) P.cal.hit++; else P.cal.over++; }
     if (r === 0) SS.queue.push({ id: it.id, retry: true }); // successive relearning: back into this session
     if (r < 2 && !it.retry) { const c = cardDef(it.id); window.EULE && EULE.push({ src: 'stb', q: c.q, a: c.a, ref: it.id }); }
-    if (!it.retry) { const d = P.days[today()] || (P.days[today()] = { sec: 0, rev: 0 }); d.rev = (d.rev || 0) + 1; gainXP('stbpfad', r === 2 ? 4 : 2); }
+    if (!it.retry) { const d = P.days[today()] || (P.days[today()] = { sec: 0, rev: 0 }); d.rev = (d.rev || 0) + 1; gainXP('stbpfad', r === 2 ? 8 : 4); }
     act(); save(); SS.i++; SS.shown = false; SS.typed = ''; SS.conf = null; SS.navRes = null;
     if (SS.i >= SS.queue.length) afterReviews(); else render(); return;
   }
@@ -440,7 +440,7 @@ app.addEventListener('click', e => {
   if (a === 'sreveal') { SS.C.guess = val('guess'); SS.C.shown = true; render(); return; }
   if (a === 'step') { const C = SS.C; if (+v === 0) { C.miss++; refresh(C.steps[C.s][2] || C.L.id); window.EULE && EULE.push({ src: 'stb', q: 'Fall: ' + C.sv.slice(0, 220) + (C.sv.length > 220 ? ' …' : '') + '\n→ ' + C.steps[C.s][0], a: C.steps[C.s][1] }); } C.s++; C.shown = false; C.guess = ''; render(); return; }
   if (a === 'casedone') {
-    const C = SS.C, xp = C.boss ? (C.miss <= 1 ? 150 : 80) : 25 + (C.pick === (C.L || {}).id ? 10 : 0);
+    const C = SS.C, xp = C.boss ? (C.miss <= 1 ? 300 : 160) : 50 + (C.pick === (C.L || {}).id ? 20 : 0);
     if (C.boss && C.miss <= 1) P.boss[C.mod] = today();
     if (!C.boss) { P.caseLast[C.L.id] = today(); (P.caseSeen || (P.caseSeen = {}))[C.key] = Date.now(); P.lastCaseL = C.L.id; }
     act(); save(); gainXP('stbpfad', xp); toast('+' + xp + ' XP');
