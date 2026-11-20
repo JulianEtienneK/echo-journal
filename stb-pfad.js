@@ -426,23 +426,25 @@ function examCard() {
 function viewExams() {
   const ex = P.exams || {};
   return `<div class="topbar"><a class="link" href="#">← ${esc(CFG.short)}</a></div><header class="stack" style="gap:4px"><h1>📝 Probeklausuren</h1><span class="small muted">Unter echten Bedingungen: Zeit läuft, Unterlagen nur so weit erlaubt. Danach bewertest du jede Aufgabe mit der Musterlösung; was unter der Hälfte bleibt, kommt in die Wiederholungen.</span></header>
-  ${D.EXAMS.map(e => { const r = (ex[e.id] || []).slice(-1)[0], max = e.tasks.reduce((a, t) => a + t.pts, 0); return `<a class="card" href="#klausur-${e.id}" style="text-decoration:none;color:inherit"><div class="row"><span class="big">📝</span><div class="stack grow" style="gap:0"><h3>${esc(e.t)}</h3><span class="small muted">${e.min} min · ${max} Punkte${r ? ` · zuletzt ${r.pts}/${r.max}` : ''}${e.src ? ' · ' + esc(e.src) : ''}</span></div></div></a>`; }).join('')}`;
+  ${D.EXAMS.map(e => { const r = (ex[e.id] || []).slice(-1)[0], max = e.pts || e.tasks.reduce((a, t) => a + t.pts, 0); return `<a class="card" href="#klausur-${e.id}" style="text-decoration:none;color:inherit"><div class="row"><span class="big">📝</span><div class="stack grow" style="gap:0"><h3>${esc(e.t)}</h3><span class="small muted">${e.min} min · ${max} Punkte${r ? ` · zuletzt ${r.pts}/${r.max}` : ''}${e.src ? ' · ' + esc(e.src) : ''}</span></div></div></a>`; }).join('')}`;
 }
-function startExam(id) { const e = D.EXAMS.find(x => x.id === id); if (!e) return; EX = { e, i: 0, ans: {}, t0: Date.now(), phase: 'write', score: {} }; }
+function startExam(id) { let e = D.EXAMS.find(x => x.id === id); if (!e) return; if (e.gen) e = Object.assign({}, e, { tasks: e.gen(P) }); EX = { e, i: 0, ans: {}, tf: {}, t0: Date.now(), phase: 'write', score: {} }; }
+/* true/false blocks (as in multiple-choice exams): task.tf = [[statement, isTrue, explanation, lessonId?]]; each correct mark earns pts/len */
+const tfScore = (t, i) => { const m = EX.tf[i] || {}; const ok = t.tf.filter((x, j) => !!m[j] === !!x[1]).length; return Math.round(t.pts * ok / t.tf.length * 10) / 10; };
 function viewExam() {
   const { e, phase } = EX, max = e.tasks.reduce((a, t) => a + t.pts, 0);
   const left = Math.max(0, e.min * 60 - Math.floor((Date.now() - EX.t0) / 1000));
   const head = `<div class="topbar"><a class="link" href="#klausur">← Klausuren</a><span class="mono small" id="exleft" style="color:${left < 600 ? 'var(--gold)' : 'var(--muted)'}">${phase === 'write' ? '⏳ ' + mmss(left) : ''}</span></div><header class="stack" style="gap:4px"><h1 style="font-size:24px">📝 ${esc(e.t)}</h1></header>`;
-  if (phase === 'write') return `${head}${e.tasks.map((t, i) => `<section class="card"><div class="row spread"><b>Aufgabe ${i + 1}: ${esc(t.t)}</b><span class="small muted">${t.pts} P.</span></div><div class="sv" style="white-space:pre-wrap">${esc(t.q)}</div><textarea data-ex="${i}" placeholder="Lösung (Rechenweg, Ergebnis, Begründung)" style="min-height:110px">${esc(EX.ans[i] || '')}</textarea></section>`).join('')}
+  if (phase === 'write') return `${head}${e.tasks.map((t, i) => `<section class="card"><div class="row spread"><b>Aufgabe ${i + 1}: ${esc(t.t)}</b><span class="small muted">${t.pts} P.</span></div><div class="sv" style="white-space:pre-wrap">${esc(t.q)}</div>${t.tf ? `<span class="small muted">Ankreuzen, was richtig ist. Nicht angekreuzt heißt falsch.</span>${t.tf.map((x, j) => `<label class="row" style="gap:10px;align-items:flex-start;line-height:1.5"><input type="checkbox" data-tf="${i}:${j}" ${(EX.tf[i] || {})[j] ? 'checked' : ''} style="margin-top:4px;width:20px;height:20px;flex:none"><span><b>${'ABCDE'[j] || j + 1}</b> ${esc(x[0])}</span></label>`).join('')}` : `<textarea data-ex="${i}" placeholder="Lösung (Rechenweg, Ergebnis, Begründung)" style="min-height:110px">${esc(EX.ans[i] || '')}</textarea>`}</section>`).join('')}
     <button class="btn primary big" data-act="examend">Abgeben und auswerten</button>`;
-  if (phase === 'grade') return `${head}<section class="card"><span class="small muted">Vergleiche jede Aufgabe mit der Lösung und vergib ehrlich Punkte. Gezählt wird nur, was du in der Zeit geschrieben hast.</span></section>
-    ${e.tasks.map((t, i) => `<section class="card"><div class="row spread"><b>Aufgabe ${i + 1}: ${esc(t.t)}</b><span class="small muted">max. ${t.pts} P.</span></div>
+  if (phase === 'grade') return `${head}<section class="card"><span class="small muted">${e.tasks.every(t => t.tf) ? 'Automatisch ausgewertet. Eine richtige Aussage, die du nicht angekreuzt hast, zählt wie in der Klausur als Fehler.' : 'Vergleiche jede Aufgabe mit der Lösung und vergib ehrlich Punkte. Gezählt wird nur, was du in der Zeit geschrieben hast.'}</span></section>
+    ${e.tasks.map((t, i) => t.tf ? `<section class="card"><div class="row spread"><b>Aufgabe ${i + 1}: ${esc(t.t)}</b><span class="small muted">${fmtN(tfScore(t, i), 1)} / ${t.pts} P.</span></div>${t.tf.map((x, j) => { const m = !!(EX.tf[i] || {})[j], ok = m === !!x[1]; return `<div class="step open" style="border-color:${ok ? 'var(--calm)' : 'var(--gold)'}"><span><b>${'ABCDE'[j] || j + 1}</b> ${ok ? '✅' : '❌'} ${esc(x[0])}</span><div class="ans"><b>${x[1] ? 'Richtig' : 'Falsch'}.</b> ${esc(x[2] || '')}</div></div>`; }).join('')}<input type="hidden" data-sc="${i}" value="${tfScore(t, i)}"></section>` : `<section class="card"><div class="row spread"><b>Aufgabe ${i + 1}: ${esc(t.t)}</b><span class="small muted">max. ${t.pts} P.</span></div>
       <details><summary class="small">Aufgabe und deine Lösung</summary><div class="sv" style="white-space:pre-wrap;margin-top:6px">${esc(t.q)}</div><div class="small" style="white-space:pre-wrap;margin-top:6px">${esc(EX.ans[i] || '–')}</div></details>
       <div class="ans" style="white-space:pre-wrap">${esc(t.sol)}</div>
       <input type="text" inputmode="decimal" data-sc="${i}" placeholder="Deine Punkte (0–${t.pts})" value="${EX.score[i] ?? ''}"></section>`).join('')}
     <button class="btn primary big" data-act="examscore">Ergebnis speichern</button>`;
   const pts = Object.values(EX.score).reduce((a, b) => a + b, 0);
-  return `${head}<section class="card" style="text-align:center"><span style="font-size:44px">${pts / max >= 0.5 ? '🎉' : '💪'}</span><h2>${fmtN(pts, 1)} von ${max} Punkten</h2><span class="small muted">${pts / max >= 0.5 ? 'Bestanden (Grenze meist 50 %).' : 'Noch unter 50 %. Die schwachen Aufgaben sind jetzt Wiederholungskarten.'} ${EX.weak} Aufgabe${EX.weak === 1 ? '' : 'n'} in die Wiederholungen.</span>
+  return `${head}<section class="card" style="text-align:center"><span style="font-size:44px">${pts / max >= (e.tasks.every(t => t.tf) ? 0.75 : 0.5) ? '🎉' : '💪'}</span><h2>${fmtN(pts, 1)} von ${max} Punkten</h2><span class="small muted">${e.tasks.every(t => t.tf) ? (pts / max >= 0.75 ? 'Stark. ' : pts / max >= 0.6 ? 'Solide, aber Raten bringt bei richtig/falsch schon 50 %; ab etwa 75 % bist du sicher. ' : 'Bei richtig/falsch bringt Raten schon die Hälfte; dein Ziel sind 75 % und mehr. ') + 'Die echte Klausur rechnet Rohpunkte wegen der Ratewahrscheinlichkeit noch um.' : pts / max >= 0.5 ? 'Bestanden (Grenze meist 50 %).' : 'Noch unter 50 %. Die schwachen Aufgaben sind jetzt Wiederholungskarten.'} ${EX.weak} ${e.tasks.some(t => t.tf) ? 'falsch beantwortete Aussage' + (EX.weak === 1 ? '' : 'n') : 'Aufgabe' + (EX.weak === 1 ? '' : 'n')} in die Wiederholungen.</span>
     <button class="btn primary" data-act="home">Zum Pfad</button></section>`;
 }
 function examTick() {
@@ -453,7 +455,7 @@ function examTick() {
   if (left === 0) { toast('Zeit ist um'); collectExam(); EX.phase = 'grade'; render(); }
 }
 setInterval(examTick, 1000);
-function collectExam() { app.querySelectorAll('[data-ex]').forEach(t => { EX.ans[t.dataset.ex] = t.value; }); }
+function collectExam() { app.querySelectorAll('[data-ex]').forEach(t => { EX.ans[t.dataset.ex] = t.value; }); app.querySelectorAll('[data-tf]').forEach(c => { const [i, j] = c.dataset.tf.split(':'); (EX.tf[i] || (EX.tf[i] = {}))[j] = c.checked; }); }
 
 /* ---------- render and actions ---------- */
 function render() {
@@ -491,6 +493,7 @@ app.addEventListener('click', e => {
   if (a === 'examscore') {
     const e = EX.e; let weak = 0;
     app.querySelectorAll('[data-sc]').forEach(inp => { const i = +inp.dataset.sc, t = e.tasks[i], v = Math.max(0, Math.min(t.pts, num(inp.value) || 0)); EX.score[i] = v;
+      if (t.tf) { t.tf.forEach((x, j) => { if (!!(EX.tf[i] || {})[j] !== !!x[1]) { weak++; const lid = x[3] && LBY[x[3]] ? x[3] : (LESSONS[0] || {}).id || 'x', id = lid + ':q' + uid(); (P.qcards || (P.qcards = {}))[id] = { q: 'Richtig oder falsch? ' + x[0], a: (x[1] ? 'Richtig. ' : 'Falsch. ') + (x[2] || ''), d: today() }; P.cards[id] = { b: 0, due: addDays(1), n: 0, lapses: 0, last: today() }; } }); return; }
       if (v < t.pts / 2) { weak++; const lid = (LESSONS[0] || {}).id || 'x', id = lid + ':q' + uid(); (P.qcards || (P.qcards = {}))[id] = { q: e.t + ' · ' + t.t + ': ' + t.q.slice(0, 300), a: t.sol.slice(0, 700), d: today() }; P.cards[id] = { b: 0, due: addDays(1), n: 0, lapses: 0, last: today() }; } });
     const pts = Object.values(EX.score).reduce((x, y) => x + y, 0), max = e.tasks.reduce((x, t) => x + t.pts, 0);
     (P.exams || (P.exams = {}))[e.id] = [...((P.exams || {})[e.id] || []), { d: today(), pts, max }];

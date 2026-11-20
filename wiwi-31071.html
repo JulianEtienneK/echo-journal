@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Echo 31071</title>
+<meta name="theme-color" content="#F2F3EF">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="tools.css">
+<script src="theme.js"></script>
+<script src="kurator.js"></script>
+<script src="eule.js" defer></script>
+<link rel="stylesheet" href="theme.css">
+<style>
+.phase{display:flex;gap:4px}
+.phase i{flex:1;height:5px;border-radius:9px;background:var(--surface-2)}
+.phase i.on{background:var(--calm)}
+.phase i.cur{background:var(--gold)}
+.sv{background:var(--surface-2);border-radius:12px;padding:12px 14px;line-height:1.55}
+.step{border-left:3px solid var(--line);padding:4px 0 4px 12px;display:grid;gap:6px}
+.step.open{border-color:var(--calm)}
+.ans{background:var(--calm-soft, rgba(27,129,115,.12));border-radius:10px;padding:10px 12px;line-height:1.5}
+.schema{margin:0;padding-left:20px;display:grid;gap:4px;line-height:1.45}
+.core p{margin:0 0 10px;line-height:1.6}
+.norm{font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);border-radius:99px;padding:1px 8px;color:var(--muted);white-space:nowrap}
+#app textarea,#app input[type=text]{width:100%;font:inherit;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+#app textarea{min-height:70px;resize:vertical}
+.rate{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.conf{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.mod{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.mod.lock{opacity:.5}
+.why{border-left:3px solid var(--gold);padding-left:12px;line-height:1.55}
+details summary{cursor:pointer;font-weight:600}
+.askov{position:fixed;inset:0;z-index:60;background:rgba(10,14,12,.55);display:grid;place-items:end center;padding:10px}
+.askbox{width:min(560px,100%);max-height:86vh;overflow:auto;background:var(--bg);border-radius:22px;padding:16px;display:grid;gap:10px}
+.askq{justify-self:end;max-width:88%;background:var(--surface-2);border-radius:14px 14px 4px 14px;padding:9px 12px;line-height:1.45}
+.aska{background:var(--surface);border:1px solid var(--line);border-radius:14px 14px 14px 4px;padding:10px 12px;line-height:1.55}
+.askbox textarea{width:100%;font:inherit;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);resize:vertical}
+.big{font-size:28px}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script src="tools-common.js"></script>
+<script src="wiwi-common.js"></script>
+<script>
+window.PFAD_CFG = { key: 'echo-wiwi-31071', title: '💻 31071 Wirtschaftsinformatik', short: '31071', back: 'wiwi.html', backLabel: 'WiWi',
+  xp: 'wiwi-31071', src: 'pfad:echo-wiwi-31071', dayMin: 20, extraCard: false, askTopic: 'Einführung in die Wirtschaftsinformatik (FernUni Hagen, Modul 31071)',
+  sys: 'Du bist Tutor für das Modul 31071 Einführung in die Wirtschaftsinformatik der FernUniversität in Hagen. Einheiten: 1 WI als Disziplin, 2 Informationsmanagement (IT-Strategie nach Teubner, Business/IT-Alignment nach Henderson/Venkatraman, IT-Controlling und IT-BSC, Geschäftsprozessmanagement und Process Mining, Unternehmensarchitektur nach Niemann, Governance, Compliance, COBIT 2019, ITIL 4, DSGVO, NIS-2, AI Act, KonTraG, IT-Risikomanagement), 3 Projektmanagement und KI, 4 Betriebliche Anwendungssysteme (Drei-Schichten-Architektur, SCM/SCOR, ERP, PLM, E-/M-Commerce, CRM, Individual- vs. Standardsoftware), 5 Entscheidungsunterstützung (BuK, EUS, FIS), BI, Data Warehouse, OLAP, Big Data, Wissensmanagementsysteme, 6 Modellierung (Modellbegriff, Modellierungssprache und -methode, Abstraktion, ERM mit min,max-Kardinalitäten), 7 Systementwicklung, Vorgehensmodelle, Aufwandschätzung (COCOMO). Die Klausur besteht aus Aussagen, die richtig oder falsch sind. Antworte auf Deutsch, knapp, und sag bei einer Aussage klar, ob sie richtig oder falsch ist und welches Wort den Ausschlag gibt. Wenn du dir nicht sicher bist, was der Studienbrief genau sagt, sag es.',
+  exam: WIWI.MODS[1].exam, examLabel: 'Klausur (voraussichtlich)', progress: WIWI.progress,
+  note: 'Die Klausur hat 24 Blöcke mit je fünf Aussagen, richtig oder falsch, in 120 Minuten. Darum gibt es hier zu jeder Lektion eine Aussagenbank: in der Blitzrunde, den Teilklausuren je Lehrstuhl und der Probeklausur. Jede falsch beantwortete Aussage wird eine Wiederholungskarte. Die alten Klausuren aus Moodle bleiben die beste Generalprobe; die Aussagen hier sind eigene.' };
+</script>
+<script src="wiwi-31071-data.js"></script>
+<script src="wiwi-31071-tf.js"></script>
+<script src="stb-pfad.js"></script>
+</body>
+</html>
