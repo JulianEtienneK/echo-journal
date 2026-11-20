@@ -110,7 +110,7 @@
     const by = {}; for (const it of items.sort(() => Math.random() - 0.5)) (by[it.src] = by[it.src] || []).push(it);
     const lists = Object.values(by), q = []; while (lists.some(l => l.length)) for (const l of lists) if (l.length) q.push(l.shift());
     const M = { q: q.slice(0, 25).map(it => ({ it })), i: 0, shown: false, ok: 0, miss: new Set() };
-    const label = s => s === 'stb' ? '⚖️ StB-Pfad' : s === 'med' ? '🩺 Medizin' : s.startsWith('quiz:') ? '🎯 Quiz' : s === 'wege' ? '🪷 Wege' : '✍️ Eigene Notiz';
+    const label = s => s === 'stb' ? '⚖️ StB-Pfad' : s.startsWith('pfad:echo-wiwi-') ? '🎓 WiWi ' + s.slice(15) : s === 'med' ? '🩺 Medizin' : s.startsWith('quiz:') ? '🎯 Quiz' : s === 'wege' ? '🪷 Wege' : '✍️ Eigene Notiz';
     const o = ov(''), box = o.querySelector('.eu-box');
     o.onclick = null;
     function draw() {
@@ -142,6 +142,7 @@
   function feedBack(it) {
     try {
       if (it.src === 'stb' && it.ref) { const P = lsj('echo-stbpfad', null); if (P && P.cards && P.cards[it.ref]) { const c = P.cards[it.ref]; c.b = 0; c.due = dk(new Date()); P.updated = Date.now(); lsset('echo-stbpfad', P); } }
+      else if (it.src.startsWith('pfad:') && it.ref) { const k = it.src.slice(5), P = lsj(k, null); if (P && P.cards && P.cards[it.ref]) { const c = P.cards[it.ref]; c.b = 0; c.due = dk(new Date()); P.updated = Date.now(); lsset(k, P); } }
       else if (it.src === 'med' && it.ref) { const M = lsj('echo-med', null); if (M && M.c && M.c[it.ref]) { M.c[it.ref].d = Date.now(); M.updated = Date.now(); lsset('echo-med', M); } }
       else if (it.src.startsWith('quiz:') && it.ref) { const G = lsj('echo-games', null), bank = it.src.slice(5); const s = G && G.quiz && G.quiz[bank] && G.quiz[bank][it.ref]; if (s) { s.b = 0; s.d = Date.now(); G.updated = Date.now(); lsset('echo-games', G); } }
       else if (it.src === 'wege' && it.ref) { const W = lsj('echo-wege', null); if (W) { W.rev = W.rev || {}; W.rev[it.ref] = { b: 0, due: dk(new Date()) }; W.updated = Date.now(); lsset('echo-wege', W); } }

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Echo 31021</title>
+<meta name="theme-color" content="#F2F3EF">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="tools.css">
+<script src="theme.js"></script>
+<script src="kurator.js"></script>
+<script src="eule.js" defer></script>
+<link rel="stylesheet" href="theme.css">
+<style>
+.phase{display:flex;gap:4px}
+.phase i{flex:1;height:5px;border-radius:9px;background:var(--surface-2)}
+.phase i.on{background:var(--calm)}
+.phase i.cur{background:var(--gold)}
+.sv{background:var(--surface-2);border-radius:12px;padding:12px 14px;line-height:1.55}
+.step{border-left:3px solid var(--line);padding:4px 0 4px 12px;display:grid;gap:6px}
+.step.open{border-color:var(--calm)}
+.ans{background:var(--calm-soft, rgba(27,129,115,.12));border-radius:10px;padding:10px 12px;line-height:1.5}
+.schema{margin:0;padding-left:20px;display:grid;gap:4px;line-height:1.45}
+.core p{margin:0 0 10px;line-height:1.6}
+.norm{font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);border-radius:99px;padding:1px 8px;color:var(--muted);white-space:nowrap}
+#app textarea,#app input[type=text]{width:100%;font:inherit;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+#app textarea{min-height:70px;resize:vertical}
+.rate{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.conf{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.mod{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.mod.lock{opacity:.5}
+.why{border-left:3px solid var(--gold);padding-left:12px;line-height:1.55}
+details summary{cursor:pointer;font-weight:600}
+.askov{position:fixed;inset:0;z-index:60;background:rgba(10,14,12,.55);display:grid;place-items:end center;padding:10px}
+.askbox{width:min(560px,100%);max-height:86vh;overflow:auto;background:var(--bg);border-radius:22px;padding:16px;display:grid;gap:10px}
+.askq{justify-self:end;max-width:88%;background:var(--surface-2);border-radius:14px 14px 4px 14px;padding:9px 12px;line-height:1.45}
+.aska{background:var(--surface);border:1px solid var(--line);border-radius:14px 14px 14px 4px;padding:10px 12px;line-height:1.55}
+.askbox textarea{width:100%;font:inherit;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);resize:vertical}
+.big{font-size:28px}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script src="tools-common.js"></script>
+<script src="wiwi-common.js"></script>
+<script>
+window.PFAD_CFG = { key: 'echo-wiwi-31021', title: '💶 31021 Investition und Finanzierung', short: '31021', back: 'wiwi.html', backLabel: 'WiWi',
+  xp: 'wiwi-31021', src: 'pfad:echo-wiwi-31021', dayMin: 20, extraCard: false, askTopic: 'Investition und Finanzierung (FernUni Hagen, Modul 31021)',
+  sys: 'Du bist Tutor für das Modul 31021 Investition und Finanzierung der FernUniversität in Hagen. Teil Investition: Investitionsrechnung auf dem vollkommenen Kapitalmarkt (Kapitalwert, Endwert, Differenzinvestition, äquivalente Annuität, interner Zinsfuß, periodenindividuelle Zinsen, Annuitätendarlehen) und Entscheidungen unter Unsicherheit (Dominanz, µ- und µ-σ-Prinzip, Bernoulli-Prinzip, Regeln bei Ungewissheit). Teil Finanzierung: Rechtsformen, Innen- und Außenfinanzierung, Kredite, Anleihen, Aktien und Kapitalerhöhung, Leverage und Modigliani-Miller, Börse und Markteffizienz, Rendite, Kennzahlen und Cashflow. Antworte auf Deutsch, knapp und mit Rechenweg; runde Zinssätze auf 4 und Beträge auf 2 Nachkommastellen, wie in der Klausur. Wenn du unsicher bist, sag es.',
+  exam: WIWI.MODS[0].exam, examLabel: 'Klausur (voraussichtlich)', progress: WIWI.progress,
+  note: 'Die Klausur dauert 120 Minuten: 50 Punkte Investition, 50 Punkte Finanzierung, viel Rechnen. Darum hat dieser Pfad einen Rechentrainer mit immer neuen Zahlen und Probeklausuren auf Zeit. Die Fälle und Klausuren hier sind eigene Aufgaben; die alten FernUni-Klausuren aus Moodle bleiben die beste Generalprobe.' };
+</script>
+<script src="wiwi-31021-data.js"></script>
+<script src="wiwi-31021-drills.js"></script>
+<script src="stb-pfad.js"></script>
+</body>
+</html>

@@ -9,12 +9,14 @@
 'use strict';
 const app = document.getElementById('app');
 const D = window.STB_PFAD;
-const P = Object.assign({ done: {}, cards: {}, days: {}, boss: {}, notes: {}, cal: { n: 0, hit: 0, over: 0 }, caseLast: {}, qa: [], qcards: {} }, LS.get('echo-stbpfad', {}));
+const CFG = Object.assign({ key: 'echo-stbpfad', title: '⚖️ StB-Pfad', short: 'StB-Pfad', back: 'index.html#games', backLabel: 'Spiele', xp: 'stbpfad', src: 'stb',
+  dayMin: 30, extraCard: true, askTopic: 'Steuerrecht allgemein', sys: null, exam: null, examLabel: '', note: null, progress: null }, window.PFAD_CFG || {});
+const P = Object.assign({ done: {}, cards: {}, days: {}, boss: {}, notes: {}, cal: { n: 0, hit: 0, over: 0 }, caseLast: {}, qa: [], qcards: {} }, LS.get(CFG.key, {}));
 const save = () => {
   const ms = D.ROADMAP.filter(m => (D.LESSONS[m.id] || []).length), cur = ms.find(m => D.LESSONS[m.id].some(l => !P.done[l.id])) || ms[ms.length - 1];
   const ls = D.LESSONS[cur.id], n = ls.filter(l => P.done[l.id]).length;
   P.meta = { mod: D.ROADMAP.indexOf(cur) + 1, mods: D.ROADMAP.length, name: cur.n, lesson: Math.min(n + 1, ls.length), of: ls.length, done: Object.keys(P.done).length, total: ms.reduce((a, m) => a + D.LESSONS[m.id].length, 0) };
-  P.updated = Date.now(); LS.set('echo-stbpfad', P);
+  P.updated = Date.now(); LS.set(CFG.key, P);
 };
 const LADDER = [1, 3, 7, 16, 35, 90, 180];
 const MASTER = 3; // box 3 = the card survived a gap of a week or more
@@ -71,12 +73,13 @@ function checkNorm(given, want) {
 /* ---------- time, streak, rank ---------- */
 /* live session clock: runs while a session is open and the page is visible; pauses after 3 minutes without any input
    (reading counts, walking away does not); stops when you leave the session. Seconds go into P.days[day].sec. */
-let lastInput = Date.now(), CLK = null, RESET = false;
+let lastInput = Date.now(), CLK = null, RESET = false, DR = null, EX = null;
 function tick() { lastInput = Date.now(); }
 ['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach(ev => addEventListener(ev, tick, { passive: true }));
 const mmss = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
 function clock() {
-  if (SS && !CLK) {
+  const on = SS || DR || EX;
+  if (on && !CLK) {
     const el = document.createElement('div'); el.id = 'clk';
     el.style.cssText = 'position:fixed;bottom:calc(12px + env(safe-area-inset-bottom));left:12px;z-index:50;background:var(--surface);border:2px solid var(--calm);border-radius:99px;padding:6px 12px;font:600 14px var(--f-mono);box-shadow:0 4px 16px rgba(0,0,0,.15)';
     document.body.appendChild(el);
@@ -84,11 +87,11 @@ function clock() {
       const idle = Date.now() - lastInput > 180000, hidden = document.visibilityState !== 'visible';
       if (!idle && !hidden) { CLK.sec++; const d = P.days[today()] || (P.days[today()] = { sec: 0, rev: 0 }); d.sec = (d.sec || 0) + 1; if (CLK.sec % 15 === 0) save(); }
       const tm = minToday();
-      CLK.el.innerHTML = `${idle || hidden ? '⏸' : '⏱'} ${mmss(CLK.sec)} <span style="color:var(--muted);font-weight:500">· heute ${tm}/30</span>`;
-      CLK.el.style.borderColor = tm >= 30 ? 'var(--gold)' : 'var(--calm)';
+      CLK.el.innerHTML = `${idle || hidden ? '⏸' : '⏱'} ${mmss(CLK.sec)} <span style="color:var(--muted);font-weight:500">· heute ${tm}/${CFG.dayMin}</span>`;
+      CLK.el.style.borderColor = tm >= CFG.dayMin ? 'var(--gold)' : 'var(--calm)';
     }, 1000) };
-    CLK.el.innerHTML = `⏱ 0:00 <span style="color:var(--muted);font-weight:500">· heute ${minToday()}/30</span>`;
-  } else if (!SS && CLK) {
+    CLK.el.innerHTML = `⏱ 0:00 <span style="color:var(--muted);font-weight:500">· heute ${minToday()}/${CFG.dayMin}</span>`;
+  } else if (!on && CLK) {
     clearInterval(CLK.iv); CLK.el.remove(); const s = CLK.sec; CLK = null; save();
     if (s >= 30) toast(`Session: ${mmss(s)} · heute ${minToday()} min`);
   }
@@ -101,10 +104,15 @@ const weekMin = () => { let s = 0; for (let i = 0; i < 7; i++) s += ((P.days[add
 function rank() { const m = mastered(); let r = D.RANKS[0]; for (const x of D.RANKS) if (m >= x[0]) r = x; const nx = D.RANKS.find(x => x[0] > m); return { name: r[1], m, next: nx }; }
 const nextLesson = () => LESSONS.find(l => !P.done[l.id]);
 // a new lesson every other day: the day in between belongs to reviews and a case (spacing beats speed)
-function lessonDay() { const ds = Object.values(P.done); return !ds.includes(today()) && !ds.includes(addDays(-1)); }
+function lessonDay() {
+  const ds = Object.values(P.done); if (ds.includes(today())) return false;
+  if (CFG.exam) { const left = LESSONS.filter(l => !P.done[l.id]).length, days = Math.round((new Date(CFG.exam + 'T12:00') - new Date(today() + 'T12:00')) / 864e5); if (left > (days - 21) / 2) return true; }
+  return !ds.includes(addDays(-1));
+}
+const examDays = () => CFG.exam ? Math.round((new Date(CFG.exam + 'T12:00') - new Date(today() + 'T12:00')) / 864e5) : null;
 
 /* ---------- small UI pieces ---------- */
-const back = h => `<a class="link" href="${h}">← ${h === 'index.html#games' ? 'Spiele' : 'StB-Pfad'}</a>`;
+const back = h => `<a class="link" href="${h}">← ${h === CFG.back ? esc(CFG.backLabel) : esc(CFG.short)}</a>`;
 const norms = l => l.norms.map(n => `<span class="norm">${esc(n)}</span>`).join(' ');
 const phase = (n, cur) => `<div class="phase">${Array.from({ length: n }, (_, i) => `<i class="${i < cur ? 'on' : i === cur ? 'cur' : ''}"></i>`).join('')}</div>`;
 const rateBtns = () => `<div class="rate"><button class="btn" data-act="rate" data-v="0">Nicht gewusst</button><button class="btn" data-act="rate" data-v="1">Mit Mühe</button><button class="btn primary" data-act="rate" data-v="2">Gewusst</button></div>`;
@@ -134,18 +142,18 @@ function viewHome() {
   const h = hoursTotal(), cal = P.cal.n >= 5 ? Math.round(P.cal.hit / P.cal.n * 100) + ' %' : '–';
   const bosses = D.ROADMAP.filter(m => D.BOSS[m.id] && (D.LESSONS[m.id] || []).length && D.LESSONS[m.id].every(l => P.done[l.id])).sort((a, b) => !!P.boss[a.id] - !!P.boss[b.id]);
   const modRow = m => { const ls = D.LESSONS[m.id] || [], n = ls.filter(l => P.done[l.id]).length, cur = m.id === m0.id;
-    return `<div class="mod${ls.length ? '' : ' lock'}"><span class="big">${m.em}</span><div class="stack" style="gap:0;min-width:0"><b>${esc(m.n)}</b><span class="small muted">Woche ${m.w} · ${esc(m.goal)}</span>${!cur && ls.length ? `<details style="margin-top:4px"><summary class="small muted">${ls.length} Lektionen ansehen</summary><div class="stack" style="gap:2px;margin-top:6px">${ls.map((l, i) => `<a class="small" href="#l-${l.id}" style="color:${P.done[l.id] ? 'var(--ink)' : 'var(--muted)'};text-decoration:none">${P.done[l.id] ? '✓' : '○'} ${i + 1}. ${esc(l.t)}</a>`).join('')}</div></details>` : ''}${cur && ls.length ? `<div class="stack" style="gap:2px;margin-top:6px">${ls.map((l, i) => `<a class="small" href="#l-${l.id}" style="color:${P.done[l.id] ? 'var(--ink)' : 'var(--muted)'};text-decoration:none">${P.done[l.id] ? '✓' : '○'} ${i + 1}. ${esc(l.t)}</a>`).join('')}${D.BOSS[m.id] ? `<span class="small" style="color:${P.boss[m.id] ? 'var(--ink)' : 'var(--muted)'}">${P.boss[m.id] ? '🏆' : '🔒'} Abschlussfall: ${esc(D.BOSS[m.id].t)}</span>` : ''}</div>` : ''}</div><span class="mono small muted">${ls.length ? n + '/' + ls.length : 'bald'}</span></div>`; };
-  return `<div class="topbar">${back('index.html#games')}<button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button></div>
-  <header class="stack" style="gap:4px"><span class="eyebrow">${esc(r.name)}${r.next ? ' · nächster Rang bei ' + r.next[0] + ' sicheren Karten' : ''}</span><h1>⚖️ StB-Pfad</h1></header>
+    return `<div class="mod${ls.length ? '' : ' lock'}"><span class="big">${m.em}</span><div class="stack" style="gap:0;min-width:0"><b>${esc(m.n)}</b><span class="small muted">${m.w ? 'Woche ' + m.w + ' · ' : ''}${esc(m.goal)}</span>${!cur && ls.length ? `<details style="margin-top:4px"><summary class="small muted">${ls.length} Lektionen ansehen</summary><div class="stack" style="gap:2px;margin-top:6px">${ls.map((l, i) => `<a class="small" href="#l-${l.id}" style="color:${P.done[l.id] ? 'var(--ink)' : 'var(--muted)'};text-decoration:none">${P.done[l.id] ? '✓' : '○'} ${i + 1}. ${esc(l.t)}</a>`).join('')}</div></details>` : ''}${cur && ls.length ? `<div class="stack" style="gap:2px;margin-top:6px">${ls.map((l, i) => `<a class="small" href="#l-${l.id}" style="color:${P.done[l.id] ? 'var(--ink)' : 'var(--muted)'};text-decoration:none">${P.done[l.id] ? '✓' : '○'} ${i + 1}. ${esc(l.t)}</a>`).join('')}${D.BOSS[m.id] ? `<span class="small" style="color:${P.boss[m.id] ? 'var(--ink)' : 'var(--muted)'}">${P.boss[m.id] ? '🏆' : '🔒'} Abschlussfall: ${esc(D.BOSS[m.id].t)}</span>` : ''}</div>` : ''}</div><span class="mono small muted">${ls.length ? n + '/' + ls.length : 'bald'}</span></div>`; };
+  return `<div class="topbar">${back(CFG.back)}<button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button></div>
+  <header class="stack" style="gap:4px"><span class="eyebrow">${esc(r.name)}${r.next ? ' · nächster Rang bei ' + r.next[0] + ' sicheren Karten' : ''}</span><h1>${CFG.title}</h1>${CFG.exam ? `<span class="small" style="color:var(--gold)">📅 ${esc(CFG.examLabel)} in ${examDays()} Tagen</span>` : ''}</header>
   <section class="card" style="border:2px solid var(--calm)"><div class="row spread"><h3>Heute</h3><span class="mono" style="font-size:20px;font-weight:600">⏱ ${mmss(sec)}</span></div>
     <span>${plan} · ${todayL}</span>
-    <div class="bar"><i style="width:${Math.min(100, Math.round(sec / 1800 * 100))}%"></i></div><div class="row spread"><span class="small muted">${mmss(sec)} von 30:00 heute${sec >= 1800 ? ' ✓' : ''}</span>${sec ? `<button class="link small" data-act="resetday" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--muted)">${RESET ? 'Wirklich auf 0:00?' : '↺ Zeit zurücksetzen'}</button>` : ''}</div>
+    <div class="bar"><i style="width:${Math.min(100, Math.round(sec / (CFG.dayMin * 60) * 100))}%"></i></div><div class="row spread"><span class="small muted">${mmss(sec)} von ${CFG.dayMin}:00 heute${sec >= CFG.dayMin * 60 ? ' ✓' : ''}</span>${sec ? `<button class="link small" data-act="resetday" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--muted)">${RESET ? 'Wirklich auf 0:00?' : '↺ Zeit zurücksetzen'}</button>` : ''}</div>
     <button class="btn primary big" data-act="today">${minToday() ? 'Weitermachen' : 'Starten'}</button></section>
   <section class="card"><div class="row" style="justify-content:space-around;text-align:center">
     <div class="stack" style="gap:0"><b style="font-size:24px">🔥 ${st}</b><span class="small muted">Tage am Stück</span></div>
     <div class="stack" style="gap:0"><b style="font-size:24px">${mastered()}</b><span class="small muted">Karten sitzen</span></div>
     <div class="stack" style="gap:0"><b style="font-size:24px">${cal}</b><span class="small muted">„Sicher“ und richtig</span></div></div>
-    <div class="stack" style="gap:4px"><div class="row spread"><span class="small">Jahresziel</span><span class="small muted mono">${h.toFixed(1)} / 180 h · ${weekMin()} min diese Woche</span></div><div class="bar gold"><i style="width:${Math.min(100, h / 180 * 100)}%"></i></div></div></section>
+    <div class="stack" style="gap:4px"><div class="row spread">${(() => { const pr = CFG.progress ? CFG.progress() : { label: 'Jahresziel', text: h.toFixed(1) + ' / 180 h · ' + weekMin() + ' min diese Woche', pct: h / 180 }; return `<span class="small">${esc(pr.label)}</span><span class="small muted mono">${esc(pr.text)}</span></div><div class="bar gold"><i style="width:${Math.min(100, pr.pct * 100)}%"></i></div>`; })()}</div></section>
   ${dl.length >= 2 ? `<a class="card" href="#fall" style="text-decoration:none;color:inherit"><div class="row"><span class="big">🧩</span><div class="stack grow" style="gap:0"><h3>Fall-Training</h3><span class="small muted">Gemischter Fall: erst erkennen, welches Thema greift, dann selbst lösen</span></div></div></a>` : ''}
   ${bosses.map(m => `<a class="card" href="#boss-${m.id}" style="text-decoration:none;color:inherit;${P.boss[m.id] ? '' : 'border:2px solid var(--gold)'}"><div class="row"><span class="big">${P.boss[m.id] ? '🏆' : '👹'}</span><div class="stack grow" style="gap:0"><h3>Abschlussfall: ${esc(D.BOSS[m.id].t)}</h3><span class="small muted">${esc(m.n)} · ${P.boss[m.id] ? 'bestanden, jederzeit wiederholbar' : 'alle Lektionen des Moduls in einem Fall'}</span></div></div></a>`).join('')}
   ${P.qa.length ? `<a class="card" href="#fragen" style="text-decoration:none;color:inherit"><div class="row"><span class="big">❓</span><div class="stack grow" style="gap:0"><h3>Deine Fragen</h3><span class="small muted">${P.qa.length} gestellt · zuletzt: ${esc(P.qa[P.qa.length - 1].q.slice(0, 70))}</span></div></div></a>` : ''}
@@ -155,18 +163,18 @@ function viewHome() {
     <span><b>Abrufen vor Nachlesen.</b> Jede Einheit beginnt mit Fragen. Sich erinnern festigt Wissen stärker als erneutes Lesen.</span>
     <span><b>Wachsende Abstände.</b> Eine Karte kommt nach 1, 3, 7, 16, 35, 90 und 180 Tagen wieder, solange du sie weißt. Wer sie vergisst, beginnt wieder vorn.</span>
     <span><b>Bis es einmal sitzt.</b> Eine verpasste Karte kommt in derselben Sitzung noch einmal, bis du sie richtig hast.</span>
-    <span><b>Gemischt üben.</b> Wiederholungen und Fälle mischen die Themen. So lernst du zu erkennen, welche Norm greift.</span>
+    <span><b>Gemischt üben.</b> Wiederholungen und Fälle mischen die Themen. So lernst du zu erkennen, ${CFG.extraCard ? 'welche Norm greift' : 'welches Werkzeug die Aufgabe verlangt'}.</span>
     <span><b>Erst Vorbild, dann selbst.</b> In den ersten Lektionen siehst du den Lösungsweg. Danach schreibst du jeden Schritt zuerst selbst.</span>
     <span><b>Vorab-Frage und eigene Worte.</b> Eine Frage vor der Lektion und ein Satz in eigenen Worten danach machen das Neue besser merkbar.</span>
     <span><b>Sicher oder unsicher?</b> Das Gefühl „kann ich“ trügt. Deshalb zeigt Echo, wie oft du richtig lagst, wenn du dir sicher warst.</span>
     <span><b>Jeden Tag ein wenig.</b> 25 Minuten täglich schlagen drei Stunden am Sonntag, auch weil Schlaf das Gelernte festigt. Neue Lektionen kommen jeden zweiten Tag; dazwischen wird wiederholt.</span>
-    <span class="muted">Ehrlich: Ein Jahr mit 30 Minuten am Tag legt das Fundament über alle Prüfungsgebiete. Für die Klausuren selbst planen Repetitorien danach noch einmal 12 bis 15 Monate intensiv, mit Dutzenden Probeklausuren.</span></div></details>
-  <a class="card" href="spiele.html#stb" style="text-decoration:none;color:inherit"><div class="row"><span class="big">🎮</span><div class="stack grow" style="gap:0"><h3>Steuer-Akademie</h3><span class="small muted">Die Spiele als Zusatztraining: Sortieren, Fristen, Paragrafen-Jagd</span></div></div></a>`;
+    <span class="muted">${CFG.note || 'Ehrlich: Ein Jahr mit 30 Minuten am Tag legt das Fundament über alle Prüfungsgebiete. Für die Klausuren selbst planen Repetitorien danach noch einmal 12 bis 15 Monate intensiv, mit Dutzenden Probeklausuren.'}</span></div></details>
+  ${CFG.extraCard ? `<a class="card" href="spiele.html#stb" style="text-decoration:none;color:inherit"><div class="row"><span class="big">🎮</span><div class="stack grow" style="gap:0"><h3>Steuer-Akademie</h3><span class="small muted">Die Spiele als Zusatztraining: Sortieren, Fristen, Paragrafen-Jagd</span></div></div></a>` : ''}${drillCard()}${examCard()}`;
 }
 
 function viewReview() {
   const it = SS.queue[SS.i], c = cardDef(it.id), l = LBY[c.lid];
-  const head = `<div class="topbar"><a class="link" href="#" data-act="home">← StB-Pfad</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button><span class="small muted mono">${Math.min(SS.i + 1, SS.queue.length)} / ${SS.queue.length}</span></div>
+  const head = `<div class="topbar"><a class="link" href="#" data-act="home">← ${esc(CFG.short)}</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button><span class="small muted mono">${Math.min(SS.i + 1, SS.queue.length)} / ${SS.queue.length}</span></div>
   <span class="eyebrow">Wiederholung${it.retry ? ' · noch einmal, bis es sitzt' : ''} · ${esc(l.t)}</span>`;
   if (!SS.shown) {
     return `${head}<section class="card"><h2 style="line-height:1.35">${esc(c.q)}</h2>
@@ -186,7 +194,7 @@ function viewPlan() {
   if (dl.length >= 1) opts.push(`<button class="btn${nl && lessonDay() ? '' : ' primary big'}" data-act="fall">🧩 Fall-Training</button>`);
   if (nl && !lessonDay()) opts.push(`<button class="btn" data-act="lesson">Trotzdem neue Lektion (${esc(nl.t)})</button>`);
   if (!nl && !dl.length) opts.push('<span>Noch keine Lektion vorhanden.</span>');
-  return `<div class="topbar"><a class="link" href="#" data-act="home">← StB-Pfad</a></div>
+  return `<div class="topbar"><a class="link" href="#" data-act="home">← ${esc(CFG.short)}</a></div>
   <section class="card"><h2>Weiter geht's</h2>${reviewed}
   ${nl && !lessonDay() ? '<span class="small muted">Gestern gab es eine neue Lektion. Heute festigst du sie: Abstand zwischen den Lektionen hält länger als Tempo.</span>' : ''}
   ${!nl ? '<span class="small muted">Alle verfügbaren Lektionen sind gelernt. Das nächste Modul folgt; bis dahin halten Wiederholungen und Fälle das Wissen frisch.</span>' : ''}
@@ -196,7 +204,7 @@ function viewPlan() {
 /* lesson: 0 pre-question · 1 why, core, schema · 2 worked or self-solved case · 3 paragraph navigation · 4 own words and link · 5 immediate recall · 6 done */
 function viewLesson() {
   const l = SS.L, k = SS.k, fading = doneL().length >= 3;
-  const head = `<div class="topbar"><a class="link" href="#" data-act="home">← StB-Pfad</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button><span class="small muted">Lektion ${LESSONS.indexOf(l) + 1}</span></div>
+  const head = `<div class="topbar"><a class="link" href="#" data-act="home">← ${esc(CFG.short)}</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button><span class="small muted">Lektion ${LESSONS.indexOf(l) + 1}</span></div>
   <header class="stack" style="gap:6px"><h1 style="font-size:26px">${esc(l.t)}</h1><div class="row" style="flex-wrap:wrap;gap:6px">${norms(l)}</div>${phase(6, k)}</header>`;
   if (k === 0) return `${head}<section class="card"><span class="eyebrow">Vorab-Frage</span><h2 style="line-height:1.35">${esc(l.cards[0][0])}</h2>
     <span class="small muted">Rate ruhig, bevor du liest. Auch eine falsche Vermutung macht die Antwort danach merkbarer.</span>
@@ -209,7 +217,7 @@ function viewLesson() {
   if (k === 2) {
     const c = l.case, s = SS.step, done = s >= c.steps.length;
     const shown = c.steps.slice(0, s).map(([q, a]) => `<div class="step open"><b>${esc(q)}</b><div class="ans">${esc(a)}</div></div>`).join('');
-    const cur = done ? `<div class="ans"><b>Ergebnis:</b> ${esc(c.res)}</div><button class="btn primary" data-act="next">Weiter zur Paragrafen-Navigation</button>`
+    const cur = done ? `<div class="ans"><b>Ergebnis:</b> ${esc(c.res)}</div><button class="btn primary" data-act="next">${l.nav && l.nav.length ? 'Weiter zur Paragrafen-Navigation' : 'Weiter'}</button>`
       : fading ? `<div class="step"><b>${esc(c.steps[s][0])}</b><textarea id="guess" placeholder="Erst selbst lösen, dann aufdecken">${esc(SS.guess)}</textarea><button class="btn primary" data-act="reveal">Aufdecken</button></div>`
         : `<div class="step"><b>${esc(c.steps[s][0])}</b><span class="small muted">Überleg kurz selbst, dann deck den Schritt auf.</span><button class="btn primary" data-act="reveal">Schritt zeigen</button></div>`;
     return `${head}<section class="card"><span class="eyebrow">${fading ? 'Fall · selbst lösen' : 'Fall · Lösungsweg zum Mitdenken'}</span><div class="sv">${esc(c.sv)}</div>${shown}${cur}</section>`;
@@ -263,10 +271,10 @@ function startBoss(mid) {
 }
 function viewCase() {
   const C = SS.C, done = C.s >= C.steps.length;
-  const head = `<div class="topbar"><a class="link" href="#" data-act="home">← StB-Pfad</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button><span class="small muted">${C.boss ? 'Abschlussfall' : 'Fall-Training'}</span></div>
+  const head = `<div class="topbar"><a class="link" href="#" data-act="home">← ${esc(CFG.short)}</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button><span class="small muted">${C.boss ? 'Abschlussfall' : 'Fall-Training'}</span></div>
   <header class="stack" style="gap:6px"><h1 style="font-size:26px">${C.boss ? '👹 ' + esc(C.title) : '🧩 Gemischter Fall'}</h1>${C.boss ? '' : `<span class="small muted">${C.repeat ? 'Alle Fälle zu deinen bisherigen Lektionen hast du heute schon gelöst, das hier ist eine Wiederholung. Mit jeder neuen Lektion kommen neue Fälle dazu.' : `Fall ${C.idx} von ${C.of} zu diesem Thema · ${doneL().length} Lektion${doneL().length === 1 ? '' : 'en'} im Fallpool`}</span>`}${phase(C.steps.length + (C.boss ? 0 : 1), (C.pick ? 1 : 0) * (C.boss ? 0 : 1) + C.s)}</header>
   <section class="card"><div class="sv">${esc(C.sv)}</div></section>`;
-  if (!C.pick) return `${head}<section class="card"><h3>Welches Thema steckt im Kern dieses Falls?</h3><span class="small muted">In der Klausur steht nirgends, welche Norm gefragt ist. Erkennen ist die halbe Lösung.</span>
+  if (!C.pick) return `${head}<section class="card"><h3>Welches Thema steckt im Kern dieses Falls?</h3><span class="small muted">In der Klausur steht nirgends, ${CFG.extraCard ? 'welche Norm' : 'welches Thema'} gefragt ist. Erkennen ist die halbe Lösung.</span>
     <div class="opts">${C.opts.map(o => `<button class="opt" data-act="pick" data-v="${o.id}">${esc(o.t)}</button>`).join('')}</div></section>`;
   const pickFb = C.boss ? '' : `<section class="card"><b>${C.pick === C.L.id ? '✅ Richtig erkannt' : '❌ Gemeint war: ' + esc(C.L.t)}</b></section>`;
   const prev = C.steps.slice(0, C.s).map(st => `<div class="step open"><b>${esc(st[0])}</b><div class="ans">${esc(st[1])}</div></div>`).join('');
@@ -280,7 +288,7 @@ function viewCase() {
 }
 
 function viewRead(l) {
-  return `<div class="topbar"><a class="link" href="#">← StB-Pfad</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button></div>
+  return `<div class="topbar"><a class="link" href="#">← ${esc(CFG.short)}</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button></div>
   <header class="stack" style="gap:6px"><h1 style="font-size:26px">${esc(l.t)}</h1><div class="row" style="flex-wrap:wrap;gap:6px">${norms(l)}</div></header>
   ${P.done[l.id] ? '' : '<section class="card"><span class="small muted">Diese Lektion kommt noch. Lies ruhig vor, aber am meisten bringt sie, wenn du sie mit Vorab-Frage und Fall im Tagesablauf lernst.</span></section>'}
   <section class="card"><span class="eyebrow">Roter Faden</span><div class="why">${esc(l.why)}</div></section>
@@ -298,6 +306,7 @@ function ctxNow() {
   let l = null, item = '';
   if (h.startsWith('l-')) l = LBY[h.slice(2)];
   else if (SS && SS.stage === 'lesson') { l = SS.L; if (SS.k === 2 && SS.L.case.steps[SS.step]) item = 'Aktueller Fallschritt: ' + SS.L.case.steps[SS.step][0]; }
+  else if (DR) { item = 'Rechenaufgabe (' + DR.d.t + '): ' + DR.task.q + (DR.res ? ' | Lösung: ' + fmtN(DR.task.a) + ' | Weg: ' + DR.task.steps.join(' / ') : ''); }
   else if (SS && SS.stage === 'review') { const c = cardDef(SS.queue[SS.i].id); l = LBY[c.lid]; item = 'Aktuelle Karte: ' + c.q + (SS.shown ? ' | Lösung: ' + c.a : ''); }
   else if (SS && SS.stage === 'case') { const C = SS.C, st = C.steps[C.s]; l = C.L || (st && LBY[st[2]]) || null; item = 'Sachverhalt: ' + C.sv + (st ? ' | Aktueller Schritt: ' + st[0] + (C.shown ? ' | Lösung: ' + st[1] : '') : ''); }
   return { l, item };
@@ -312,7 +321,7 @@ const SYS = 'Du bist ein erfahrener Tutor für die deutsche Steuerberaterprüfun
   'Beende die Antwort mit einer eigenen letzten Zeile im Format „KARTE: <kurze Abruffrage> || <Antwort in ein bis zwei Sätzen>“, die den Kern deiner Erklärung als Lernkarte festhält. Kein Markdown außer Absätzen.';
 function askOpen() {
   const { l, item } = ctxNow();
-  ASK = { lid: l ? l.id : null, ctx: ctxText(l, item), msgs: [], busy: false, err: '', card: null, saved: false, title: l ? l.t : 'Steuerrecht allgemein' };
+  ASK = { lid: l ? l.id : null, ctx: ctxText(l, item), msgs: [], busy: false, err: '', card: null, saved: false, title: l ? l.t : CFG.askTopic };
   askDraw();
 }
 function askDraw() {
@@ -337,13 +346,13 @@ async function askSend(text) {
   askDraw();
   try {
     const s = LS.get('echo-settings', {});
-    const ans = await askAI(SYS, ASK.msgs.map(m => ({ role: m.role, content: m.content })), 900, s.model || s.fastModel);
+    const ans = await askAI(CFG.sys ? CFG.sys + ' Beende die Antwort mit einer eigenen letzten Zeile im Format „KARTE: <kurze Abruffrage> || <Antwort in ein bis zwei Sätzen>“, die den Kern deiner Erklärung als Lernkarte festhält. Kein Markdown.' : SYS, ASK.msgs.map(m => ({ role: m.role, content: m.content })), 900, s.model || s.fastModel);
     const m = ans.match(/\n?\s*KARTE:\s*(.+?)\s*\|\|\s*([\s\S]+?)\s*$/);
     const shown = m ? ans.slice(0, m.index).trim() : ans;
     ASK.msgs.push({ role: 'assistant', content: ans, shown });
     if (m) { ASK.card = [m[1].trim(), m[2].trim()]; ASK.saved = false; }
-    P.qa.push({ d: today(), lid: ASK.lid, q: text, a: shown }); save(); gainXP('stbpfad-frage', 10);
-    window.EULE && EULE.push({ src: 'stb', q: m ? ASK.card[0] : text, a: m ? ASK.card[1] : shown.slice(0, 600) });
+    P.qa.push({ d: today(), lid: ASK.lid, q: text, a: shown }); save(); gainXP(CFG.xp + '-frage', 10);
+    window.EULE && EULE.push({ src: CFG.src, q: m ? ASK.card[0] : text, a: m ? ASK.card[1] : shown.slice(0, 600) });
   } catch (e) { ASK.err = 'Keine Antwort: ' + e.message; ASK.msgs.pop(); }
   ASK.busy = false; askDraw();
 }
@@ -366,8 +375,85 @@ function qaList(lid) {
   return `<section class="card"><span class="eyebrow">Deine Fragen</span>${xs.slice().reverse().map(x => `<details><summary class="small">${esc(x.q)}</summary><div class="ans small" style="margin-top:6px">${x.a ? esc(x.a).replace(/\n/g, '<br>') : '<span class="muted">Noch keine Antwort gespeichert.</span>'}</div>${!lid && x.lid && LBY[x.lid] ? `<a class="small muted" href="#l-${x.lid}">${esc(LBY[x.lid].t)}</a>` : ''}</details>`).join('')}</section>`;
 }
 function viewQA() {
-  return `<div class="topbar"><a class="link" href="#">← StB-Pfad</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button></div><header class="stack" style="gap:4px"><h1>❓ Deine Fragen</h1><span class="small muted">Gespeichert mit Antwort. Was als Karte übernommen wurde, kommt in den Wiederholungen.</span></header>${qaList(null) || '<section class="card"><span class="muted">Noch keine Fragen.</span></section>'}`;
+  return `<div class="topbar"><a class="link" href="#">← ${esc(CFG.short)}</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button></div><header class="stack" style="gap:4px"><h1>❓ Deine Fragen</h1><span class="small muted">Gespeichert mit Antwort. Was als Karte übernommen wurde, kommt in den Wiederholungen.</span></header>${qaList(null) || '<section class="card"><span class="muted">Noch keine Fragen.</span></section>'}`;
 }
+
+/* ---------- calculation drills: D.DRILLS = [{ id, t, em, sub, gen: () => ({ q, a, tol, unit, steps: [] }) }] ----------
+   Every call of gen() builds a fresh task with new numbers, so practice never runs out. */
+const num = v => { const t = String(v).trim().replace(/\s|€|%/g, ''); if (!t) return NaN; const x = t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : t; return parseFloat(x); };
+const fmtN = (x, d = 2) => Number(x).toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: d });
+function drillCard() {
+  if (!(D.DRILLS || []).length) return '';
+  const st = P.drills || {}, n = Object.values(st).reduce((a, x) => a + x.n, 0), ok = Object.values(st).reduce((a, x) => a + x.ok, 0);
+  return `<a class="card" href="#rechnen" style="text-decoration:none;color:inherit"><div class="row"><span class="big">🧮</span><div class="stack grow" style="gap:0"><h3>Rechentrainer</h3><span class="small muted">${D.DRILLS.length} Aufgabentypen, jedes Mal neue Zahlen${n ? ` · ${ok}/${n} richtig` : ''}</span></div></div></a>`;
+}
+function viewDrills() {
+  const st = P.drills || {};
+  return `<div class="topbar"><a class="link" href="#">← ${esc(CFG.short)}</a></div><header class="stack" style="gap:4px"><h1>🧮 Rechentrainer</h1><span class="small muted">Erst rechnen, dann prüfen. Falsche Typen kommen öfter dran, wenn du „Gemischt“ wählst.</span></header>
+  <a class="card" href="#rechnen-mix" style="text-decoration:none;color:inherit;border:2px solid var(--calm)"><div class="row"><span class="big">🎲</span><div class="stack grow" style="gap:0"><h3>Gemischt</h3><span class="small muted">Schwache Typen häufiger</span></div></div></a>
+  ${D.DRILLS.map(d => { const x = st[d.id] || { n: 0, ok: 0 }; return `<a class="card" href="#rechnen-${d.id}" style="text-decoration:none;color:inherit"><div class="row"><span class="big">${d.em || '🧮'}</span><div class="stack grow" style="gap:0"><h3>${esc(d.t)}</h3><span class="small muted">${esc(d.sub || '')}${x.n ? ` · ${x.ok}/${x.n}` : ''}</span></div></div></a>`; }).join('')}`;
+}
+function pickDrill(id) {
+  if (id !== 'mix') return D.DRILLS.find(d => d.id === id);
+  const st = P.drills || {}, w = D.DRILLS.map(d => { const x = st[d.id] || { n: 0, ok: 0 }; return 1 + 3 * (1 - (x.ok + 1) / (x.n + 2)); });
+  let r = Math.random() * w.reduce((a, b) => a + b, 0); for (let i = 0; i < w.length; i++) { r -= w[i]; if (r <= 0) return D.DRILLS[i]; } return D.DRILLS[0];
+}
+function startDrill(id) { const d = pickDrill(id); if (!d) return; DR = { id, d, task: d.gen(), given: '', res: null }; }
+function viewDrill() {
+  const { d, task, res } = DR;
+  return `<div class="topbar"><a class="link" href="#rechnen">← Rechentrainer</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button></div>
+  <header class="stack" style="gap:4px"><span class="eyebrow">${d.em || '🧮'} ${esc(d.t)}</span></header>
+  <section class="card"><div class="sv" style="white-space:pre-wrap">${esc(task.q)}</div>
+    <input type="text" id="drillin" inputmode="decimal" placeholder="Ergebnis${task.unit ? ' in ' + esc(task.unit) : ''}" value="${esc(DR.given)}" ${res ? 'disabled' : ''} autocomplete="off">
+    ${res ? `<b>${res === 'ok' ? '✅ Richtig' : '❌ Nicht ganz'} · Lösung: ${fmtN(task.a, task.dec ?? 2)}${task.unit ? ' ' + esc(task.unit) : ''}</b>
+      <div class="stack" style="gap:6px">${task.steps.map(x => `<div class="step open"><div class="ans" style="white-space:pre-wrap">${esc(x)}</div></div>`).join('')}</div>
+      <div class="row" style="gap:8px"><button class="btn primary grow" data-act="drillnext">Nächste Aufgabe</button><button class="btn" data-act="drillmine">War doch richtig</button></div>`
+      : `<button class="btn primary" data-act="drillcheck">Prüfen</button><button class="btn" data-act="drillskip">Lösung zeigen</button>`}</section>`;
+}
+function drillScore(ok) {
+  const st = P.drills || (P.drills = {}), x = st[DR.d.id] || (st[DR.d.id] = { n: 0, ok: 0 }); x.n++; if (ok) { x.ok++; gainXP(CFG.xp, 20); }
+  if (!ok) window.EULE && EULE.push({ src: CFG.src, q: DR.task.q, a: 'Ergebnis ' + fmtN(DR.task.a, DR.task.dec ?? 2) + (DR.task.unit ? ' ' + DR.task.unit : '') + '\n' + DR.task.steps.join('\n') });
+  act(); save();
+}
+
+/* ---------- mock exams: D.EXAMS = [{ id, t, min, src, tasks: [{ t, pts, q, sol }] }] ----------
+   Timed like the real exam; afterwards each task is scored by its solution, and weak tasks become review cards. */
+function examCard() {
+  if (!(D.EXAMS || []).length) return '';
+  const best = (P.exams || {}), done = Object.keys(best).length;
+  return `<a class="card" href="#klausur" style="text-decoration:none;color:inherit"><div class="row"><span class="big">📝</span><div class="stack grow" style="gap:0"><h3>Probeklausuren</h3><span class="small muted">${D.EXAMS.length} Klausuren auf Zeit${done ? ` · ${done} geschrieben` : ''}</span></div></div></a>`;
+}
+function viewExams() {
+  const ex = P.exams || {};
+  return `<div class="topbar"><a class="link" href="#">← ${esc(CFG.short)}</a></div><header class="stack" style="gap:4px"><h1>📝 Probeklausuren</h1><span class="small muted">Unter echten Bedingungen: Zeit läuft, Unterlagen nur so weit erlaubt. Danach bewertest du jede Aufgabe mit der Musterlösung; was unter der Hälfte bleibt, kommt in die Wiederholungen.</span></header>
+  ${D.EXAMS.map(e => { const r = (ex[e.id] || []).slice(-1)[0], max = e.tasks.reduce((a, t) => a + t.pts, 0); return `<a class="card" href="#klausur-${e.id}" style="text-decoration:none;color:inherit"><div class="row"><span class="big">📝</span><div class="stack grow" style="gap:0"><h3>${esc(e.t)}</h3><span class="small muted">${e.min} min · ${max} Punkte${r ? ` · zuletzt ${r.pts}/${r.max}` : ''}${e.src ? ' · ' + esc(e.src) : ''}</span></div></div></a>`; }).join('')}`;
+}
+function startExam(id) { const e = D.EXAMS.find(x => x.id === id); if (!e) return; EX = { e, i: 0, ans: {}, t0: Date.now(), phase: 'write', score: {} }; }
+function viewExam() {
+  const { e, phase } = EX, max = e.tasks.reduce((a, t) => a + t.pts, 0);
+  const left = Math.max(0, e.min * 60 - Math.floor((Date.now() - EX.t0) / 1000));
+  const head = `<div class="topbar"><a class="link" href="#klausur">← Klausuren</a><span class="mono small" id="exleft" style="color:${left < 600 ? 'var(--gold)' : 'var(--muted)'}">${phase === 'write' ? '⏳ ' + mmss(left) : ''}</span></div><header class="stack" style="gap:4px"><h1 style="font-size:24px">📝 ${esc(e.t)}</h1></header>`;
+  if (phase === 'write') return `${head}${e.tasks.map((t, i) => `<section class="card"><div class="row spread"><b>Aufgabe ${i + 1}: ${esc(t.t)}</b><span class="small muted">${t.pts} P.</span></div><div class="sv" style="white-space:pre-wrap">${esc(t.q)}</div><textarea data-ex="${i}" placeholder="Lösung (Rechenweg, Ergebnis, Begründung)" style="min-height:110px">${esc(EX.ans[i] || '')}</textarea></section>`).join('')}
+    <button class="btn primary big" data-act="examend">Abgeben und auswerten</button>`;
+  if (phase === 'grade') return `${head}<section class="card"><span class="small muted">Vergleiche jede Aufgabe mit der Lösung und vergib ehrlich Punkte. Gezählt wird nur, was du in der Zeit geschrieben hast.</span></section>
+    ${e.tasks.map((t, i) => `<section class="card"><div class="row spread"><b>Aufgabe ${i + 1}: ${esc(t.t)}</b><span class="small muted">max. ${t.pts} P.</span></div>
+      <details><summary class="small">Aufgabe und deine Lösung</summary><div class="sv" style="white-space:pre-wrap;margin-top:6px">${esc(t.q)}</div><div class="small" style="white-space:pre-wrap;margin-top:6px">${esc(EX.ans[i] || '–')}</div></details>
+      <div class="ans" style="white-space:pre-wrap">${esc(t.sol)}</div>
+      <input type="text" inputmode="decimal" data-sc="${i}" placeholder="Deine Punkte (0–${t.pts})" value="${EX.score[i] ?? ''}"></section>`).join('')}
+    <button class="btn primary big" data-act="examscore">Ergebnis speichern</button>`;
+  const pts = Object.values(EX.score).reduce((a, b) => a + b, 0);
+  return `${head}<section class="card" style="text-align:center"><span style="font-size:44px">${pts / max >= 0.5 ? '🎉' : '💪'}</span><h2>${fmtN(pts, 1)} von ${max} Punkten</h2><span class="small muted">${pts / max >= 0.5 ? 'Bestanden (Grenze meist 50 %).' : 'Noch unter 50 %. Die schwachen Aufgaben sind jetzt Wiederholungskarten.'} ${EX.weak} Aufgabe${EX.weak === 1 ? '' : 'n'} in die Wiederholungen.</span>
+    <button class="btn primary" data-act="home">Zum Pfad</button></section>`;
+}
+function examTick() {
+  if (!EX || EX.phase !== 'write') return;
+  const el = document.getElementById('exleft'); if (!el) return;
+  const left = Math.max(0, EX.e.min * 60 - Math.floor((Date.now() - EX.t0) / 1000));
+  el.textContent = '⏳ ' + mmss(left); el.style.color = left < 600 ? 'var(--gold)' : 'var(--muted)';
+  if (left === 0) { toast('Zeit ist um'); collectExam(); EX.phase = 'grade'; render(); }
+}
+setInterval(examTick, 1000);
+function collectExam() { app.querySelectorAll('[data-ex]').forEach(t => { EX.ans[t.dataset.ex] = t.value; }); }
 
 /* ---------- render and actions ---------- */
 function render() {
@@ -375,6 +461,10 @@ function render() {
   let html;
   if (h.startsWith('l-') && LBY[h.slice(2)]) html = viewRead(LBY[h.slice(2)]);
   else if (h === 'fragen') html = viewQA();
+  else if (h === 'rechnen' && (D.DRILLS || []).length) html = viewDrills();
+  else if (h.startsWith('rechnen-') && (D.DRILLS || []).length) { if (!DR || DR.id !== h.slice(8)) startDrill(h.slice(8)); html = DR ? viewDrill() : viewDrills(); }
+  else if (h === 'klausur' && (D.EXAMS || []).length) html = viewExams();
+  else if (h.startsWith('klausur-') && (D.EXAMS || []).length) { if (!EX || EX.e.id !== h.slice(8)) startExam(h.slice(8)); html = EX ? viewExam() : viewExams(); }
   else if (SS && h === 'heute') html = SS.stage === 'review' ? viewReview() : SS.stage === 'lesson' ? viewLesson() : SS.stage === 'case' ? viewCase() : viewPlan();
   else if (SS && SS.stage === 'case' && (h === 'fall' || h.startsWith('boss'))) html = viewCase();
   else if (h === 'fall' && doneL().length) { startCase(); return; }
@@ -387,13 +477,25 @@ const val = id => { const el = document.getElementById(id); return el ? el.value
 function finishLesson() {
   const l = SS.L; P.done[l.id] = today(); if (SS.note) P.notes[l.id] = SS.note;
   for (const id of lessonCards(l)) if (!P.cards[id]) P.cards[id] = { b: 0, due: addDays(1), n: 1, lapses: 0, last: today() };
-  for (const id of lessonCards(l)) { const c = cardDef(id); if (c) window.EULE && EULE.push({ src: 'stb', q: c.q, a: c.a, ref: id }); }
-  act(); save(); gainXP('stbpfad', 120); SS.xp += 120; SS.k = 6;
+  for (const id of lessonCards(l)) { const c = cardDef(id); if (c) window.EULE && EULE.push({ src: CFG.src, q: c.q, a: c.a, ref: id }); }
+  act(); save(); gainXP(CFG.xp, 120); SS.xp += 120; SS.k = 6;
 }
 app.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, v = b.dataset.v; tick();
   if (a === 'ask') { askOpen(); return; }
+  if (a === 'drillcheck' || a === 'drillskip') { DR.given = val('drillin'); const g = num(DR.given), t = DR.task; const ok = a === 'drillcheck' && isFinite(g) && Math.abs(g - t.a) <= (t.tol ?? Math.max(0.01, Math.abs(t.a) * 0.002)); DR.res = ok ? 'ok' : 'no'; drillScore(ok); render(); return; }
+  if (a === 'drillmine') { const x = (P.drills || {})[DR.d.id]; if (x && DR.res === 'no') { x.ok++; gainXP(CFG.xp, 20); save(); } startDrill(DR.id); render(); return; }
+  if (a === 'drillnext') { startDrill(DR.id); render(); return; }
+  if (a === 'examend') { collectExam(); EX.phase = 'grade'; render(); return; }
+  if (a === 'examscore') {
+    const e = EX.e; let weak = 0;
+    app.querySelectorAll('[data-sc]').forEach(inp => { const i = +inp.dataset.sc, t = e.tasks[i], v = Math.max(0, Math.min(t.pts, num(inp.value) || 0)); EX.score[i] = v;
+      if (v < t.pts / 2) { weak++; const lid = (LESSONS[0] || {}).id || 'x', id = lid + ':q' + uid(); (P.qcards || (P.qcards = {}))[id] = { q: e.t + ' · ' + t.t + ': ' + t.q.slice(0, 300), a: t.sol.slice(0, 700), d: today() }; P.cards[id] = { b: 0, due: addDays(1), n: 0, lapses: 0, last: today() }; } });
+    const pts = Object.values(EX.score).reduce((x, y) => x + y, 0), max = e.tasks.reduce((x, t) => x + t.pts, 0);
+    (P.exams || (P.exams = {}))[e.id] = [...((P.exams || {})[e.id] || []), { d: today(), pts, max }];
+    EX.weak = weak; EX.phase = 'done'; act(); save(); gainXP(CFG.xp, Math.round(pts * 2) + 100); toast('+' + (Math.round(pts * 2) + 100) + ' XP'); render(); return;
+  }
   if (a === 'resetday') { if (!RESET) { RESET = true; render(); setTimeout(() => { RESET = false; if (!SS) render(); }, 4000); return; } RESET = false; const d = P.days[today()]; if (d) { d.sec = 0; save(); } toast('Zeit für heute auf 0:00'); render(); return; }
   if (a === 'home') { e.preventDefault(); SS = null; history.replaceState(null, '', location.pathname); save(); render(); return; }
   if (a === 'today') { startToday(); return; }
@@ -412,8 +514,8 @@ app.addEventListener('click', e => {
     rate(it.id, r, it.retry);
     if (SS.conf === 'sure' && !it.retry) { P.cal.n++; if (r === 2) P.cal.hit++; else P.cal.over++; }
     if (r === 0) SS.queue.push({ id: it.id, retry: true }); // successive relearning: back into this session
-    if (r < 2 && !it.retry) { const c = cardDef(it.id); window.EULE && EULE.push({ src: 'stb', q: c.q, a: c.a, ref: it.id }); }
-    if (!it.retry) { const d = P.days[today()] || (P.days[today()] = { sec: 0, rev: 0 }); d.rev = (d.rev || 0) + 1; gainXP('stbpfad', r === 2 ? 8 : 4); }
+    if (r < 2 && !it.retry) { const c = cardDef(it.id); window.EULE && EULE.push({ src: CFG.src, q: c.q, a: c.a, ref: it.id }); }
+    if (!it.retry) { const d = P.days[today()] || (P.days[today()] = { sec: 0, rev: 0 }); d.rev = (d.rev || 0) + 1; gainXP(CFG.xp, r === 2 ? 8 : 4); }
     act(); save(); SS.i++; SS.shown = false; SS.typed = ''; SS.conf = null; SS.navRes = null;
     if (SS.i >= SS.queue.length) afterReviews(); else render(); return;
   }
@@ -438,21 +540,21 @@ app.addEventListener('click', e => {
   // case training and boss
   if (a === 'pick') { SS.C.pick = v; render(); return; }
   if (a === 'sreveal') { SS.C.guess = val('guess'); SS.C.shown = true; render(); return; }
-  if (a === 'step') { const C = SS.C; if (+v === 0) { C.miss++; refresh(C.steps[C.s][2] || C.L.id); window.EULE && EULE.push({ src: 'stb', q: 'Fall: ' + C.sv.slice(0, 220) + (C.sv.length > 220 ? ' …' : '') + '\n→ ' + C.steps[C.s][0], a: C.steps[C.s][1] }); } C.s++; C.shown = false; C.guess = ''; render(); return; }
+  if (a === 'step') { const C = SS.C; if (+v === 0) { C.miss++; refresh(C.steps[C.s][2] || C.L.id); window.EULE && EULE.push({ src: CFG.src, q: 'Fall: ' + C.sv.slice(0, 220) + (C.sv.length > 220 ? ' …' : '') + '\n→ ' + C.steps[C.s][0], a: C.steps[C.s][1] }); } C.s++; C.shown = false; C.guess = ''; render(); return; }
   if (a === 'casedone') {
     const C = SS.C, xp = C.boss ? (C.miss <= 1 ? 300 : 160) : 50 + (C.pick === (C.L || {}).id ? 20 : 0);
     if (C.boss && C.miss <= 1) P.boss[C.mod] = today();
     if (!C.boss) { P.caseLast[C.L.id] = today(); (P.caseSeen || (P.caseSeen = {}))[C.key] = Date.now(); P.lastCaseL = C.L.id; }
-    act(); save(); gainXP('stbpfad', xp); toast('+' + xp + ' XP');
+    act(); save(); gainXP(CFG.xp, xp); toast('+' + xp + ' XP');
     if (SS.kind === 'today') { SS.stage = 'plan'; SS.total = 0; location.hash = 'heute'; } else { SS = null; history.replaceState(null, '', location.pathname); }
     render(); return;
   }
 });
 app.addEventListener('keydown', e => {
   if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
-  const btn = app.querySelector('[data-act="check"], [data-act="navcheck"], [data-act="conf"][data-v="sure"]'); if (btn) { e.preventDefault(); btn.click(); }
+  const btn = app.querySelector('[data-act="check"], [data-act="navcheck"], [data-act="drillcheck"], [data-act="conf"][data-v="sure"]'); if (btn) { e.preventDefault(); btn.click(); }
 });
-window.addEventListener('hashchange', () => { if (!/^#(heute|fall|boss(-\w+)?)$/.test(location.hash) && !location.hash.startsWith('#l-')) SS = null; render(); });
-{ const before = JSON.stringify(P.meta || null); const P0 = P.updated; save(); if (before === JSON.stringify(P.meta)) { P.updated = P0; LS.set('echo-stbpfad', P); } }
+window.addEventListener('hashchange', () => { if (!/^#(heute|fall|boss(-\w+)?)$/.test(location.hash) && !location.hash.startsWith('#l-')) SS = null; if (!location.hash.startsWith('#rechnen-')) DR = null; if (!location.hash.startsWith('#klausur-')) { if (EX && EX.phase === 'write') collectExam(); EX = null; } render(); });
+{ const before = JSON.stringify(P.meta || null); const P0 = P.updated; save(); if (before === JSON.stringify(P.meta)) { P.updated = P0; LS.set(CFG.key, P); } }
 render();
 window.STB_TEST = { P, checkNorm, rate, interleave, LESSONS };
