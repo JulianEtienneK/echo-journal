@@ -173,6 +173,10 @@ details.rules ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 6px
 .lchip { display: inline-flex; gap: 6px; align-items: center; padding: 6px 10px; border-radius: 99px; background: var(--surface); box-shadow: var(--shadow); font-size: 13px; font-weight: 700; }
 .lchip.cur { box-shadow: inset 0 0 0 2px currentColor, var(--shadow); }
 .lchip.out { opacity: .4; text-decoration: line-through; }
+.kick { display: grid; gap: 8px; }
+.kick summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.kick .chips { margin-top: 8px; }
+.kick .chip b { margin-left: 6px; color: var(--rec); }
 .bcat { text-align: center; justify-items: center; gap: 4px; }
 .bcat .q { font-size: 25px; }
 .bombzone { display: grid; justify-items: center; gap: 8px; position: relative; padding: 4px 0; }
@@ -902,6 +906,13 @@ function bBoom(why) {
   B.phase = 'boom'; B.why = typeof why === 'string' ? why : null; B.hints = [...B.cat.set].filter(c => !B.used.includes(c)).sort(() => Math.random() - 0.5).slice(0, 3);
   bSound('boom'); buzz([220, 80, 320]); render(); document.body.classList.remove('flash'); void document.body.offsetWidth; document.body.classList.add('flash');
 }
+function bDel(i) { // one phone: someone has to go, between two categories
+  if (!B || !B.players[i] || B.players.length <= 2) return; const cur = B.turn;
+  B.players.splice(i, 1); B.trap = null;
+  if (alive().length <= 1) { B.phase = 'end'; render(); scrollTo(0, 0); return; }
+  let t = cur > i ? cur - 1 : cur; if (t >= B.players.length) t = 0; if (B.players[t].lives <= 0) t = nextAlive(t);
+  B.turn = t; render();
+}
 function bNext() {
   B.trap = null; B.why = null;
   if (alive().length <= 1) { B.phase = 'end'; render(); scrollTo(0, 0); echoXP(2500); setTimeout(() => confettiBurst(), 300); return; }
@@ -927,7 +938,7 @@ function viewBSetup() {
 function viewBomb() {
   const pl = B.players[B.turn], cat = B.cat;
   const top = `<div class="topbar"><button class="link" data-act="quit">✕ Beenden</button><button class="link" data-act="bsound">${B.sound ? '🔊' : '🔇'}</button></div><div class="lives" id="blives">${livesHTML()}</div>`;
-  if (B.phase === 'ready') return `${top}<div class="handoff"><span class="eyebrow">${cat.chain ? 'Neue Kette' : 'Neue Kategorie'} · Handy an</span><div class="who" style="color:${pl.color}">${esc(pl.name)}</div>${cat.turbo ? '<span class="tag gold" style="justify-self:center">⚡ Turbo-Kategorie · kürzere Lunte</span>' : ''}<span class="small muted">${cat.chain ? `Startland: <b>${esc(BY[cat.start].n)}</b>. Jedes Land beginnt mit dem letzten Buchstaben des vorigen.` : 'Die Kategorie erscheint, sobald die Lunte brennt.'} Zeit pro Zug: ${fmt(B.tcur)} s, mit jedem Treffer etwas weniger.</span><button class="btn primary big" data-act="bstart" style="max-width:360px">💣 Zünden</button></div>`;
+  if (B.phase === 'ready') return `${top}<div class="handoff"><span class="eyebrow">${cat.chain ? 'Neue Kette' : 'Neue Kategorie'} · Handy an</span><div class="who" style="color:${pl.color}">${esc(pl.name)}</div>${cat.turbo ? '<span class="tag gold" style="justify-self:center">⚡ Turbo-Kategorie · kürzere Lunte</span>' : ''}<span class="small muted">${cat.chain ? `Startland: <b>${esc(BY[cat.start].n)}</b>. Jedes Land beginnt mit dem letzten Buchstaben des vorigen.` : 'Die Kategorie erscheint, sobald die Lunte brennt.'} Zeit pro Zug: ${fmt(B.tcur)} s, mit jedem Treffer etwas weniger.</span><button class="btn primary big" data-act="bstart" style="max-width:360px">💣 Zünden</button></div>${B.players.length > 2 ? `<details class="kick card"><summary>Spieler entfernen</summary><div class="chips">${B.players.map((q, i) => `<button class="chip" data-act="bdel" data-v="${i}" aria-label="${esc(q.name)} entfernen"><span style="color:${q.color}">●</span> ${esc(q.name)}<b>×</b></button>`).join('')}</div><span class="small muted">Wer gehen muss, ist ab sofort raus. Die anderen spielen weiter.</span></details>` : ''}`;
   if (B.phase === 'turn') return `${top}
     <div class="card bcat"><span class="eyebrow">${cat.turbo ? '⚡ Turbo · ' : ''}${B.var === 'memory' ? '🧠 Gedächtnis · ' : ''}Nenne</span><div class="q" id="bcat">${esc(cat.label)}</div><span class="small muted" id="bchain"></span><span class="small muted" id="bleft"></span></div>
     <div class="bombzone"><div class="bomb" id="bomb">💣</div><div class="fuse"><i id="bfuse"></i></div><div class="bsec mono" id="bsec"></div><div class="bpass" id="bpass" hidden></div></div>
@@ -1082,12 +1093,24 @@ function obRecv(conn, d) {
 }
 function obGone(conn) {
   if (!NET || NET.role !== 'host' || !OBS) return; const e = NET.conns.get(conn.peer); if (!e) return; NET.conns.delete(conn.peer);
-  const p = OBS.players[e.idx]; p.online = false;
+  obDrop(e.idx);
+}
+function obDrop(idx) { // a player leaves (connection lost or removed by the host)
+  const p = OBS.players[idx]; p.online = false;
   if (OBS.phase === 'lobby' || OBS.phase === 'end') { obBroadcast(); return; }
-  if (OBS.out && !OBS.out.includes(e.idx)) OBS.out.push(e.idx);
+  if (OBS.out && !OBS.out.includes(idx)) OBS.out.push(idx);
   if (['turn', 'pass', 'ready', 'shakecd', 'shake', 'shakeres'].includes(OBS.phase) && onAlive().length <= 1) return obEnd();
-  if (OBS.phase === 'turn' && OBS.turn === e.idx) { OBS.last = { kind: 'gone', by: e.idx }; OBS.turn = obNext(e.idx); return obSet('pass', 1200, obTurn); }
+  if (OBS.phase === 'turn' && OBS.turn === idx) { OBS.last = { kind: 'gone', by: idx }; OBS.turn = obNext(idx); return obSet('pass', 1200, obTurn); }
   obBroadcast();
+}
+function obKick(idx) { // host removes a player; in lobby and after a game the seat disappears completely
+  if (!OBS || !(idx > 0) || idx >= OBS.players.length) return; const p = OBS.players[idx];
+  for (const [k, c] of NET.conns) if (c.idx === idx) { send(c.conn, { t: 'kicked' }); NET.conns.delete(k); setTimeout(() => { try { c.conn.close(); } catch {} }, 400); }
+  if (OBS.phase !== 'lobby' && OBS.phase !== 'end') { if (p.online) obDrop(idx); else obBroadcast(); toast(`${p.name} ist raus`); return; }
+  OBS.players.splice(idx, 1); if (OBS.total) OBS.total.delete(p.name);
+  for (const [, c] of NET.conns) if (c.idx > idx) c.idx--;
+  if (OBS.out) OBS.out = OBS.out.filter(i => i !== idx).map(i => i > idx ? i - 1 : i);
+  OBS.turn = 0; toast(`${p.name} entfernt`); obBroadcast();
 }
 /* client side */
 async function obJoin(code, name) {
@@ -1096,8 +1119,8 @@ async function obJoin(code, name) {
   const peer = new Peer(undefined, peerOpts()); NET.peer = peer;
   peer.on('open', () => { const conn = peer.connect('atlasduell-' + code.toLowerCase(), { reliable: true }); NET.conn = conn;
     conn.on('open', () => { send(conn, { t: 'hello', name }); NET.status = 'Verbunden, warte auf den Gastgeber …'; render(); wake(); });
-    conn.on('data', d => { if (!d || typeof d !== 'object' || !NET) return; if (d.t === 'state' && d.s) { NET.me = d.me; obApply(d.s, d.me); } else if (d.t === 'typing') obTyping(d.text); else if (d.t === 'reject') { NET.status = d.why; NET.rejected = true; render(); } });
-    conn.on('close', () => { if (NET && NET.role === 'client') { NET.status = 'Verbindung zum Gastgeber verloren.'; NET.lost = true; NET.st = null; render(); } }); });
+    conn.on('data', d => { if (!d || typeof d !== 'object' || !NET) return; if (d.t === 'state' && d.s) { NET.me = d.me; obApply(d.s, d.me); } else if (d.t === 'typing') obTyping(d.text); else if (d.t === 'kicked') { NET.kicked = true; NET.status = 'Der Gastgeber hat dich aus dem Raum genommen.'; NET.rejected = true; NET.st = null; render(); } else if (d.t === 'reject') { NET.status = d.why; NET.rejected = true; render(); } });
+    conn.on('close', () => { if (NET && NET.role === 'client' && !NET.kicked) { NET.status = 'Verbindung zum Gastgeber verloren.'; NET.lost = true; NET.st = null; render(); } }); });
   peer.on('error', err => { if (!NET) return; NET.status = err.type === 'peer-unavailable' ? `Raum ${code} nicht gefunden. Code richtig? Ist das Spiel beim Gastgeber noch offen?` : 'Verbindungsproblem: ' + (err.type || err.message); NET.lost = true; render(); });
 }
 function act(msg) { if (!NET || (NET.role === 'host' && !OBS)) return; if (NET.role === 'host') { if (msg.t === 'answer') obAnswer(0, msg.text); else if (msg.t === 'skip') obSkip(0); else if (msg.t === 'help') obHelp(0, msg.text); else if (msg.t === 'shake' && OBS.phase === 'shake') OBS.shakeCounts[0] = Math.max(OBS.shakeCounts[0] || 0, Math.min(400, msg.n | 0)); else if (msg.t === 'typing') { if (OBS.phase === 'turn' && OBS.turn === 0) for (const [, c] of NET.conns) send(c.conn, { t: 'typing', text: msg.text }); } } else send(NET.conn, msg); }
@@ -1137,6 +1160,7 @@ function obClock() {
     if (left > 0) OB_RAF = requestAnimationFrame(tick); };
   OB_RAF = requestAnimationFrame(tick);
 }
+const kickHTML = (st, open) => NET && NET.role === 'host' && st.players.length > 1 ? `<details class="kick card"${open ? ' open' : ''}><summary>Spieler entfernen</summary><div class="chips">${st.players.map((p, i) => i === 0 ? '' : `<button class="chip" data-act="okick" data-v="${i}" aria-label="${esc(p.name)} entfernen"><span style="color:${p.color}">●</span> ${esc(p.name)}${p.online ? '' : ' <small class="muted">offline</small>'}<b>×</b></button>`).join('')}</div><span class="small muted">${['lobby', 'end'].includes(st.phase) ? 'Der Platz wird frei, die Punkte in der Gesamtwertung fallen weg.' : 'Läuft gerade ein Spiel, scheidet die Person sofort aus.'}</span></details>` : '';
 const onLives = st => st.players.map((p, i) => `<span class="lchip${p.lives <= 0 ? ' out' : ''}${i === st.turn && ['turn', 'pass'].includes(st.phase) ? ' cur' : ''}" style="color:${p.color}"><i class="odot${p.online ? '' : ' off'}"></i><span style="color:var(--ink)">${esc(p.name)}${i === NET.me ? ' (du)' : ''}</span>${st.phase === 'lobby' ? '' : p.lives > 0 ? '❤️'.repeat(p.lives) : '💀'}</span>`).join('');
 function obPatch() { // update the live parts of the turn screen
   const st = NET.st, me = NET.me, pl = st.players[st.turn], mine = st.turn === me && st.phase === 'turn', set = (id, h) => { const el = document.getElementById(id); if (el) el.innerHTML = h; };
@@ -1176,7 +1200,7 @@ function viewOnline() {
   const st = NET.st, me = NET.me, host = NET.role === 'host', link = location.origin + location.pathname + '#r=' + st.code;
   const lives = `<div class="lives" id="blives">${onLives(st)}</div>`;
   if (st.phase === 'lobby') return `${top}<div class="card" style="text-align:center;justify-items:center"><span class="eyebrow">Raumcode</span><div class="roomcode">${esc(st.code)}</div><button class="btn" data-act="oshare">Link in die Gruppe schicken</button>${S.showLink ? `<input class="sharebox" readonly value="${esc(S.showLink)}">` : ''}</div>
-    <div class="card"><h3>Im Raum (${st.players.filter(p => p.online).length}/${MAX_P})</h3>${lives}</div>
+    <div class="card"><h3>Im Raum (${st.players.filter(p => p.online).length}/${MAX_P})</h3>${lives}</div>${kickHTML(st, st.players.some(p => !p.online))}
     ${st.games ? `<div class="card"><h3>Gesamtwertung · ${st.games} ${st.games === 1 ? 'Runde' : 'Runden'}</h3>${boardHTML(st.totals.map(([n, v]) => [n, v, '', (st.players.find(p => p.name === n) || {}).color]))}</div>` : ''}
     <details class="rules"><summary>Regeln und Punkte</summary><ul><li>Reihum ein passendes Land nennen, bevor die eigene Zeit abläuft. Schon Genanntes zählt nicht. Knallt es bei dir, ist ein Leben weg.</li><li>🤝 Hängt jemand rund vier Sekunden fest, können die anderen helfen: ein oder zwei Anfangsbuchstaben einer passenden Antwort. Jeder hat ${HELPS} Tipps pro Runde, pro Zug gibt es einen.</li><li>Punkte pro Runde: jede richtige Antwort +1, Platz 1/2/3: +5/+3/+1.</li><li>Hast du der Person geholfen, die am Ende gewinnt: +2 je Tipp. Wer in einer Runde nie hilft, obwohl er konnte: −2 (Geizhals).</li><li>🥛 Nach jeder dritten Kategorie: Milchshake-Pause. Acht Sekunden Handy schütteln (oder tippen), wer am meisten Schaum schlägt, bekommt +2, wer am wenigsten schüttelt, bekommt als Nächstes die Bombe.</li><li>🔗 Länderkette: Jedes Land beginnt mit dem letzten Buchstaben des vorigen. Wer eine Sackgasse baut, bekommt +1 (Fiesling), keiner verliert ein Leben.</li><li>🧠 Gedächtnis: Genanntes wird nicht angezeigt, eine Wiederholung lässt die Bombe sofort hochgehen.</li><li>⚡ Turbo-Kategorien: Die Lunte brennt fast doppelt so schnell, dafür zählt jeder Treffer doppelt.</li><li>Alles wird über die Runden in der Gesamtwertung gesammelt.</li></ul></details>
     ${host ? `<div class="card" style="gap:10px"><span class="eyebrow">Leben</span><div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="olives" data-v="${l}" aria-pressed="${st.lives === l}">${'❤️'.repeat(l)}</button>`).join('')}</div><span class="eyebrow">Schwierigkeit</span><div class="chips">${[1, 2, 3].map(l => `<button class="chip" data-act="olvl" data-v="${l}" aria-pressed="${st.level === l}">${lvlName(l)} · ${BTIME[l]} s</button>`).join('')}</div>${bombOptsHTML({ var: st.var, packs: st.packs || [], turbo: st.turbo, milk: st.milk, level: st.level }, 'o', true)}</div>
@@ -1189,7 +1213,7 @@ function viewOnline() {
     <div class="bwho" id="bwho"></div><div class="hintbig" id="obhint" hidden></div><div class="ptyping" id="obtyping" hidden>…</div>
     <div class="card helpcard" id="obhelp" hidden><span id="hlabel" class="small"></span><form id="hform" autocomplete="off"><input id="hin" class="field" maxlength="2" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="z. B. SA" aria-label="Anfangsbuchstaben"><button class="btn" type="submit">Tipp geben</button></form><span id="hmsg" class="small" style="color:var(--rec)"></span></div>
     <form id="bform" autocomplete="off" hidden><input id="bin" class="field" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send" placeholder="${esc(st.cat.ph || 'Land')} eintippen …" aria-label="Antwort"><button class="btn primary" type="submit">OK</button></form>
-    <div class="bsug" id="bsug"></div><div class="bmsg" id="bmsg"></div><button class="btn" data-act="oskip" id="bskipbtn" hidden></button><div class="chips" id="bused"></div>`; }
+    <div class="bsug" id="bsug"></div><div class="bmsg" id="bmsg"></div><button class="btn" data-act="oskip" id="bskipbtn" hidden></button><div class="chips" id="bused"></div>${kickHTML(st)}`; }
   if (st.phase === 'shakecd') return `${top}${lives}<div class="handoff"><span style="font-size:80px">🥛</span><h1>Milchshake-Pause!</h1><p class="muted">Gleich ${SHAKE_MS / 1000} Sekunden lang das Handy schütteln, so wild es geht. Am meisten Schaum: +2 Punkte. Am wenigsten: kriegt als Nächstes die Bombe.</p><div class="countdown mono" id="obcd">3</div></div>`;
   if (st.phase === 'shake') { setTimeout(shakeBoard, 0); return `${top}<div id="shakescr" class="boomscr" style="padding-top:4px"><span class="eyebrow">Schütteln! Noch <b id="obcd">8</b> s</span><span id="shem" style="font-size:44px">🥛</span>${GLASS}<div class="big-num" id="shn">${SHK.n}</div></div>
     <button class="shakebtn" id="shaketap" data-act="shaketap">Kein Sensor? Hier wie wild tippen</button><div class="card" id="shboard"></div>`; }
@@ -1205,7 +1229,7 @@ function viewOnline() {
     ${st.results ? `<div class="card"><h3>Punkte dieser Runde</h3>${boardHTML(st.results.slice().sort((a, b) => a.place - b.place).map(r => [r.name + (st.players.findIndex(p => p.name === r.name) === me ? ' (du)' : ''), r.pts, [`${r.ans} Treffer`, r.placePts ? `Platz ${r.place} +${r.placePts}` : `Platz ${r.place}`, r.bonus ? `Hilfe +${r.bonus}` : '', r.milk ? `Milchshake +${r.milk}` : '', r.tb ? `Turbo +${r.tb}` : '', r.trap ? `Sackgasse +${r.trap}` : '', r.geiz ? 'Geizhals −2' : '', r.helps ? `${r.helps}× geholfen` : ''].filter(Boolean).join(' · '), r.color]), null, true)}</div>
       <div class="card"><h3>Gesamtwertung · ${st.games} ${st.games === 1 ? 'Runde' : 'Runden'}</h3>${boardHTML(st.totals.map(([n, v]) => [n, v, '', (st.players.find(p => p.name === n) || {}).color]))}</div>` : ''}
     <div class="awards">${best('ans', '🎇', 'Feuerwerker', 'Treffer')}${best('close', '🧊', 'Nerven aus Stahl', ['knappe Rettung', 'knappe Rettungen'])}${best('boom', '💣', 'Pechvogel', ['Explosion', 'Explosionen'])}${best('shakes', '🥛', 'Milchbart', 'mal geschüttelt')}${best('trap', '😈', 'Fiesling', ['Sackgasse', 'Sackgassen'])}</div>
-    ${host ? '<button class="btn primary big" data-act="oagain">Revanche</button><button class="btn" data-act="olobby">Zurück in die Lobby</button>' : `<p class="muted small">${esc(st.players[0].name)} kann eine Revanche starten.</p>`}`;
+    ${host ? kickHTML(st) + '<button class="btn primary big" data-act="oagain">Revanche</button><button class="btn" data-act="olobby">Zurück in die Lobby</button>' : `<p class="muted small">${esc(st.players[0].name)} kann eine Revanche starten.</p>`}`;
 }
 function onlineAfter() {
   const inp = document.getElementById('bin');
@@ -1253,6 +1277,7 @@ app.addEventListener('click', e => {
       if (a === 'oturbo') { OBS.turbo = S.bturbo = DB.bturbo = !OBS.turbo; saveDB(); obBroadcast(); return; }
       if (a === 'ostart' || a === 'oagain') return obStart();
       if (a === 'olobby') { if (OBS.players.filter(p => p.online).length < 1) return; OBS.players = OBS.players.filter(p => p.online); NET.conns.forEach(c => { c.idx = OBS.players.findIndex(p => p.name === NET.st.players[c.idx].name); }); for (const p of OBS.players) p.lives = OBS.lives; clearTimeout(OB_T); OBS.phase = 'lobby'; OBS.until = 0; obBroadcast(); return; }
+      if (a === 'okick') { const i = +v, p = OBS.players[i]; if (p && confirm(`${p.name} aus dem Raum nehmen?`)) obKick(i); return; }
       if (a === 'oforce') { if (OBS.pending && OBS.phase === 'turn' && !OBS.used.includes(OBS.pending)) obAccept(OBS.pending, true); return; }
     }
   }
@@ -1268,6 +1293,7 @@ app.addEventListener('click', e => {
     if (a === 'bsug') { const inp = document.getElementById('bin'); if (inp) inp.value = v; return bSubmit(v); }
     if (a === 'bforce') { if (B.pending && !B.used.includes(B.pending)) bAccept(B.pending, true); return; }
     if (a === 'bnext') return bNext();
+    if (a === 'bdel') { const p = B.players[+v]; if (p && confirm(`${p.name} aus dem Spiel nehmen?`)) bDel(+v); return; }
     if (a === 'bagain') return bStartGame(B.players.map(p => p.name), B.lives, B.level);
     if (a === 'bsound') { B.sound = !B.sound; e.target.textContent = B.sound ? '🔊' : '🔇'; return; }
   }
