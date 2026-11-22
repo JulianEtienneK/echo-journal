@@ -41,18 +41,19 @@ const TECH = [
 ];
 const WHY = [['ueberr', 'Überraschung, die im Nachhinein Sinn ergibt'], ['harmlos', 'Verletzung einer Norm, aber harmlos'], ['wahr', 'Ertappt: es stimmt einfach'], ['span', 'Spannung aufgebaut und gelöst'], ['ueberl', 'Gefühl, schlauer zu sein als jemand'], ['bild', 'Absurdes Bild im Kopf']];
 // Quellen ohne YouTube (Detox). Verfügbarkeit bei Streamingdiensten wechselt; im Zweifel suchen.
-const SRC = [
-  ['🎤', 'Mitch Hedberg, Comedy-Alben', 'Audio, z. B. Spotify', 'Einzeiler mit sauberer Mechanik, ideal für Erwartung und Bruch.'],
-  ['🎤', 'Hazel Brugger, Bühnenprogramm', 'Streaming, Deutsch', 'Trockene Untertreibung und Statuswechsel.'],
-  ['🎤', 'John Mulaney, „Kid Gorgeous“', 'Netflix', 'Lange Geschichten mit Callbacks und Act-out.'],
-  ['🎤', 'Taylor Tomlinson, Specials', 'Netflix', 'Dichte Pointen, viel Selbstironie.'],
-  ['🎤', 'Felix Lobrecht, Specials', 'Streaming, Deutsch', 'Beobachtung und Milieu, Timing.'],
-  ['🎤', 'Ali Wong, Specials', 'Netflix', 'Übertreibung und Tabubruch, der harmlos bleibt.'],
-  ['📰', 'Der Postillon', 'Text, kostenlos', 'Satire-Schlagzeilen: Die Schlagzeile ist das Setup und die Pointe in einem.'],
-  ['📰', 'The Onion', 'Text, Englisch', 'Absurde Logik im Nachrichtenton.'],
-  ['📖', 'Loriot, Dramatische Werke', 'Buch', 'Statuswechsel und Sprache, die an der Situation vorbeiredet.'],
-  ['📖', 'Heinz Erhardt, Gedichte', 'Buch', 'Doppeldeutigkeit und Wortspiel.'],
-  ['🎧', 'Ein Comedy-Podcast deiner Wahl', 'Audio', 'Gespräch statt Bühne: Pointen entstehen spontan, Callbacks besonders gut zu sehen.'],
+const SRC = [ // nur deutsch und kostenlos, kein YouTube (Detox). Was gerade online ist, wechselt; im Zweifel in der Mediathek suchen.
+  ['📺', 'heute-show', 'ZDF-Mediathek', 'Satire mit hohem Pointentempo: gut, um Fehlleitung und Übertreibung zu zählen.'],
+  ['📺', 'Die Anstalt', 'ZDF-Mediathek', 'Kabarett mit Rollenspiel: Statuswechsel und Callbacks über die ganze Sendung.'],
+  ['📺', 'extra 3', 'ARD-Mediathek', 'Kurze Beiträge mit klaren Pointen, ideal für zwei schnelle Momente.'],
+  ['📺', 'ZDF Magazin Royale', 'ZDF-Mediathek', 'Trockene Untertreibung und absurde Logik im Nachrichtenton.'],
+  ['📺', 'Die Carolin Kebekus Show', 'ARD-Mediathek', 'Sketche mit Tabubruch, der harmlos bleibt; gut für „warum lustig“.'],
+  ['📺', 'Ladies Night', 'ARD-Mediathek (WDR)', 'Stand-up von mehreren Comedians: kurze Nummern, viele Techniken nebeneinander.'],
+  ['🎧', 'Gemischtes Hack', 'Spotify, kostenlos mit Werbung', 'Gesprächscomedy: Pointen entstehen spontan, Callbacks und Beobachtung.'],
+  ['🎧', 'Fest & Flauschig', 'Spotify, kostenlos mit Werbung', 'Zwei, die sich gegenseitig hochschaukeln: Übertreibung in Stufen.'],
+  ['🎧', 'Baywatch Berlin', 'Spotify, kostenlos mit Werbung', 'Selbstironie und Running Gags.'],
+  ['📰', 'Der Postillon', 'Text, kostenlos', 'Satire-Schlagzeilen: Die Schlagzeile ist Setup und Pointe in einem.'],
+  ['📰', 'Die Tagespresse', 'Text, kostenlos', 'Österreichische Satire: absurde Logik, konsequent zu Ende gedacht.'],
+  ['📰', 'Titanic', 'titanic-magazin.de, teils kostenlos', 'Bissige Wortspiele und Doppeldeutigkeiten.'],
   ['👥', 'Ein Gespräch von heute', 'Alltag', 'Wer hat heute gelacht und warum? Alltagshumor ist das beste Material.'],
 ];
 const C = Object.assign({ days: {}, xp: 0 }, LS.get('echo-comedy', {}));
@@ -75,7 +76,7 @@ function viewHub() {
   <section class="card"><div class="row spread"><div class="stack" style="gap:0"><span class="eyebrow">Heute</span><h3>${d.done ? '✓ Session erledigt' : `${(d.moments || []).length} von ${NEED} Momenten`}${(d.challenges || []).length ? ` · ${d.challenges.length} Challenge${d.challenges.length > 1 ? 's' : ''}` : ''}</h3></div><span class="xp">${d.done ? '+' + XP.session : '10 min'}</span></div>
     <div class="bar"><i style="width:${Math.min(100, Math.round(100 * (d.moments || []).length / NEED))}%"></i></div>
     <div class="note"><b>${s[0]} Quelle des Tages:</b> ${esc(s[1])} <span class="small muted">(${esc(s[2])})</span><br><span class="small">${esc(s[3])}</span></div>
-    <span class="small muted">Kein YouTube. Andere Quelle? Egal, Hauptsache du schaust oder hörst 5 bis 10 Minuten bewusst zu.</span>
+    <span class="small muted">Alles deutsch und kostenlos, kein YouTube. Andere Quelle? Egal, Hauptsache du schaust oder hörst 5 bis 10 Minuten bewusst zu.</span>
     <button class="btn" data-act="go" data-v="challenge" style="border-color:var(--gold)">⏱️ 5-Minuten-Challenge (+${XP.challenge})</button>
     <span class="small muted">Erledigt mit zwei Momenten oder einer Challenge.</span>
     <button class="btn primary" data-act="new">${(d.moments || []).length ? 'Nächsten Moment auseinandernehmen' : 'Ersten Moment auseinandernehmen'}</button>
