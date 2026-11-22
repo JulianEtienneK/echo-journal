@@ -61,7 +61,7 @@
     o.querySelector('[data-eu=x]').onclick = () => o.remove();
   }
   function choose() {
-    const L = [['stb-pfad.html#heute', '⚖️', 'StB-Pfad', 'Fällige Karten oder die nächste Lektion', 1], ['medizin.html', '🩺', 'Medizin', 'Lernrunde Anatomie, Krankheiten, Stoffwechsel', 1], ['comedy.html', '😂', 'Comedy', 'Momente zerlegen oder eine 5-Minuten-Challenge', 1],
+    const L = [['stb-pfad.html#heute', '⚖️', 'StB-Pfad', 'Fällige Karten oder die nächste Lektion', 1], ['medizin.html', '🩺', 'Medizin', 'Lernrunde Anatomie, Krankheiten, Stoffwechsel', 1], ['comedy.html', '😂', 'Comedy', 'Momente zerlegen oder eine Challenge schreiben', 1],
       ['spiele.html#quiz-ernmed', '🥗', 'Ernährungsmedizin-Quiz', '', 0], ['spiele.html#quiz-steuer', '🧾', 'Steuer-Fallquiz', '', 0], ['spanisch.html', '🇪🇸', 'Spanisch', '', 0], ['wege.html', '🪷', 'Buddhismus und Stoa', '', 0]];
     const o = ov(`<h2>🦉 Eule · Was lernst du?</h2><span class="eu-muted">Alles, was du in den nächsten Minuten neu lernst oder falsch hast, fragt Echo dich morgen früh ab.</span>
       ${L.map(x => `<a class="eu-opt${x[4] ? ' hi' : ''}" href="${x[0]}"><span style="font-size:${x[4] ? 30 : 22}px">${x[1]}</span><span><b>${x[2]}</b>${x[3] ? `<small>${x[3]}</small>` : ''}</span></a>`).join('')}

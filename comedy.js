@@ -1,6 +1,6 @@
 /* Echo · Comedy-Session: Humor trainieren, indem man Witze auseinandernimmt.
    Pro Moment: Was war es? → Welche Erwartung hat das Setup gebaut? → Wie wurde sie gebrochen (Technik)? → Warum ist es lustig?
-   Danach optional: eine eigene Pointe zu einem Setup drehen. Zwei analysierte Momente oder eine 5-Minuten-Challenge = Session erledigt (tickt das Wochenziel in Echo).
+   Danach optional: eine eigene Pointe zu einem Setup drehen. Zwei analysierte Momente oder eine Challenge = Session erledigt; läuft als Teil der Eule.
    Grundlage: Inkongruenz-Auflösung (Setup baut eine Annahme, die Pointe enthüllt eine zweite Deutung) und Benign Violation (eine Verletzung, die zugleich harmlos ist).
    Storage: 'echo-comedy' (in Echos Sicherung). Needs tools-common.js. */
 'use strict';
@@ -77,7 +77,7 @@ function viewHub() {
     <div class="bar"><i style="width:${Math.min(100, Math.round(100 * (d.moments || []).length / NEED))}%"></i></div>
     <div class="note"><b>${s[0]} Quelle des Tages:</b> ${esc(s[1])} <span class="small muted">(${esc(s[2])})</span><br><span class="small">${esc(s[3])}</span></div>
     <span class="small muted">Alles deutsch und kostenlos, kein YouTube. Andere Quelle? Egal, Hauptsache du schaust oder hörst 5 bis 10 Minuten bewusst zu.</span>
-    <button class="btn" data-act="go" data-v="challenge" style="border-color:var(--gold)">⏱️ 5-Minuten-Challenge (+${XP.challenge})</button>
+    <button class="btn" data-act="go" data-v="challenge" style="border-color:var(--gold)">✏️ Challenge schreiben (+${XP.challenge})</button>
     <span class="small muted">Erledigt mit zwei Momenten oder einer Challenge.</span>
     <button class="btn primary" data-act="new">${(d.moments || []).length ? 'Nächsten Moment auseinandernehmen' : 'Ersten Moment auseinandernehmen'}</button>
     ${(d.moments || []).length ? `<button class="btn" data-act="go" data-v="twist">Selbst drehen: eigene Pointe (+${XP.twist})</button>` : ''}</section>
@@ -126,25 +126,17 @@ function viewTwist() {
 
 const mmss = n => Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0');
 function viewChallenge() {
-  if (!T.id) return `${topBar(true)}<div class="stack"><span class="eyebrow">5 Minuten</span><h1>⏱️ Challenge</h1><p class="muted">Eine Technik, fünf Minuten, so viele Ideen wie möglich. Bewertet wird nicht; danach markierst du nur die beste. Menge schlägt Qualität, denn gute Pointen kommen fast immer erst nach den naheliegenden.</p></div>
+  if (!T.id) return `${topBar(true)}<div class="stack"><span class="eyebrow">Zählt zur Eule</span><h1>✏️ Challenge</h1><p class="muted">Eine Technik, so viele Ideen wie möglich. Bewertet wird nicht; danach markierst du nur die beste. Menge schlägt Qualität, denn gute Pointen kommen fast immer erst nach den naheliegenden.</p></div>
     <button class="btn primary" data-act="chrand">🎲 Zufällige Challenge</button>
     <div class="stack">${CH.map(c => `<button class="card hub" data-act="chpick" data-v="${c[0]}" style="text-align:left"><div class="row"><span class="em">${c[1]}</span><div class="stack" style="gap:0"><h3>${esc(c[2])}</h3><span class="small muted">${esc(c[3])}</span></div></div></button>`).join('')}</div>`;
-  const c = CH.find(x => x[0] === T.id), over = !T.run && T.left <= 0;
-  return `${topBar(true)}<div class="stack"><span class="eyebrow">${c[1]} ${esc(c[2])}</span><h1 id="clock" style="font-variant-numeric:tabular-nums">${mmss(Math.max(0, T.left))}</h1></div>
+  const c = CH.find(x => x[0] === T.id);
+  return `${topBar(true)}<div class="stack"><span class="eyebrow">Challenge</span><h1>${c[1]} ${esc(c[2])}</h1></div>
   <section class="card"><span class="small muted">${esc(c[3])}</span>
-    <div class="note"><b>${esc(c[4])}:</b> ${esc(T.prompt)} ${T.run || over ? '' : '<button class="link" data-act="chnew" style="margin-left:6px">andere</button>'}</div>
-    <textarea class="input" id="cht" rows="9" placeholder="Eine Idee pro Zeile …">${esc(T.text)}</textarea>
-    ${over ? `<p class="small">Zeit um. Setz ein ★ vor deine beste Idee, dann speichern.</p><button class="btn primary" data-act="chsave">Speichern (+${XP.challenge} XP)</button>`
-      : T.run ? '<button class="btn" data-act="chpause">Pause</button>'
-      : `<button class="btn primary" data-act="chstart">${T.left < MIN5 ? 'Weiter' : 'Start: 5 Minuten'}</button>${T.left < MIN5 ? '<button class="btn" data-act="chstop">Jetzt beenden</button>' : ''}`}
+    <div class="note"><b>${esc(c[4])}:</b> ${esc(T.prompt)} <button class="link" data-act="chnew" style="margin-left:6px">andere</button></div>
+    <textarea class="input" id="cht" rows="9" placeholder="Eine Idee pro Zeile. Vor die beste ein ★ setzen.">${esc(T.text)}</textarea>
+    <button class="btn primary" data-act="chsave">Speichern (+${XP.challenge} XP)</button>
   </section>`;
 }
-function tick() {
-  T.left = Math.round((T.end - Date.now()) / 1000);
-  const el = document.getElementById('clock'); if (el) el.textContent = mmss(Math.max(0, T.left));
-  if (T.left <= 0) { clearInterval(T.iv); T.run = false; try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch {} beep(); render(); }
-}
-function beep() { try { const ac = new (window.AudioContext || window.webkitAudioContext)(), o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = 660; g.gain.setValueAtTime(0.15, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.8); o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime + 0.8); } catch {} }
 function chSet(id) { const c = CH.find(x => x[0] === id); clearInterval(T.iv); T = { id, prompt: c[5][Math.floor(Math.random() * c[5].length)], text: '', end: 0, left: MIN5, run: false, iv: null }; }
 function render() {
   const r = route();
@@ -157,12 +149,9 @@ function keep() { const v = val(); if (F.step === 0) F.m.what = v; else if (F.st
 app.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const a = el.dataset.act, v = el.dataset.v;
-  if (a === 'go') { if (v === 'challenge' && !T.run && T.left >= MIN5) T.id = null; return go(v); }
+  if (a === 'go') { if (v === 'challenge' && !(T.text || '').trim()) T.id = null; return go(v); }
   if (a === 'chpick' || a === 'chrand') { chSet(a === 'chrand' ? CH[Math.floor(Math.random() * CH.length)][0] : v); render(); return; }
   if (a === 'chnew') { const t = T.text; chSet(T.id); T.text = t; render(); return; }
-  if (a === 'chstart') { T.end = Date.now() + T.left * 1000; T.run = true; clearInterval(T.iv); T.iv = setInterval(tick, 250); render(); const ct = document.getElementById('cht'); if (ct) { ct.focus(); ct.setSelectionRange(ct.value.length, ct.value.length); } return; }
-  if (a === 'chpause') { clearInterval(T.iv); T.left = Math.max(1, Math.round((T.end - Date.now()) / 1000)); T.run = false; render(); return; }
-  if (a === 'chstop') { clearInterval(T.iv); T.left = 0; T.run = false; render(); return; }
   if (a === 'chsave') {
     const text = (T.text || '').trim(); if (!text) { toast('Mindestens eine Idee, auch eine schlechte'); return; }
     const lines = text.split('\n').map(x => x.trim()).filter(Boolean), best = lines.find(x => x.startsWith('★')) || '';
