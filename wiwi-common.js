@@ -6,7 +6,7 @@ window.WIWI = (() => {
   const MODS = [
     { nr: '31021', t: 'Investition und Finanzierung', em: '💶', page: 'wiwi-31021.html', exam: '2027-03-10', examNote: 'voraussichtlich, Termin in Moodle prüfen', kind: 'Pflicht' },
     { nr: '31071', t: 'Wirtschaftsinformatik', em: '💻', page: 'wiwi-31071.html', exam: '2027-03-09', examNote: 'voraussichtlich, Termin in Moodle prüfen', kind: 'Pflicht' },
-    { nr: '55207', t: 'Steuerrechtliche Grundlagen und Einführung ins Ertragsteuerrecht', em: '⚖️', page: 'stb-pfad.html', exam: '2027-03-09', examNote: 'Online-Klausur 16–18 Uhr, Anmeldung 06.01.–01.02.2027', kind: 'Wahl III', viaStb: 'StB-Pfad Modul 1, AO, KSt (k1–k4)' },
+    { nr: '55207', t: 'Steuerrechtliche Grundlagen und Einführung ins Ertragsteuerrecht', em: '⚖️', page: 'wiwi-55207.html', exam: '2027-03-09', examNote: 'Online-Klausur 16–18 Uhr, Anmeldung 06.01.–01.02.2027', kind: 'Wahl III' },
     { nr: '31681', t: 'Grundlagen der Unternehmensbesteuerung', em: '🏢', page: 'stb-pfad.html', exam: null, examNote: 'Termin in Moodle prüfen', kind: 'Wahl I', viaStb: 'StB-Pfad Module 1, 3, 4, 6 und ErbSt r1–r3' },
   ];
   const WEEK_GOAL_MIN = 120;

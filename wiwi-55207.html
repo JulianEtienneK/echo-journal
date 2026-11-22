@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Echo 55207</title>
+<meta name="theme-color" content="#F2F3EF">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="tools.css">
+<script src="theme.js"></script>
+<script src="kurator.js"></script>
+<script src="eule.js" defer></script>
+<link rel="stylesheet" href="theme.css">
+<style>
+.phase{display:flex;gap:4px}
+.phase i{flex:1;height:5px;border-radius:9px;background:var(--surface-2)}
+.phase i.on{background:var(--calm)}
+.phase i.cur{background:var(--gold)}
+.sv{background:var(--surface-2);border-radius:12px;padding:12px 14px;line-height:1.55}
+.step{border-left:3px solid var(--line);padding:4px 0 4px 12px;display:grid;gap:6px}
+.step.open{border-color:var(--calm)}
+.ans{background:var(--calm-soft, rgba(27,129,115,.12));border-radius:10px;padding:10px 12px;line-height:1.5}
+.schema{margin:0;padding-left:20px;display:grid;gap:4px;line-height:1.45}
+.core p{margin:0 0 10px;line-height:1.6}
+.norm{font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);border-radius:99px;padding:1px 8px;color:var(--muted);white-space:nowrap}
+#app textarea,#app input[type=text]{width:100%;font:inherit;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+#app textarea{min-height:70px;resize:vertical}
+.rate{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.conf{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.mod{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.mod.lock{opacity:.5}
+.why{border-left:3px solid var(--gold);padding-left:12px;line-height:1.55}
+details summary{cursor:pointer;font-weight:600}
+.askov{position:fixed;inset:0;z-index:60;background:rgba(10,14,12,.55);display:grid;place-items:end center;padding:10px}
+.askbox{width:min(560px,100%);max-height:86vh;overflow:auto;background:var(--bg);border-radius:22px;padding:16px;display:grid;gap:10px}
+.askq{justify-self:end;max-width:88%;background:var(--surface-2);border-radius:14px 14px 4px 14px;padding:9px 12px;line-height:1.45}
+.aska{background:var(--surface);border:1px solid var(--line);border-radius:14px 14px 14px 4px;padding:10px 12px;line-height:1.55}
+.askbox textarea{width:100%;font:inherit;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);resize:vertical}
+.big{font-size:28px}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script src="tools-common.js"></script>
+<script src="wiwi-common.js"></script>
+<script>
+window.PFAD_CFG = { key: 'echo-wiwi-55207', title: '⚖️ 55207 Steuerrecht', short: '55207', back: 'wiwi.html', backLabel: 'WiWi',
+  xp: 'wiwi-55207', src: 'pfad:echo-wiwi-55207', dayMin: 20, extraCard: false, askTopic: 'Steuerrechtliche Grundlagen und Einführung in das Ertragsteuerrecht (FernUni Hagen, Modul 55207)',
+  sys: 'Du bist Tutor für das Modul 55207 Steuerrechtliche Grundlagen und Einführung in das Ertragsteuerrecht der Rechtswissenschaftlichen Fakultät der FernUniversität in Hagen. Studienbrief 1: Steuerarten, Steuerbegriff, Eingriffsrecht, Methodik, Rechtsquellen, Rückwirkung, Steuertatbestand. Studienbrief 2: Völker- und Europarecht, Finanzverfassung und Grundrechte, Steuerschuldrecht der AO (Entstehung, Erlöschen, Erstattung, Nebenleistungen, Haftung nach § 69 AO und Haftungsbescheid), Steuerverfahrensrecht (Verwaltungsakt, Bekanntgabe mit Viertagesfiktion, Mitwirkung, Verspätungszuschlag, Außenprüfung, Steuerbescheid, Grundlagen- und Folgebescheid, Festsetzungsverjährung, Nebenbestimmungen, Änderung nach §§ 172 ff. AO), Rechtsbehelfe. Studienbrief 3: Einkommensteuer (Steuerpflicht, § 2 EStG, Liebhaberei, Überschusseinkünfte, § 19, Gewerbe, Gewinnermittlung, §§ 20, 21, 22, 23, 17, Sonderausgaben, agB). Studienbrief 4: Unternehmenssteuerrecht (Einzelunternehmer, Mitunternehmerschaft, Sondervergütungen, vermögensverwaltende PersG, § 16, Körperschaftsteuer, Trennungsprinzip, vGA, verdeckte Einlage, Organschaft, Gewerbesteuer). Die Klausur ist eine Online-Klausur mit gutachterlicher Fallbearbeitung (Klage, Einspruch, Rechtmäßigkeit eines Bescheids, materielle Prüfung). Antworte auf Deutsch, knapp, mit Normzitaten und im Gutachtenstil, wenn nach einer Lösung gefragt ist. Wenn du dir bei aktuellen Beträgen oder dem genauen Stand des Studienbriefs nicht sicher bist, sag es.',
+  exam: WIWI.MODS[2].exam, examLabel: 'Online-Klausur', progress: WIWI.progress,
+  note: 'Online-Klausur am 09.03.2027, 16 bis 18 Uhr, Anmeldung 06.01. bis 01.02.2027. Geprüft wird gutachterliche Fallbearbeitung: Klage, Einspruch, Rechtmäßigkeit eines Bescheids oder die Einkünfte selbst. Darum hat jede Lektion ein Prüfschema, die Rechentrainer üben Fristen, Zuschläge und Einkünfte, und die Probeklausuren sind Gutachtenfälle mit Lösungsskizze zum Selbstbewerten. Die Übungsfälle aus Moodle bleiben die beste Generalprobe; die Fälle hier sind eigene.' };
+</script>
+<script src="wiwi-55207-data.js"></script>
+<script src="wiwi-55207-exam.js"></script>
+<script src="stb-pfad.js"></script>
+</body>
+</html>

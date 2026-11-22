@@ -30,9 +30,10 @@ function cardDef(id) {
   const i = +k.slice(1);
   if (k[0] === 'q') { const c = (P.qcards || {})[id]; return c && { id, lid, type: 'recall', q: c.q, a: c.a, own: true }; }
   if (k[0] === 'c') { const c = l.cards[i]; return c && { id, lid, type: 'recall', q: c[0], a: c[1] }; }
+  if (!CFG.navReview) return null; // Fundstellen werden nachgeschlagen, nicht auswendig gelernt (in der StB-Prüfung liegt das Gesetz offen)
   const n = (l.nav || [])[i]; return n && { id, lid, type: 'nav', q: n[0], a: n[1] };
 }
-const lessonCards = l => [...l.cards.map((_, i) => l.id + ':c' + i), ...(l.nav || []).map((_, i) => l.id + ':n' + i)];
+const lessonCards = l => [...l.cards.map((_, i) => l.id + ':c' + i), ...(CFG.navReview ? (l.nav || []).map((_, i) => l.id + ':n' + i) : [])];
 const dueIds = () => Object.entries(P.cards).filter(([id, c]) => c.due <= today() && cardDef(id)).map(([id]) => id);
 const mastered = () => Object.values(P.cards).filter(c => c.b >= MASTER).length;
 // interleave: round-robin over lessons, so two cards of the same topic rarely follow each other
@@ -217,19 +218,19 @@ function viewLesson() {
   if (k === 2) {
     const c = l.case, s = SS.step, done = s >= c.steps.length;
     const shown = c.steps.slice(0, s).map(([q, a]) => `<div class="step open"><b>${esc(q)}</b><div class="ans">${esc(a)}</div></div>`).join('');
-    const cur = done ? `<div class="ans"><b>Ergebnis:</b> ${esc(c.res)}</div><button class="btn primary" data-act="next">${l.nav && l.nav.length ? 'Weiter zur Paragrafen-Navigation' : 'Weiter'}</button>`
+    const cur = done ? `<div class="ans"><b>Ergebnis:</b> ${esc(c.res)}</div><button class="btn primary" data-act="next">${l.nav && l.nav.length ? (CFG.navReview ? 'Weiter zur Paragrafen-Navigation' : 'Weiter zum Nachschlagen') : 'Weiter'}</button>`
       : fading ? `<div class="step"><b>${esc(c.steps[s][0])}</b><textarea id="guess" placeholder="Erst selbst lösen, dann aufdecken">${esc(SS.guess)}</textarea><button class="btn primary" data-act="reveal">Aufdecken</button></div>`
         : `<div class="step"><b>${esc(c.steps[s][0])}</b><span class="small muted">Überleg kurz selbst, dann deck den Schritt auf.</span><button class="btn primary" data-act="reveal">Schritt zeigen</button></div>`;
     return `${head}<section class="card"><span class="eyebrow">${fading ? 'Fall · selbst lösen' : 'Fall · Lösungsweg zum Mitdenken'}</span><div class="sv">${esc(c.sv)}</div>${shown}${cur}</section>`;
   }
   if (k === 3) {
     const n = l.nav[SS.navI];
-    if (!n) { SS.k = 4; return viewLesson(); }
+    if (!n || (!CFG.navReview && SS.navI > 0)) { SS.k = 4; return viewLesson(); }
     const res = SS.navRes;
-    return `${head}<section class="card"><span class="eyebrow">Paragrafen-Navigation ${SS.navI + 1}/${l.nav.length}</span><h2 style="line-height:1.35">${esc(n[0])}</h2>
-      <span class="small muted">Tippen, nicht raten: Gesetz, Paragraf, Absatz, Satz, Nummer.</span>
+    return `${head}<section class="card"><span class="eyebrow">${CFG.navReview ? `Paragrafen-Navigation ${SS.navI + 1}/${l.nav.length}` : 'Nachschlagen wie in der Prüfung'}</span><h2 style="line-height:1.35">${esc(n[0])}</h2>
+      <span class="small muted">${CFG.navReview ? 'Tippen, nicht raten: Gesetz, Paragraf, Absatz, Satz, Nummer.' : 'Nicht auswendig: In der Prüfung liegt das Gesetz offen. Schlag nach (Gesetzestext oder gesetze-im-internet.de) und übe, die Stelle schnell zu finden. Wird keine Wiederholungskarte.'}</span>
       <input type="text" id="nav" value="${esc(SS.navGiven)}" placeholder="z. B. § 2 Abs. 5 EStG" autocomplete="off" ${res != null ? 'disabled' : ''}>
-      ${res == null ? '<button class="btn primary" data-act="navcheck">Prüfen</button>' : `<b>${['❌ Nicht ganz', '🟡 Richtige Norm, die Fundstelle weicht ab', '✅ Genau'][res]}</b><div class="ans">${esc(n[1])}</div><button class="btn primary" data-act="navnext">Weiter</button>`}</section>`;
+      ${res == null ? `<button class="btn primary" data-act="navcheck">Prüfen</button>${CFG.navReview ? '' : '<button class="btn" data-act="navskip">Überspringen</button>'}` : `<b>${['❌ Nicht ganz', '🟡 Richtige Norm, die Fundstelle weicht ab', '✅ Genau'][res]}</b><div class="ans">${esc(n[1])}</div><button class="btn primary" data-act="navnext">Weiter</button>`}</section>`;
   }
   if (k === 4) {
     const lk = (D.LINKS || {})[l.id], ln = lk && LBY[lk[0]];
@@ -530,6 +531,7 @@ app.addEventListener('click', e => {
   }
   if (a === 'reveal') { SS.guess = ''; SS.step++; render(); return; }
   if (a === 'navcheck') { SS.navGiven = val('nav'); SS.navRes = checkNorm(SS.navGiven, SS.L.nav[SS.navI][1]); render(); return; }
+  if (a === 'navskip') { SS.k = 4; render(); return; }
   if (a === 'navnext') { SS.navI++; SS.navGiven = ''; SS.navRes = null; if (SS.navI >= SS.L.nav.length) SS.k = 4; render(); return; }
   if (a === 'linkshow') { SS.note = val('note'); SS.linkShown = true; render(); return; }
   if (a === 'rshow') { SS.recall.shown = true; render(); return; }
