@@ -165,6 +165,7 @@ app.addEventListener('click', e => {
   if (a === 'chsave') {
     const text = (T.text || '').trim(); if (!text) { toast('Mindestens eine Idee, auch eine schlechte'); return; }
     const lines = text.split('\n').map(x => x.trim()).filter(Boolean), best = lines.find(x => x.startsWith('★')) || '';
+    { const c = CH.find(x => x[0] === T.id); window.EULE && EULE.push({ src: 'comedy', q: `${c[2]}: ${T.prompt}\nWas war deine beste Idee, und welche Technik steckt drin?`, a: (best ? best.replace(/^★\s*/, '') : lines[0]) + '\n(' + c[2] + ': ' + c[3] + ')' }); }
     const d = day(); (d.challenges || (d.challenges = [])).push({ id: T.id, prompt: T.prompt, text: text.slice(0, 4000), n: lines.length, best: best.replace(/^★\s*/, ''), at: Date.now() });
     let xp = XP.challenge; if (!d.done) { d.done = true; xp += XP.session; }
     C.xp += xp; save(); gainXP('comedy', xp); toast(`${lines.length} Ideen · +${xp} XP`); T = { id: null, prompt: '', text: '', end: 0, left: MIN5, run: false, iv: null }; go(''); return;
@@ -176,6 +177,8 @@ app.addEventListener('click', e => {
   if (a === 'save') {
     keep(); if (!F.m.note && !F.m.why.length) { toast('Ein Grund reicht: antippen oder ein Satz'); return; }
     const d = day(); d.moments.push(Object.assign({ at: Date.now() }, F.m)); d.src = d.src || srcOfDay()[1];
+    const tn = (F.m.tech || []).map(k => (TECH.find(t => t[0] === k) || [, k])[1]).join(', ');
+    window.EULE && EULE.push({ src: 'comedy', q: 'Pointe: ' + F.m.what.slice(0, 240) + '\nWelche Erwartung wurde aufgebaut, und wie wurde sie gebrochen?', a: 'Erwartung: ' + F.m.exp + '\nBruch: ' + F.m.brk + (tn ? ' (' + tn + ')' : '') + (F.m.note ? '\nWarum lustig: ' + F.m.note : '') });
     let xp = XP.moment; if (!d.done && d.moments.length >= NEED) { d.done = true; xp += XP.session; }
     C.xp += xp; save(); gainXP('comedy', xp); toast((d.done && d.moments.length === NEED ? 'Session erledigt · ' : 'Gespeichert · ') + '+' + xp + ' XP'); F = { step: 0, m: {} }; go(''); return;
   }
