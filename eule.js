@@ -113,7 +113,18 @@
     const label = s => s === 'stb' ? '⚖️ StB-Pfad' : s.startsWith('pfad:echo-wiwi-') ? '🎓 WiWi ' + s.slice(15) : s === 'med' ? '🩺 Medizin' : s.startsWith('quiz:') ? '🎯 Quiz' : s === 'wege' ? '🪷 Wege' : s === 'comedy' ? '😂 Comedy' : '✍️ Eigene Notiz';
     const o = ov(''), box = o.querySelector('.eu-box');
     o.onclick = null;
+    // Phone challenge (Echo, 'echo-phone'): ask about yesterday first, if it is still open.
+    const BQ = (() => { try { const pd = lsj('echo-phone', null); if (!pd) return null; const td = dk(new Date()), y = new Date(); y.setDate(y.getDate() - 1); const yd = dk(y);
+      const c = (pd.list || []).find(x => x.start <= td && td <= x.end); if (!c || yd < c.start) return null; const v = c.days[yd] || {}; return v.box || v.asked ? null : { pd, c, yd }; } catch { return null; } })();
+    function boxCard() {
+      box.innerHTML = `<span class="eu-muted">🌅 Guten Morgen · 📦 Challenge</span><h2 style="font-size:19px;line-height:1.35">Gestern beim Heimkommen: Handy direkt in die Box?</h2>
+        <span class="eu-muted">Ehrlich antworten, ein Nein ist ein Datenpunkt, kein Reset.</span><div class="eu-row"><button class="eu-btn" data-eu="bn">Nein</button><button class="eu-btn p" data-eu="by">Ja</button></div>`;
+      const fin = yes => { const d = BQ.c.days[BQ.yd] || {}; if (yes) d.box = true; else d.asked = true; BQ.c.days[BQ.yd] = d;
+        if (yes && !BQ.c.won && Object.values(BQ.c.days).filter(v => v && v.box).length >= BQ.c.goal) BQ.c.won = true; lsset('echo-phone', BQ.pd); BQ.done = true; draw(); };
+      box.querySelector('[data-eu=by]').onclick = () => fin(true); box.querySelector('[data-eu=bn]').onclick = () => fin(false);
+    }
     function draw() {
+      if (BQ && !BQ.done) return boxCard();
       if (M.i >= M.q.length) return finish();
       const c = M.q[M.i], it = c.it;
       box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><span class="eu-muted">🌅 Guten Morgen · ${Math.min(M.i + 1, M.q.length)}/${M.q.length}${c.again ? ' · noch einmal' : ''}</span><button class="eu-btn" style="padding:6px 10px" data-eu="later">Später</button></div>
