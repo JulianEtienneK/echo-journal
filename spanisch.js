@@ -237,3 +237,6 @@ document.addEventListener('submit', e => {
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && document.getElementById('nextbtn') && !(e.target.id === 'vin' || e.target.id === 'gin') ) { e.preventDefault(); document.getElementById('nextbtn').click(); } });
 window.ES_TEST = { ES, conj, checkProd, allWords, rate, buildSession, recTopic, targets, cefr };
 render();
+// Deep links from Echo's daily Spanish slot: #vocab starts a vocabulary round, #gram the recommended grammar topic.
+if (location.hash === '#vocab') { history.replaceState(null, '', location.pathname); startVocab(false); }
+else if (location.hash === '#gram') { history.replaceState(null, '', location.pathname); try { startGram(recTopic()[0]); } catch { /* no topic yet */ } }
