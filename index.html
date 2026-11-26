@@ -335,7 +335,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   };
   addEventListener('error', ev => { errs.push((ev.error && ev.error.stack) || ev.message + ' @ ' + ev.filename + ':' + ev.lineno); setTimeout(show, 1500); });
   addEventListener('unhandledrejection', ev => { const r = ev.reason; errs.push((r && r.stack) || String(r)); setTimeout(show, 1500); });
-  setTimeout(show, 4000);
+  setTimeout(() => { const app = document.getElementById('app'); if (app && !app.children.length && !errs.length) { errs.push('Echo hängt beim Start, letzter Schritt: ' + (window.__echoStep || 'Skripte laden') + '. Kein Fehler gemeldet.'); show(); } }, 8000);
 })();
 </script>
 <div id="player" hidden></div>
@@ -701,6 +701,7 @@ const DB = {
       r.onupgradeneeded = () => { for (const [s, key] of Object.entries(STORES)) if (!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s, { keyPath: key }); };
       r.onsuccess = () => { this.db = r.result; res(); };
       r.onerror = () => rej(r.error);
+      r.onblocked = () => rej(new Error('Die Datenbank ist blockiert: Ein anderes Echo-Fenster oder ein anderer Tab hält sie offen. Schließ alle Echo-Fenster und öffne Echo neu.'));
     });
   },
   req(store, mode, fn) {
@@ -3039,7 +3040,8 @@ if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListen
 
 (async function boot() {
   applyTheme();
-  try { await DB.open(); await loadAll(); }
+  window.__echoStep = 'Datenbank öffnen';
+  try { await DB.open(); window.__echoStep = 'Daten laden'; await loadAll(); window.__echoStep = 'Start'; }
   catch (e) { $('#app').innerHTML = `<div class="card"><h2>IndexedDB</h2><p>${esc(String(e && e.message || e))}</p></div>`; return; }
   // Free browser speech recognition fills in the transcript while recording. Turned on once by default on desktop;
   // on phones it can fight the recorder for the microphone, so it stays opt-in there.
@@ -3094,6 +3096,7 @@ if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListen
   await abInit();
   { const g = LS.get('echo-geo', null), gm = LS.get('echo-games', null), md = LS.get('echo-med', null); if ((g && g.updated > (AB.last || 0)) || (gm && gm.updated > (AB.last || 0)) || (md && md.updated > (AB.last || 0))) abSchedule(); }
   if (!journalEmpty()) LS.set('echo-restore-hide', false);
+  window.__echoStep = 'Startseite zeichnen';
   render(); celebrate();
   if (!notesRead()[today()] && LS.get('echo-note-later', '') !== today() && !journalEmpty()) setTimeout(openNote, 600);
   if (IS_ARTIFACT) window.claude.use('sample').then(fn => { SAMPLE = fn; render(); }).catch(() => {});
