@@ -24,38 +24,43 @@ function stopRun() {
 const dayKeyOf = ts => { const d = new Date(ts); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 
 function view() {
-  const wk = WIWI.weekMin(), goal = WIWI.WEEK_GOAL_MIN, days = WIWI.weekDays(), mins = days.map(d => Math.round(WIWI.secOn(d) / 60)), mx = Math.max(30, ...mins);
-  const dn = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-  const run = F.run, el = run ? Math.min(MAX_RUN, Math.round((Date.now() - run.start) / 1000)) : 0;
+  const wk = WIWI.weekMin(), goal = WIWI.WEEK_GOAL_MIN, days = WIWI.weekDays(), dn = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+  const SRC = [...WIWI.MODS.map(m => ({ nr: m.nr, col: m.col, label: m.nr })), { nr: 'sonst', col: '#8a948f', label: 'Sonstiges' }];
+  const per = days.map(d => SRC.map(x => Math.round(WIWI.secMod(x.nr, d) / 60))), tot = per.map(r => r.reduce((a, b) => a + b, 0)), mx = Math.max(30, ...tot);
+  const wkBy = SRC.map((x, j) => per.reduce((a, r) => a + r[j], 0));
+  const run = F.run, el = run ? Math.min(MAX_RUN, Math.round((Date.now() - run.start) / 1000)) : 0, rs = run && SRC.find(x => x.nr === run.nr);
   const modCard = m => {
-    const P = LS.get('echo-wiwi-' + m.nr, null), meta = P && P.meta, dt = WIWI.daysTo(m.exam);
-    const wkm = Math.round(days.reduce((a, d) => a + ((((P || {}).days || {})[d] || {}).sec || 0) + ((((F.days[d] || {}).by) || {})[m.nr] || 0), 0) / 60);
-    return `<a class="card" href="${m.page}" style="text-decoration:none;color:inherit"><div class="row"><span class="big">${m.em}</span><div class="stack grow" style="gap:0;min-width:0"><h3>${m.nr} ${esc(m.t)}</h3>
+    const P = LS.get('echo-wiwi-' + m.nr, null), meta = P && P.meta, dt = WIWI.daysTo(m.exam), wkm = Math.round(days.reduce((a, d) => a + WIWI.secMod(m.nr, d), 0) / 60);
+    return `<a class="card" href="${m.page}" style="text-decoration:none;color:inherit;border-left:4px solid ${m.col}"><div class="row"><span class="big">${m.em}</span><div class="stack grow" style="gap:0;min-width:0"><h3>${m.nr} ${esc(m.t)}</h3>
       <span class="small muted">${m.kind}${dt != null ? ` · Klausur in ${dt} Tagen` : ''}${wkm ? ` · ${wkm} min diese Woche` : ''}</span>
-      <span class="small muted">${m.viaStb ? 'Vorerst über den ' + esc(m.viaStb) + ' · eigener Pfad folgt, sobald Material da ist' : meta ? `Lektion ${meta.done}/${meta.total} gelernt` : 'Pfad starten'}</span></div></div></a>`;
+      <span class="small muted">${m.viaStb ? 'Vorerst über den ' + esc(m.viaStb) : meta ? `Lektion ${meta.done}/${meta.total} gelernt` : 'Pfad starten'}</span></div></div></a>`;
   };
   return `<div class="topbar"><a class="link" href="index.html#games">← Spiele</a></div>
   <header class="stack" style="gap:4px"><span class="eyebrow">FernUni Hagen · WS 2026/27</span><h1>🎓 WiWi</h1></header>
-  <section class="card" style="border:2px solid ${wk >= goal ? 'var(--gold)' : 'var(--calm)'}"><div class="row spread"><h3>Diese Woche</h3><span class="mono">${hm(wk)} / ${hm(goal)}${wk >= goal ? ' ✓' : ''}</span></div>
+  <section class="card" style="border:2px solid ${wk >= goal ? 'var(--gold)' : 'var(--calm)'}">
+    <div class="row spread"><h3>Diese Woche</h3><span class="mono">${hm(wk)} / ${hm(goal)}${wk >= goal ? ' ✓' : ''}</span></div>
     <div class="bar"><i style="width:${Math.min(100, wk / goal * 100)}%"></i></div>
-    <div class="days">${mins.map((m, i) => `<div><i style="height:${Math.max(3, m / mx * 70)}px;opacity:${days[i] === today() ? 1 : .6}"></i><span>${dn[i]}${m ? ' ' + m : ''}</span></div>`).join('')}</div>
-    <span class="small muted">Zählt alles aus den WiWi-Pfaden und dem Timer unten. Der StB-Pfad zählt nicht dazu.</span></section>
-  <section class="card"><h3>⏱ Lern-Timer</h3><span class="small muted">Für alles außerhalb von Echo: Studienbrief, Moodle, Einsendearbeiten. Läuft weiter, auch wenn du Echo schließt.</span>
-    <div class="timer" id="tm">${mmss(el)}</div>
-    <select id="nr" ${run ? 'disabled' : ''}>${WIWI.MODS.map(m => `<option value="${m.nr}" ${m.nr === (run ? run.nr : sel) ? 'selected' : ''}>${m.nr} ${esc(m.t)}</option>`).join('')}<option value="sonst" ${(run ? run.nr : sel) === 'sonst' ? 'selected' : ''}>Sonstiges WiWi</option></select>
-    ${run ? `<button class="btn primary big" data-act="stop">Stopp und speichern</button>` : `<button class="btn primary big" data-act="start">Start</button>`}
-    <details><summary class="small">Zeit nachtragen</summary><div class="row" style="gap:8px;margin-top:8px"><input type="number" id="addmin" min="1" max="600" placeholder="Minuten"><button class="btn" data-act="add">Eintragen</button></div></details></section>
+    <div class="days">${per.map((r, i) => `<div><div class="stackbar" style="height:${Math.max(3, tot[i] / mx * 76)}px;opacity:${days[i] === today() ? 1 : .75}">${r.map((v, j) => v ? `<i style="flex:${v};background:${SRC[j].col}" title="${SRC[j].label}: ${v} min"></i>` : '').join('') || '<i style="flex:1;background:var(--line)"></i>'}</div><span>${dn[i]}${tot[i] ? ' ' + tot[i] : ''}</span></div>`).join('')}</div>
+    <div class="legend">${SRC.map((x, j) => wkBy[j] || x.nr !== 'sonst' ? `<span><i style="background:${x.col}"></i>${x.label} ${wkBy[j] ? hm(wkBy[j]) : '–'}</span>` : '').join('')}</div>
+    <div class="tmr ${run ? 'on' : ''}">
+      ${run ? `<div class="row spread"><span><i class="dot" style="background:${rs ? rs.col : '#888'}"></i> <b>${esc(rs ? rs.label : run.nr)}</b> läuft</span><span class="timer" id="tm">${mmss(el)}</span></div>
+        <button class="btn primary" data-act="stop">Stopp und speichern</button>`
+      : `<span class="small muted">⏱ Lernzeit außerhalb von Echo (Studienbrief, Moodle, Einsendearbeit): Modul antippen, Zeit läuft, auch wenn Echo zu ist. In den Pfaden zählt Echo die Zeit von selbst.</span>
+        <div class="chips">${SRC.map(x => `<button class="chip" data-act="start" data-v="${x.nr}"><i class="dot" style="background:${x.col}"></i>${x.label}</button>`).join('')}</div>`}
+      <details><summary class="small muted">Zeit nachtragen</summary><div class="row" style="gap:8px;margin-top:8px"><select id="nr">${SRC.map(x => `<option value="${x.nr}" ${x.nr === sel ? 'selected' : ''}>${x.label}</option>`).join('')}</select><input type="number" id="addmin" min="1" max="600" placeholder="Min." style="max-width:90px"><button class="btn" data-act="add">Eintragen</button></div></details>
+    </div>
+    <span class="small muted">Zählt Pfade und Timer zusammen. Der StB-Pfad zählt nicht dazu.</span></section>
   <h3 style="margin:8px 4px 0">Module</h3>
   ${WIWI.MODS.map(modCard).join('')}
   <details class="card"><summary>So lernst du hier</summary><div class="stack small" style="gap:6px;line-height:1.5;margin-top:8px">
-    <span>Jedes Modul hat einen eigenen Pfad wie der StB-Pfad: Lektionen mit Vorab-Frage, Fall, eigenen Worten und Verknüpfung, Karten in wachsenden Abständen, Rechentrainer mit immer neuen Zahlen und Probeklausuren auf Zeit.</span>
-    <span>Das Tempo richtet sich nach dem Klausurtermin: Bleibt bis zur Klausur zu wenig Zeit, kommen neue Lektionen täglich statt jeden zweiten Tag, damit die letzten drei Wochen für Probeklausuren frei bleiben.</span>
+    <span>Jedes Modul hat einen eigenen Pfad: Lektionen mit Vorab-Frage, Fall, eigenen Worten und Verknüpfung, Karten in wachsenden Abständen, Rechentrainer mit immer neuen Zahlen und Probeklausuren auf Zeit.</span>
+    <span>Das Tempo richtet sich nach dem Klausurtermin: Bleibt bis zur Klausur zu wenig Zeit, kommen neue Lektionen täglich statt jeden zweiten Tag.</span>
     <span>Alle Lektionen geben doppelte XP.</span></div></details>`;
 }
 function render() { app.innerHTML = view(); }
 app.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act;
-  if (a === 'start') { sel = document.getElementById('nr').value; LS.set('echo-wiwi-last', sel); F.run = { start: Date.now(), nr: sel }; saveF(); render(); }
+  if (a === 'start') { if (F.run) stopRun(); sel = b.dataset.v; LS.set('echo-wiwi-last', sel); F.run = { start: Date.now(), nr: sel }; saveF(); render(); }
   if (a === 'stop') { const s = stopRun(); toast(`${hm(Math.round(s / 60))} gespeichert`); render(); }
   if (a === 'add') { const m = Math.max(0, Math.min(600, parseInt(document.getElementById('addmin').value, 10) || 0)); if (!m) return; sel = document.getElementById('nr').value; addTime(m * 60, sel); saveF(); gainXP('wiwi-zeit', m * 2); toast(`${hm(m)} eingetragen`); render(); }
 });

@@ -86,7 +86,8 @@ function clock() {
     document.body.appendChild(el);
     CLK = { el, sec: 0, iv: setInterval(() => {
       const idle = Date.now() - lastInput > 180000, hidden = document.visibilityState !== 'visible';
-      if (!idle && !hidden) { CLK.sec++; const d = P.days[today()] || (P.days[today()] = { sec: 0, rev: 0 }); d.sec = (d.sec || 0) + 1; if (CLK.sec % 15 === 0) save(); }
+      const shared = CFG.key && CFG.key.startsWith('echo-wiwi-') && (((LS.get('echo-wiwi-free', {}) || {}).run || {}).nr === CFG.short);
+      if (!idle && !hidden && !shared) { CLK.sec++; const d = P.days[today()] || (P.days[today()] = { sec: 0, rev: 0 }); d.sec = (d.sec || 0) + 1; if (CLK.sec % 15 === 0) save(); }
       const tm = minToday();
       CLK.el.innerHTML = `${idle || hidden ? '⏸' : '⏱'} ${mmss(CLK.sec)} <span style="color:var(--muted);font-weight:500">· heute ${tm}/${CFG.dayMin}</span>`;
       CLK.el.style.borderColor = tm >= CFG.dayMin ? 'var(--gold)' : 'var(--calm)';
