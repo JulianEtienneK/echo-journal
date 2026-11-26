@@ -86,8 +86,8 @@ function viewHub() {
     <div class="note"><b>2 · Bruch:</b> Wie wurde die Annahme umgeworfen, und mit welcher Technik?</div>
     <div class="note"><b>3 · Warum lustig:</b> Was macht den Bruch angenehm statt nur verwirrend? Meist: überraschend, aber im Nachhinein logisch, und die Verletzung bleibt harmlos.</div></section>
   ${top.length ? `<section class="card"><span class="eyebrow">Deine Techniken bisher</span><div class="chips">${top.map(([k, n]) => `<span class="chip">${esc((TECH.find(t => t[0] === k) || [, k])[1])} · ${n}</span>`).join('')}</div><span class="small muted">${all.length} Momente analysiert. Techniken, die selten auftauchen, lohnt es sich gezielt zu suchen.</span></section>` : ''}
-  ${(() => { const cs = Object.entries(C.days).sort((a, b) => b[0].localeCompare(a[0])).flatMap(([k, x]) => (x.challenges || []).map(c => ({ k, c }))).slice(0, 4); return cs.length ? `<section class="card"><span class="eyebrow">Letzte Challenges</span>${cs.map(({ k, c }) => { const ch = CH.find(x => x[0] === c.id) || ['', '⏱️', c.id]; return `<div class="note"><span class="small muted">${ch[1]} ${esc(ch[2])} · ${esc(c.prompt)} · ${c.n} Ideen</span>${c.best ? `<br>★ ${esc(c.best)}` : ''}</div>`; }).join('')}</section>` : ''; })()}
-  ${recent.length ? `<section class="card"><span class="eyebrow">Zuletzt</span>${recent.map(({ k, m }) => `<div class="note"><span class="small muted">${esc(new Date(k + 'T12:00').toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' }))} · ${['🙂', '😄', '😂', '🤣'][m.laugh || 0]}</span><br><b>${esc(m.what)}</b><br><span class="small">Erwartung: ${esc(m.exp)}<br>Bruch: ${esc(m.brk)}</span></div>`).join('')}</section>` : ''}
+  ${(() => { const cs = Object.entries(C.days).sort((a, b) => b[0].localeCompare(a[0])).flatMap(([k, x]) => (x.challenges || []).map(c => ({ k, c }))).slice(0, 4); return cs.length ? `<section class="card"><span class="eyebrow">Letzte Challenges</span>${cs.map(({ k, c }) => { const ch = CH.find(x => x[0] === c.id) || ['', '⏱️', c.id]; return `<div class="note"><button class="link" data-act="del" data-k="${k}" data-t="challenges" data-at="${c.at}" style="float:right;color:var(--muted)" aria-label="Löschen">✕</button><span class="small muted">${ch[1]} ${esc(ch[2])} · ${esc(c.prompt)} · ${c.n} Ideen</span>${c.best ? `<br>★ ${esc(c.best)}` : ''}</div>`; }).join('')}</section>` : ''; })()}
+  ${recent.length ? `<section class="card"><span class="eyebrow">Zuletzt</span>${recent.map(({ k, m }) => `<div class="note"><button class="link" data-act="del" data-k="${k}" data-t="moments" data-at="${m.at}" style="float:right;color:var(--muted)" aria-label="Löschen">✕</button><span class="small muted">${esc(new Date(k + 'T12:00').toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' }))} · ${['🙂', '😄', '😂', '🤣'][m.laugh || 0]}</span><br><b>${esc(m.what)}</b><br><span class="small">Erwartung: ${esc(m.exp)}<br>Bruch: ${esc(m.brk)}</span></div>`).join('')}</section>` : ''}
   <section class="card"><span class="eyebrow">Zum Weiterlesen</span><span class="small">Steve Kaplan, „The Hidden Tools of Comedy“ (2013) · Joe Toplyn, „Comedy Writing for Late-Night TV“ (2014) · McGraw und Warner, „The Humor Code“ (2014, Benign-Violation-Theorie) · Greg Dean, „Step by Step to Stand-Up Comedy“ (2000, Erwartung und Umdeutung als Methode) · John Vorhaus, „The Comic Toolbox“ (1994)</span></section>`;
 }
 
@@ -149,6 +149,11 @@ function keep() { const v = val(); if (F.step === 0) F.m.what = v; else if (F.st
 app.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const a = el.dataset.act, v = el.dataset.v;
+  if (a === 'del') {
+    const d = C.days[el.dataset.k], list = d && d[el.dataset.t]; if (!list) return;
+    const i = list.findIndex(x => String(x.at) === el.dataset.at); if (i < 0 || !confirm('Diesen Eintrag löschen?')) return;
+    list.splice(i, 1); d.done = (d.moments || []).length >= NEED || (d.challenges || []).length > 0; save(); toast('Gelöscht'); render(); return;
+  }
   if (a === 'go') { if (v === 'challenge' && !(T.text || '').trim()) T.id = null; return go(v); }
   if (a === 'chpick' || a === 'chrand') { chSet(a === 'chrand' ? CH[Math.floor(Math.random() * CH.length)][0] : v); render(); return; }
   if (a === 'chnew') { const t = T.text; chSet(T.id); T.text = t; render(); return; }
