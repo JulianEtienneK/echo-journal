@@ -8,6 +8,7 @@
    Card ids: '<lessonId>:c<i>' (free recall) and '<lessonId>:n<i>' (paragraph navigation, typed and checked). */
 'use strict';
 const app = document.getElementById('app');
+if (!document.getElementById('trk-css')) { const st = document.createElement('style'); st.id = 'trk-css'; st.textContent = '.tri{display:flex;height:10px;border-radius:6px;overflow:hidden;background:var(--line)}.tri i{display:block;min-width:0}.btn.why{font-size:14px;padding:8px 12px;opacity:.9}'; document.head.appendChild(st); }
 const D = window.STB_PFAD;
 const CFG = Object.assign({ key: 'echo-stbpfad', title: '⚖️ StB-Pfad', short: 'StB-Pfad', back: 'index.html#games', backLabel: 'Spiele', xp: 'stbpfad', src: 'stb',
   dayMin: 30, extraCard: true, askTopic: 'Steuerrecht allgemein', sys: null, exam: null, examLabel: '', note: null, progress: null }, window.PFAD_CFG || {});
@@ -52,7 +53,58 @@ function rate(id, r, retry) {
   else { c.b = Math.min(c.b + 1, LADDER.length - 1); c.due = addDays(LADDER[c.b]); }
 }
 // pull a lesson's cards forward after a mistake in a case
-function refresh(lid) { for (const id of lessonCards(LBY[lid])) { const c = P.cards[id]; if (c && c.due > addDays(1)) { c.due = addDays(1); c.b = Math.max(0, c.b - 1); } } }
+function refresh(lid) { const l = LBY[lid]; if (!l) return; for (const id of lessonCards(l)) { const c = P.cards[id]; if (c && c.due > addDays(1)) { c.due = addDays(1); c.b = Math.max(0, c.b - 1); } } }
+
+/* ---------- knowledge tracking: every rated step, card, drill and exam task lands in P.log ----------
+   P.log = { key: { t: title, lid, k: kind ('step'|'card'|'drill'|'exam'), n, ok, part, miss, last, h: last results (0/1/2) } }.
+   A step rated "nicht gewusst" or "teilweise" becomes its own review card (P.qcards, linked through P.stepCard[key]). */
+const KIND = { step: 'Fallschritte', card: 'Karten', drill: 'Rechenaufgaben', exam: 'Klausuraufgaben' };
+function track(key, r, info) {
+  const L = P.log || (P.log = {}), x = L[key] || (L[key] = { n: 0, ok: 0, part: 0, miss: 0, h: [] });
+  Object.assign(x, info || {}); x.n++; x.last = today(); x[r === 2 ? 'ok' : r === 1 ? 'part' : 'miss']++; x.h = [...(x.h || []), r].slice(-6);
+  const d = P.days[today()] || (P.days[today()] = { sec: 0, rev: 0 }); d.tr = d.tr || [0, 0, 0]; d.tr[r]++;
+}
+// a step you did not know becomes a review card; a known step pushes an existing step card further out
+function stepCard(key, lid, q, a, r) {
+  const m = P.stepCard || (P.stepCard = {}); let id = m[key];
+  if (id && !P.cards[id]) id = null;
+  if (!id) { if (r === 2) return; id = m[key] = (lid && LBY[lid] ? lid : (LESSONS[0] || {}).id || 'x') + ':q' + uid(); (P.qcards || (P.qcards = {}))[id] = { q, a, d: today(), step: key }; P.cards[id] = { b: 0, due: addDays(1), n: 0, lapses: 0, last: today() }; return; }
+  rate(id, r);
+}
+const R3 = (act, extra = '') => `<div class="rate"><button class="btn" data-act="${act}" data-v="0"${extra}>Nicht gewusst</button><button class="btn" data-act="${act}" data-v="1"${extra}>Teilweise</button><button class="btn primary" data-act="${act}" data-v="2"${extra}>Gewusst</button></div>`;
+const whyBtn = () => `<button class="btn why" data-act="why">🤔 Warum so? Ausführlich erklären</button>`;
+const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+function knowStats() {
+  const L = P.log || {}, by = {}, lessons = {};
+  for (const [k, x] of Object.entries(L)) {
+    const g = by[x.k || 'step'] || (by[x.k || 'step'] = { n: 0, ok: 0, part: 0, miss: 0 }); for (const f of ['n', 'ok', 'part', 'miss']) g[f] += x[f] || 0;
+    if (x.lid && LBY[x.lid]) { const y = lessons[x.lid] || (lessons[x.lid] = { n: 0, score: 0, miss: 0 }); y.n += x.n; y.score += (x.ok || 0) * 2 + (x.part || 0); y.miss += x.miss || 0; }
+  }
+  // free-recall cards count with their lapses
+  for (const [id, c] of Object.entries(P.cards)) { const lid = id.split(':')[0]; if (!LBY[lid] || !c.n) continue; const y = lessons[lid] || (lessons[lid] = { n: 0, score: 0, miss: 0 }); y.n += c.n; y.score += Math.max(0, c.n - (c.lapses || 0)) * 2; y.miss += c.lapses || 0; }
+  const ls = Object.entries(lessons).map(([lid, y]) => ({ l: LBY[lid], q: y.score / (2 * y.n), n: y.n, miss: y.miss })).filter(x => x.n >= 2);
+  return { by, weak: ls.filter(x => x.q < 0.8).sort((a, b) => a.q - b.q).slice(0, 6), strong: ls.filter(x => x.q >= 0.8).length, all: ls.length };
+}
+function knowCard() {
+  const k = knowStats(), tot = Object.values(k.by).reduce((a, g) => ({ n: a.n + g.n, ok: a.ok + g.ok, part: a.part + g.part, miss: a.miss + g.miss }), { n: 0, ok: 0, part: 0, miss: 0 });
+  if (!tot.n) return '';
+  const bar = g => `<div class="tri"><i style="flex:${g.ok};background:var(--calm)"></i><i style="flex:${g.part};background:var(--gold)"></i><i style="flex:${g.miss};background:var(--muted)"></i></div>`;
+  return `<a class="card" href="#wissen" style="text-decoration:none;color:inherit"><div class="row spread"><h3>📊 Wissensstand</h3><span class="small muted">${pct(tot.ok, tot.n)} % gewusst</span></div>${bar(tot)}
+    <span class="small muted">${tot.n} Mal bewertet · ${tot.ok} gewusst · ${tot.part} teilweise · ${tot.miss} nicht gewusst${k.weak.length ? ' · wackelt: ' + esc(k.weak.slice(0, 2).map(x => x.l.t).join(', ')) : ''}</span></a>`;
+}
+function viewKnow() {
+  const k = knowStats(), L = P.log || {};
+  const bar = g => `<div class="tri"><i style="flex:${g.ok || 0};background:var(--calm)"></i><i style="flex:${g.part || 0};background:var(--gold)"></i><i style="flex:${g.miss || 0};background:var(--muted)"></i></div>`;
+  const recent = Object.entries(L).filter(([, x]) => x.miss || x.part).sort((a, b) => (b[1].last || '').localeCompare(a[1].last || '') || (b[1].miss - a[1].miss)).slice(0, 25);
+  const days = Object.entries(P.days).filter(([, d]) => d.tr).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14);
+  return `<div class="topbar"><a class="link" href="#">← ${esc(CFG.short)}</a></div>
+  <header class="stack" style="gap:4px"><h1>📊 Wissensstand</h1><span class="small muted">Was du nach dem Aufdecken selbst bewertet hast, plus Rechentrainer und Probeklausuren. Grün gewusst, gelb teilweise, grau nicht gewusst.</span></header>
+  <section class="card">${Object.entries(k.by).map(([kind, g]) => `<div class="stack" style="gap:4px"><div class="row spread"><b class="small">${KIND[kind] || kind}</b><span class="small muted">${pct(g.ok, g.n)} % · ${g.n}×</span></div>${bar(g)}</div>`).join('')}
+    <span class="small muted">${k.strong} von ${k.all} bewerteten Lektionen sitzen (mindestens 80 %).</span></section>
+  ${k.weak.length ? `<section class="card"><h3>Wo es hakt</h3>${k.weak.map(x => `<a class="row spread" href="#l-${x.l.id}" style="text-decoration:none;color:inherit"><span class="small">${esc(x.l.t)}</span><span class="small muted mono">${Math.round(x.q * 100)} %</span></a>`).join('')}<span class="small muted">Antippen zum Nachlesen. Nicht gewusste Schritte kommen ohnehin als Karten wieder.</span></section>` : ''}
+  ${recent.length ? `<section class="card"><h3>Zuletzt nicht oder halb gewusst</h3>${recent.map(([, x]) => `<div class="stack" style="gap:2px"><span class="small">${mf(String(x.t || '').slice(0, 160))}</span><span class="small muted">${KIND[x.k] || ''} · ${x.h.map(r => ['✗', '½', '✓'][r]).join(' ')} · zuletzt ${x.last}</span></div>`).join('')}</section>` : ''}
+  ${days.length ? `<section class="card"><h3>Letzte Tage</h3>${days.map(([d, x]) => `<div class="row spread"><span class="small mono">${d.slice(5)}</span><span class="small muted">✓ ${x.tr[2]} · ½ ${x.tr[1]} · ✗ ${x.tr[0]}</span></div>`).join('')}</section>` : ''}`;
+}
 
 /* ---------- paragraph check: law name plus the chain of numbers ---------- */
 const LAWS = /(estg|esth|estr|lstdv|ao|kstg|gewstg|ustg|hgb|bewg|erbstg|stberg)/;
@@ -158,6 +210,7 @@ function viewHome() {
     <div class="stack" style="gap:4px"><div class="row spread">${(() => { const pr = CFG.progress ? CFG.progress() : { label: 'Jahresziel', text: h.toFixed(1) + ' / 180 h · ' + weekMin() + ' min diese Woche', pct: h / 180 }; return `<span class="small">${esc(pr.label)}</span><span class="small muted mono">${esc(pr.text)}</span></div><div class="bar gold"><i style="width:${Math.min(100, pr.pct * 100)}%"></i></div>`; })()}</div></section>
   ${dl.length >= 2 ? `<a class="card" href="#fall" style="text-decoration:none;color:inherit"><div class="row"><span class="big">🧩</span><div class="stack grow" style="gap:0"><h3>Fall-Training</h3><span class="small muted">Gemischter Fall: erst erkennen, welches Thema greift, dann selbst lösen</span></div></div></a>` : ''}
   ${bosses.map(m => `<a class="card" href="#boss-${m.id}" style="text-decoration:none;color:inherit;${P.boss[m.id] ? '' : 'border:2px solid var(--gold)'}"><div class="row"><span class="big">${P.boss[m.id] ? '🏆' : '👹'}</span><div class="stack grow" style="gap:0"><h3>Abschlussfall: ${esc(D.BOSS[m.id].t)}</h3><span class="small muted">${esc(m.n)} · ${P.boss[m.id] ? 'bestanden, jederzeit wiederholbar' : 'alle Lektionen des Moduls in einem Fall'}</span></div></div></a>`).join('')}
+  ${knowCard()}
   ${P.qa.length ? `<a class="card" href="#fragen" style="text-decoration:none;color:inherit"><div class="row"><span class="big">❓</span><div class="stack grow" style="gap:0"><h3>Deine Fragen</h3><span class="small muted">${P.qa.length} gestellt · zuletzt: ${esc(P.qa[P.qa.length - 1].q.slice(0, 70))}</span></div></div></a>` : ''}
   <section class="card"><h3>Der rote Faden</h3>${D.ROADMAP.map(modRow).join('')}</section>
   <section class="card"><h3>Ränge</h3><div class="stack" style="gap:2px">${D.RANKS.map(x => `<span class="small" style="color:${r.m >= x[0] ? 'var(--ink)' : 'var(--muted)'}">${r.m >= x[0] ? '●' : '○'} ${esc(x[1])} <span class="muted">· ab ${x[0]} sicheren Karten</span></span>`).join('')}</div><span class="small muted">„Sicher“ heißt: Die Karte wurde nach einer Pause von mindestens einer Woche noch gewusst. Nur das zählt, nicht wie oft du sie gesehen hast.</span></section>
@@ -185,7 +238,7 @@ function viewReview() {
   }
   const res = c.type === 'nav' ? ['❌ Nicht ganz', '🟡 Richtige Norm, Absatz oder Satz fehlt oder weicht ab', '✅ Genau'][SS.navRes] : '';
   return `${head}<section class="card"><span class="small muted">${esc(c.q)}</span>${SS.typed ? `<span class="small">Du: ${esc(SS.typed)}</span>` : ''}${res ? `<b>${res}</b>` : ''}
-    <div class="ans">${mf(c.a)}</div>${rateBtns()}</section>`;
+    <div class="ans">${mf(c.a)}</div>${whyBtn()}${rateBtns()}</section>`;
 }
 
 function viewPlan() {
@@ -277,7 +330,8 @@ function viewLesson() {
   if (k === 2) {
     const c = l.case, s = SS.step, done = s >= c.steps.length;
     const mine = SS.mine || {}, shown = c.steps.slice(0, s).map(([q, a], k) => `<div class="step open"><b>${mf(q)}</b>${mine[k] ? `<span class="small" style="white-space:pre-wrap">Du: ${esc(mine[k])}</span>${calcHTML(mine[k])}` : ''}<div class="ans">${mf(a)}</div></div>`).join('');
-    const cur = done ? `<div class="ans"><b>Ergebnis:</b> ${mf(c.res)}</div><button class="btn primary" data-act="next">${l.nav && l.nav.length ? (CFG.navReview ? 'Weiter zur Paragrafen-Navigation' : 'Weiter zum Nachschlagen') : 'Weiter'}</button>`
+    const open = SS.open ? `<div class="step open"><b>${mf(c.steps[s][0])}</b>${mine[s] ? `<span class="small" style="white-space:pre-wrap">Du: ${esc(mine[s])}</span>${calcHTML(mine[s])}` : ''}<div class="ans">${mf(c.steps[s][1])}</div>${whyBtn()}<span class="small muted">${fading ? 'Wie gut lag deine Lösung?' : 'Hättest du das selbst gewusst?'}</span>${R3('lrate')}</div>` : '';
+    const cur = open ? open : done ? `<div class="ans"><b>Ergebnis:</b> ${mf(c.res)}</div><button class="btn primary" data-act="next">${l.nav && l.nav.length ? (CFG.navReview ? 'Weiter zur Paragrafen-Navigation' : 'Weiter zum Nachschlagen') : 'Weiter'}</button>`
       : fading ? `<div class="step"><b>${mf(c.steps[s][0])}</b><textarea id="guess" placeholder="Erst selbst lösen, dann aufdecken. Rechnungen wie 100.000 · 1,05^2 − 12.950,46 · 2,05 rechnet 🧮 aus.">${esc(SS.guess)}</textarea><div id="calcout"></div><div class="calcrow"><button class="btn" data-act="calc">🧮 Ausrechnen</button><button class="btn primary" data-act="reveal">Aufdecken</button></div></div>`
         : `<div class="step"><b>${esc(c.steps[s][0])}</b><span class="small muted">Überleg kurz selbst, dann deck den Schritt auf.</span><button class="btn primary" data-act="reveal">Schritt zeigen</button></div>`;
     return `${head}<section class="card"><span class="eyebrow">${fading ? 'Fall · selbst lösen' : 'Fall · Lösungsweg zum Mitdenken'}</span><div class="sv">${mf(c.sv)}</div>${shown}${cur}</section>`;
@@ -302,7 +356,7 @@ function viewLesson() {
   if (k === 5) {
     const R = SS.recall, it = R.queue[R.i], c = cardDef(it.id);
     return `${head}<section class="card"><span class="eyebrow">Sofort-Abruf ${Math.min(R.i + 1, R.queue.length)}/${R.queue.length}${it.retry ? ' · noch einmal' : ''}</span><h2 style="line-height:1.35">${esc(c.q)}</h2>
-      ${R.shown ? `<div class="ans">${esc(c.a)}</div><div class="rate"><button class="btn" data-act="rrate" data-v="0">Nicht gewusst</button><button class="btn primary" data-act="rrate" data-v="2">Gewusst</button></div>`
+      ${R.shown ? `<div class="ans">${esc(c.a)}</div>${whyBtn()}${R3('rrate')}`
         : `<span class="small muted">Nicht zurückblättern: aus dem Kopf.</span><button class="btn primary" data-act="rshow">Aufdecken</button>`}</section>`;
   }
   return `${head}<section class="card" style="text-align:center"><span style="font-size:44px">✅</span><h2>Lektion geschafft</h2>
@@ -339,11 +393,11 @@ function viewCase() {
   const pickFb = C.boss ? '' : `<section class="card"><b>${C.pick === C.L.id ? '✅ Richtig erkannt' : '❌ Gemeint war: ' + esc(C.L.t)}</b></section>`;
   const prev = C.steps.slice(0, C.s).map(st => `<div class="step open"><b>${mf(st[0])}</b><div class="ans">${mf(st[1])}</div></div>`).join('');
   if (done) return `${head}${pickFb}<section class="card">${prev}<div class="ans"><b>Ergebnis:</b> ${mf(C.res)}</div>
-    <span class="small muted">${C.miss ? `${C.miss} Schritt${C.miss === 1 ? '' : 'e'} nicht getroffen; die passenden Karten kommen morgen wieder.` : 'Alle Schritte getroffen.'}</span>
+    <span class="small muted">${C.miss || C.part ? `${C.miss} nicht gewusst, ${C.part || 0} teilweise. Diese Schritte kommen ab morgen als Karten wieder.` : 'Alle Schritte gewusst.'}</span>
     <button class="btn primary" data-act="casedone">Abschließen</button></section>`;
   const st = C.steps[C.s];
   return `${head}${pickFb}<section class="card">${prev}<div class="step"><b>${esc(st[0])}</b>${st[2] && C.boss ? `<span class="small muted">Thema: ${esc(LBY[st[2]].t)}</span>` : ''}
-    ${C.shown ? `${C.guess ? `<span class="small" style="white-space:pre-wrap">Du: ${esc(C.guess)}</span>${calcHTML(C.guess)}` : ''}<div class="ans">${mf(st[1])}</div><div class="rate" style="grid-template-columns:1fr 1fr"><button class="btn" data-act="step" data-v="0">Nicht getroffen</button><button class="btn primary" data-act="step" data-v="1">Getroffen</button></div>`
+    ${C.shown ? `${C.guess ? `<span class="small" style="white-space:pre-wrap">Du: ${esc(C.guess)}</span>${calcHTML(C.guess)}` : ''}<div class="ans">${mf(st[1])}</div>${whyBtn()}${R3('step')}`
       : `<textarea id="guess" placeholder="Deine Lösung für diesen Schritt">${esc(C.guess)}</textarea><div id="calcout"></div><div class="calcrow"><button class="btn" data-act="calc">🧮 Ausrechnen</button><button class="btn primary" data-act="sreveal">Aufdecken</button></div>`}</div></section>`;
 }
 
@@ -365,16 +419,17 @@ function ctxNow() {
   const h = location.hash.replace(/^#/, '');
   let l = null, item = '';
   if (h.startsWith('l-')) l = LBY[h.slice(2)];
-  else if (SS && SS.stage === 'lesson') { l = SS.L; if (SS.k === 2 && SS.L.case.steps[SS.step]) item = 'Aktueller Fallschritt: ' + SS.L.case.steps[SS.step][0]; }
-  else if (DR) { item = 'Rechenaufgabe (' + DR.d.t + '): ' + DR.task.q + (DR.res ? ' | Lösung: ' + fmtN(DR.task.a) + ' | Weg: ' + DR.task.steps.join(' / ') : ''); }
+  else if (SS && SS.stage === 'lesson') { l = SS.L; if (SS.k === 2 && SS.L.case.steps[SS.step]) item = 'Aktueller Fallschritt: ' + SS.L.case.steps[SS.step][0] + (SS.open ? ' | Lösung: ' + SS.L.case.steps[SS.step][1] + (SS.mine && SS.mine[SS.step] ? ' | Meine Lösung: ' + SS.mine[SS.step] : '') : ''); if (SS.k === 5 && SS.recall) { const c = cardDef(SS.recall.queue[SS.recall.i].id); if (c) item = 'Abrufkarte: ' + c.q + (SS.recall.shown ? ' | Antwort: ' + c.a : ''); } }
+  else if (DR) { item = 'Rechenaufgabe (' + DR.d.t + '): ' + DR.task.q + (DR.res ? ' | Lösung: ' + fmtN(DR.task.a) + ' | Weg: ' + DR.task.steps.join(' / ') + (DR.given ? ' | Meine Eingabe: ' + DR.given : '') : ''); }
   else if (SS && SS.stage === 'review') { const c = cardDef(SS.queue[SS.i].id); l = LBY[c.lid]; item = 'Aktuelle Karte: ' + c.q + (SS.shown ? ' | Lösung: ' + c.a : ''); }
-  else if (SS && SS.stage === 'case') { const C = SS.C, st = C.steps[C.s]; l = C.L || (st && LBY[st[2]]) || null; item = 'Sachverhalt: ' + C.sv + (st ? ' | Aktueller Schritt: ' + st[0] + (C.shown ? ' | Lösung: ' + st[1] : '') : ''); }
+  else if (SS && SS.stage === 'case') { const C = SS.C, st = C.steps[C.s]; l = C.L || (st && LBY[st[2]]) || null; item = 'Sachverhalt: ' + C.sv + (st ? ' | Aktueller Schritt: ' + st[0] + (C.shown ? ' | Lösung: ' + st[1] + (C.guess ? ' | Meine Lösung: ' + C.guess : '') : '') : ''); }
   return { l, item };
 }
 function ctxText(l, item) {
   const done = doneL().map(x => x.t).join('; ');
   return [l ? `Lektion „${l.t}“ (${l.norms.join(', ')}).\nRoter Faden: ${l.why}\nKern: ${l.core.join(' ')}\nPrüfschema: ${l.schema.join(' → ')}\nFall: ${l.case.sv} Ergebnis: ${l.case.res}` : 'Keine bestimmte Lektion offen.', item, done ? 'Bereits gelernt: ' + done : ''].filter(Boolean).join('\n\n');
 }
+const WHY = 'Erklär mir diesen Schritt ausführlich und Schritt für Schritt, als hätte ich ihn nicht verstanden: 1. Was genau ist hier gefragt? 2. Welche Regel, Formel oder Norm greift, und warum gerade diese? 3. Wie kommt man auf jede Zahl oder jedes Argument der Lösung (bei Rechnungen: Formel, eingesetzte Werte, Ergebnis)? 4. Welcher typische Fehler passiert hier, und woran erkenne ich in der Klausur, dass dieser Schritt dran ist? Diesmal gern bis 350 Wörter.';
 const SYS = 'Du bist ein erfahrener Tutor für die deutsche Steuerberaterprüfung. Rechtsstand 2026. Der Lernende arbeitet sich mit einem Lernpfad ins Steuerrecht ein und stellt eine Verständnisfrage. ' +
   'Antworte auf Deutsch, präzise und knapp (höchstens etwa 200 Wörter), mit Fundstellen (Gesetz, Paragraf, Absatz, Satz; ggf. R/H der Richtlinien oder BFH). Erkläre zuerst das Warum: die Systematik und den Zweck der Regel, dann die Folge, gern mit einem Mini-Beispiel. ' +
   'Erfinde keine Beträge, Fristen oder Urteile. Wenn du dir bei einer Zahl oder einem aktuellen Rechtsstand nicht sicher bist, sag das ausdrücklich und nenne, wo man es nachprüft. ' +
@@ -467,11 +522,12 @@ function viewDrill() {
     <input type="text" id="drillin" inputmode="decimal" placeholder="Ergebnis${task.unit ? ' in ' + esc(task.unit) : ''}" value="${esc(DR.given)}" ${res ? 'disabled' : ''} autocomplete="off">
     ${res ? `<b>${res === 'ok' ? '✅ Richtig' : '❌ Nicht ganz'} · Lösung: ${fmtN(task.a, task.dec ?? 2)}${task.unit ? ' ' + esc(task.unit) : ''}</b>
       <div class="stack" style="gap:6px">${task.steps.map(x => `<div class="step open"><div class="ans" style="white-space:pre-wrap">${mf(x)}</div></div>`).join('')}</div>
-      <div class="row" style="gap:8px"><button class="btn primary grow" data-act="drillnext">Nächste Aufgabe</button><button class="btn" data-act="drillmine">War doch richtig</button></div>`
+      ${whyBtn()}<div class="row" style="gap:8px"><button class="btn primary grow" data-act="drillnext">Nächste Aufgabe</button><button class="btn" data-act="drillmine">War doch richtig</button></div>`
       : `<button class="btn primary" data-act="drillcheck">Prüfen</button><button class="btn" data-act="drillskip">Lösung zeigen</button>`}</section>`;
 }
 function drillScore(ok) {
   const st = P.drills || (P.drills = {}), x = st[DR.d.id] || (st[DR.d.id] = { n: 0, ok: 0 }); x.n++; if (ok) { x.ok++; gainXP(CFG.xp, 20); }
+  track('drill:' + DR.d.id, ok ? 2 : 0, { t: DR.d.t, k: 'drill' });
   if (!ok) window.EULE && EULE.push({ src: CFG.src, q: DR.task.q, a: 'Ergebnis ' + fmtN(DR.task.a, DR.task.dec ?? 2) + (DR.task.unit ? ' ' + DR.task.unit : '') + '\n' + DR.task.steps.join('\n') });
   act(); save();
 }
@@ -523,6 +579,7 @@ function render() {
   let html;
   if (h.startsWith('l-') && LBY[h.slice(2)]) html = viewRead(LBY[h.slice(2)]);
   else if (h === 'fragen') html = viewQA();
+  else if (h === 'wissen') html = viewKnow();
   else if (h === 'rechnen' && (D.DRILLS || []).length) html = viewDrills();
   else if (h.startsWith('rechnen-') && (D.DRILLS || []).length) { if (!DR || DR.id !== h.slice(8)) startDrill(h.slice(8)); html = DR ? viewDrill() : viewDrills(); }
   else if (h === 'klausur' && (D.EXAMS || []).length) html = viewExams();
@@ -546,14 +603,16 @@ app.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, v = b.dataset.v; tick();
   if (a === 'ask') { askOpen(); return; }
+  if (a === 'why') { askOpen(); if (hasAI()) askSend(WHY); else { ASK.err = 'Für die Erklärung braucht Echo deinen Anthropic-Schlüssel (Echo → Einstellungen).'; askDraw(); } return; }
   if (a === 'drillcheck' || a === 'drillskip') { DR.given = val('drillin'); const g = num(DR.given), t = DR.task; const ok = a === 'drillcheck' && isFinite(g) && Math.abs(g - t.a) <= (t.tol ?? Math.max(0.01, Math.abs(t.a) * 0.002)); DR.res = ok ? 'ok' : 'no'; drillScore(ok); render(); return; }
-  if (a === 'drillmine') { const x = (P.drills || {})[DR.d.id]; if (x && DR.res === 'no') { x.ok++; gainXP(CFG.xp, 20); save(); } startDrill(DR.id); render(); return; }
+  if (a === 'drillmine') { const x = (P.drills || {})[DR.d.id], y = (P.log || {})['drill:' + DR.d.id]; if (x && DR.res === 'no') { x.ok++; if (y && y.miss) { y.miss--; y.ok++; y.h[y.h.length - 1] = 2; } gainXP(CFG.xp, 20); save(); } startDrill(DR.id); render(); return; }
   if (a === 'drillnext') { startDrill(DR.id); render(); return; }
   if (a === 'examend') { collectExam(); EX.phase = 'grade'; render(); return; }
   if (a === 'examscore') {
     const e = EX.e; let weak = 0;
     app.querySelectorAll('[data-sc]').forEach(inp => { const i = +inp.dataset.sc, t = e.tasks[i], v = Math.max(0, Math.min(t.pts, num(inp.value) || 0)); EX.score[i] = v;
-      if (t.tf) { t.tf.forEach((x, j) => { if (!!(EX.tf[i] || {})[j] !== !!x[1]) { weak++; const lid = x[3] && LBY[x[3]] ? x[3] : (LESSONS[0] || {}).id || 'x', id = lid + ':q' + uid(); (P.qcards || (P.qcards = {}))[id] = { q: 'Richtig oder falsch? ' + x[0], a: (x[1] ? 'Richtig. ' : 'Falsch. ') + (x[2] || ''), d: today() }; P.cards[id] = { b: 0, due: addDays(1), n: 0, lapses: 0, last: today() }; } }); return; }
+      if (t.tf) { t.tf.forEach((x, j) => { track('exam:' + e.id + ':' + i + ':' + j, !!(EX.tf[i] || {})[j] === !!x[1] ? 2 : 0, { t: x[0], lid: x[3] && LBY[x[3]] ? x[3] : null, k: 'exam' }); if (!!(EX.tf[i] || {})[j] !== !!x[1]) { weak++; const lid = x[3] && LBY[x[3]] ? x[3] : (LESSONS[0] || {}).id || 'x', id = lid + ':q' + uid(); (P.qcards || (P.qcards = {}))[id] = { q: 'Richtig oder falsch? ' + x[0], a: (x[1] ? 'Richtig. ' : 'Falsch. ') + (x[2] || ''), d: today() }; P.cards[id] = { b: 0, due: addDays(1), n: 0, lapses: 0, last: today() }; } }); return; }
+      { const q = v / t.pts; track('exam:' + e.id + ':' + i, q >= 0.8 ? 2 : q >= 0.5 ? 1 : 0, { t: e.t + ' · ' + t.t, k: 'exam' }); }
       if (v < t.pts / 2) { weak++; const lid = (LESSONS[0] || {}).id || 'x', id = lid + ':q' + uid(); (P.qcards || (P.qcards = {}))[id] = { q: e.t + ' · ' + t.t + ': ' + t.q.slice(0, 300), a: t.sol.slice(0, 700), d: today() }; P.cards[id] = { b: 0, due: addDays(1), n: 0, lapses: 0, last: today() }; } });
     const pts = Object.values(EX.score).reduce((x, y) => x + y, 0), max = e.tasks.reduce((x, t) => x + t.pts, 0);
     (P.exams || (P.exams = {}))[e.id] = [...((P.exams || {})[e.id] || []), { d: today(), pts, max }];
@@ -575,6 +634,7 @@ app.addEventListener('click', e => {
   if (a === 'rate') {
     const it = SS.queue[SS.i], r = +v;
     rate(it.id, r, it.retry);
+    if (!it.retry) { const cd = cardDef(it.id); track(it.id, r, { t: cd.q, lid: cd.lid, k: 'card' }); }
     if (SS.conf === 'sure' && !it.retry) { P.cal.n++; if (r === 2) P.cal.hit++; else P.cal.over++; }
     if (r === 0) SS.queue.push({ id: it.id, retry: true }); // successive relearning: back into this session
     if (r < 2 && !it.retry) { const c = cardDef(it.id); window.EULE && EULE.push({ src: CFG.src, q: c.q, a: c.a, ref: it.id }); }
@@ -586,9 +646,16 @@ app.addEventListener('click', e => {
   if (a === 'next') {
     if (SS.k === 0) SS.pre = val('pre');
     if (SS.k === 4) { SS.note = val('note'); const l = SS.L; SS.recall = { queue: shuffle(l.cards.map((_, i) => ({ id: l.id + ':c' + i }))), i: 0, shown: false }; }
-    SS.k++; SS.step = 0; SS.guess = ''; render(); return;
+    SS.k++; SS.step = 0; SS.guess = ''; SS.open = false; render(); return;
   }
-  if (a === 'reveal') { const g = val('guess'); if (g && g.trim()) (SS.mine || (SS.mine = {}))[SS.step] = g.trim(); SS.guess = ''; SS.step++; render(); return; }
+  if (a === 'reveal') { const g = val('guess'); if (g && g.trim()) (SS.mine || (SS.mine = {}))[SS.step] = g.trim(); SS.guess = ''; SS.open = true; render(); return; }
+  if (a === 'lrate') {
+    const l = SS.L, st = l.case.steps[SS.step], key = l.id + ':s' + SS.step, r = +v;
+    track(key, r, { t: st[0], lid: l.id, k: 'step' });
+    stepCard(key, l.id, 'Fall: ' + l.case.sv.slice(0, 260) + (l.case.sv.length > 260 ? ' …' : '') + '\n→ ' + st[0], st[1], r);
+    if (r < 2) window.EULE && EULE.push({ src: CFG.src, q: 'Fall: ' + l.case.sv.slice(0, 220) + '\n→ ' + st[0], a: st[1] });
+    act(); save(); SS.open = false; SS.step++; render(); return;
+  }
   if (a === 'calc') { const out = document.getElementById('calcout'), g = val('guess'); if (out) out.innerHTML = calcHTML(g) || '<div class="calcout small muted">Keine Rechnung erkannt. Beispiel: 100.000 · ANF(5 %; 10)</div>'; return; }
   if (a === 'navcheck') { SS.navGiven = val('nav'); SS.navRes = checkNorm(SS.navGiven, SS.L.nav[SS.navI][1]); render(); return; }
   if (a === 'navskip') { SS.k = 4; render(); return; }
@@ -597,6 +664,7 @@ app.addEventListener('click', e => {
   if (a === 'rshow') { SS.recall.shown = true; render(); return; }
   if (a === 'rrate') {
     const R = SS.recall, it = R.queue[R.i];
+    if (!it.retry) { const cd = cardDef(it.id); track(it.id, +v, { t: cd.q, lid: cd.lid, k: 'card' }); save(); }
     if (+v === 0) R.queue.push({ id: it.id, retry: true });
     R.i++; R.shown = false;
     if (R.i >= R.queue.length) finishLesson();
@@ -605,7 +673,14 @@ app.addEventListener('click', e => {
   // case training and boss
   if (a === 'pick') { SS.C.pick = v; render(); return; }
   if (a === 'sreveal') { SS.C.guess = val('guess'); SS.C.shown = true; render(); return; }
-  if (a === 'step') { const C = SS.C; if (+v === 0) { C.miss++; refresh(C.steps[C.s][2] || C.L.id); window.EULE && EULE.push({ src: CFG.src, q: 'Fall: ' + C.sv.slice(0, 220) + (C.sv.length > 220 ? ' …' : '') + '\n→ ' + C.steps[C.s][0], a: C.steps[C.s][1] }); } C.s++; C.shown = false; C.guess = ''; render(); return; }
+  if (a === 'step') {
+    const C = SS.C, st = C.steps[C.s], r = +v, lid = st[2] || (C.L && C.L.id), key = (C.boss ? 'boss-' + C.mod : C.key) + ':' + C.s;
+    track(key, r, { t: st[0], lid, k: 'step' });
+    stepCard(key, lid, 'Fall: ' + C.sv.slice(0, 260) + (C.sv.length > 260 ? ' …' : '') + '\n→ ' + st[0], st[1], r);
+    if (r === 0) { C.miss++; refresh(lid); }
+    if (r < 2) { C.part = (C.part || 0) + (r === 1); window.EULE && EULE.push({ src: CFG.src, q: 'Fall: ' + C.sv.slice(0, 220) + (C.sv.length > 220 ? ' …' : '') + '\n→ ' + st[0], a: st[1] }); }
+    act(); save(); C.s++; C.shown = false; C.guess = ''; render(); return;
+  }
   if (a === 'casedone') {
     const C = SS.C, xp = C.boss ? (C.miss <= 1 ? 300 : 160) : 50 + (C.pick === (C.L || {}).id ? 20 : 0);
     if (C.boss && C.miss <= 1) P.boss[C.mod] = today();
@@ -622,4 +697,4 @@ app.addEventListener('keydown', e => {
 window.addEventListener('hashchange', () => { if (!/^#(heute|fall|boss(-\w+)?)$/.test(location.hash) && !location.hash.startsWith('#l-')) SS = null; if (!location.hash.startsWith('#rechnen-')) DR = null; if (!location.hash.startsWith('#klausur-')) { if (EX && EX.phase === 'write') collectExam(); EX = null; } render(); });
 { const before = JSON.stringify(P.meta || null); const P0 = P.updated; save(); if (before === JSON.stringify(P.meta)) { P.updated = P0; LS.set(CFG.key, P); } }
 render();
-window.STB_TEST = { P, checkNorm, rate, interleave, LESSONS };
+window.STB_TEST = { P, checkNorm, rate, interleave, LESSONS, track, knowStats };

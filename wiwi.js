@@ -45,7 +45,7 @@ function view() {
     <div class="tmr ${run ? 'on' : ''}">
       ${run ? `<div class="row spread"><span><i class="dot" style="background:${rs ? rs.col : '#888'}"></i> <b>${esc(rs ? rs.label : run.nr)}</b> läuft</span><span class="timer" id="tm">${mmss(el)}</span></div>
         <button class="btn primary" data-act="stop">Stopp und speichern</button>`
-      : `<span class="small muted">⏱ Lernzeit außerhalb von Echo (Studienbrief, Moodle, Einsendearbeit): Modul antippen, Zeit läuft, auch wenn Echo zu ist. In den Pfaden zählt Echo die Zeit von selbst.</span>
+      : `<span class="small muted">⏱ Außerhalb von Echo gelernt? Modul antippen.</span>
         <div class="chips">${SRC.map(x => `<button class="chip" data-act="start" data-v="${x.nr}"><i class="dot" style="background:${x.col}"></i>${x.label}</button>`).join('')}</div>`}
       <details><summary class="small muted">Zeit nachtragen</summary><div class="row" style="gap:8px;margin-top:8px"><select id="nr">${SRC.map(x => `<option value="${x.nr}" ${x.nr === sel ? 'selected' : ''}>${x.label}</option>`).join('')}</select><input type="number" id="addmin" min="1" max="600" placeholder="Min." style="max-width:90px"><button class="btn" data-act="add">Eintragen</button></div></details>
     </div>
