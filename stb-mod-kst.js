@@ -135,7 +135,7 @@ STB_PFAD.BOSS.kst = { t: 'Fall Bergmann GmbH', sv: 'Die Bergmann GmbH (Mannheim,
   steps: [['vGA?', 'Unangemessener Teil des Gehalts: 70.000 €, Hinzurechnung (§ 8 Abs. 3 S. 2).', 'k3'],
     ['Nichtabziehbare Steuern?', '+ 40.000 € (§ 10 Nr. 2 KStG) + 50.000 € (§ 4 Abs. 5b EStG).', 'k2'],
     ['Dividende?', '− 40.000 € (§ 8b Abs. 1), + 2.000 € (5 %, § 8b Abs. 5).', 'k5'],
-    ['Zu versteuerndes Einkommen und KSt?', '300.000 + 70.000 + 90.000 − 40.000 + 2.000 = 422.000 €; KSt 15 % = 63.300 €.', 'k1'],
+    ['Zu versteuerndes Einkommen und KSt?', 'Regel: zvE = Jahresüberschuss + nicht abziehbare Steuern + vGA − steuerfreie Dividende + 5 % davon als nicht abziehbare Ausgaben (§ 8b KStG); KSt 15 %\nEingesetzt: 300.000 + 70.000 + 90.000 − 40.000 + 2.000 = 422.000; 15 % · 422.000\nErgebnis: zvE 422.000 €, KSt 63.300 €', 'k1'],
     ['Gewerbeertrag?', 'Ausgang 422.000 €. Die Dividende ist über § 8b schon gekürzt; bei 20 % Beteiligung (Schachtel ab 15 %) gibt es keine Hinzurechnung nach § 8 Nr. 5, und die 2.000 € (5 %) bleiben steuerpflichtig (§ 9 Nr. 2a S. 4). Zinsen: (220.000 € − 200.000 €) × 25 % = 5.000 € Hinzurechnung. Gewerbeertrag 427.000 €.', 'k9'],
     ['Gewerbesteuer?', 'Messbetrag 3,5 % = 14.945 €; × 430 % = 64.263,50 €.', 'k9']],
   res: 'KSt 63.300 €, GewSt 64.263,50 €.' };

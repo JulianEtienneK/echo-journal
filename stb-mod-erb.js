@@ -46,7 +46,7 @@ STB_PFAD.LESSONS.erb = [
       'Erwerb von Todes wegen durch Kinder (und Enkel verstorbener Kinder): steuerfrei, soweit die Wohnfläche 200 m² nicht übersteigt, bei unverzüglicher Selbstnutzung für zehn Jahre (Nr. 4c). Ein vorzeitiger Auszug ohne zwingenden Grund (z. B. Pflegebedürftigkeit) lässt die Befreiung rückwirkend entfallen.'],
     schema: ['Erblasser/Schenker hat das Heim selbst bewohnt?', 'Ehegatte lebzeitig (4a): frei ohne Frist', 'Ehegatte von Todes wegen (4b), Kind (4c, bis 200 m²): unverzügliche Selbstnutzung, 10 Jahre', 'Auszug ohne zwingenden Grund → rückwirkender Wegfall'],
     case: { sv: 'Die Mutter stirbt; ihr Sohn erbt ihr Einfamilienhaus (240 m², Wert 960.000 €), zieht nach vier Monaten ein und bleibt dort.',
-      steps: [['Unverzüglich?', 'In der Regel ja, wenn er innerhalb von sechs Monaten einzieht (BFH).'], ['Umfang der Befreiung?', '200 m² von 240 m² = 5/6: 800.000 € steuerfrei.'], ['Rest?', '160.000 € steuerpflichtig, durch den Freibetrag von 400.000 € gedeckt (wenn sonst nichts geerbt wurde).']],
+      steps: [['Unverzüglich?', 'In der Regel ja, wenn er innerhalb von sechs Monaten einzieht (BFH).'], ['Umfang der Befreiung?', 'Regel: Familienheim bis 200 m² Wohnfläche steuerfrei, darüber anteilig steuerpflichtig (§ 13 Abs. 1 Nr. 4c ErbStG)\nEingesetzt: \\frac{200}{240} = \\frac{5}{6}; \\frac{5}{6} · 960.000\nErgebnis: 800.000 € steuerfrei, 160.000 € steuerpflichtig'], ['Rest?', '160.000 € steuerpflichtig, durch den Freibetrag von 400.000 € gedeckt (wenn sonst nichts geerbt wurde).']],
       res: 'Keine Erbschaftsteuer.' },
     more: [{ sv: 'Eine Witwe erbt das Familienheim steuerfrei nach Nr. 4b, verkauft es aber nach drei Jahren, weil sie in eine kleinere Wohnung ziehen möchte.',
       steps: [['Zwingender Grund?', 'Nein, der Wunsch nach einer kleineren Wohnung genügt nicht.'], ['Folge?', 'Die Befreiung entfällt rückwirkend; der Erwerb wird nachträglich besteuert.']], res: 'Rückwirkende Besteuerung.' }],
@@ -62,7 +62,7 @@ STB_PFAD.LESSONS.erb = [
       steps: [['Verfahren?', 'Mietwohngrundstück: Ertragswertverfahren (§ 182 Abs. 3 Nr. 1 BewG).'], ['Begünstigung?', '§ 13d: Ansatz mit 90 % = 1.080.000 €.']],
       res: 'Ansatz 1.080.000 €.' },
     more: [{ sv: 'Eine Tochter erbt ein unbebautes Grundstück mit 800 m², Bodenrichtwert 300 €/m². Ein Gutachter ermittelt wegen einer Altlast einen Verkehrswert von 150.000 €.',
-      steps: [['Grundbesitzwert?', '800 × 300 € = 240.000 € (§ 179 BewG).'], ['Gutachten?', 'Niedrigerer gemeiner Wert nachgewiesen (§ 198): Ansatz 150.000 €.']], res: 'Ansatz 150.000 €.' }],
+      steps: [['Grundbesitzwert?', 'Regel: unbebautes Grundstück = Fläche · Bodenrichtwert (§ 179 BewG)\nEingesetzt: 800 · 300 €\nErgebnis: 240.000 €'], ['Gutachten?', 'Niedrigerer gemeiner Wert nachgewiesen (§ 198): Ansatz 150.000 €.']], res: 'Ansatz 150.000 €.' }],
     nav: [['Wo ist geregelt, welches Verfahren für welche Grundstücksart gilt?', '§ 182 BewG'], ['Wo steht der 10-%-Abschlag für vermietete Wohngrundstücke?', '§ 13d ErbStG']],
     cards: [['Drei Verfahren für bebaute Grundstücke?', 'Vergleichswert-, Ertragswert-, Sachwertverfahren (§ 182 BewG).'], ['Unbebaute Grundstücke?', 'Fläche × Bodenrichtwert (§ 179 BewG).'], ['§ 13d ErbStG?', 'Zu Wohnzwecken vermietete Grundstücke mit 90 % des Werts.']] },
 

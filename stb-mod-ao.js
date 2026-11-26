@@ -114,7 +114,7 @@ STB_PFAD.LESSONS.ao = [
       steps: [['Schonfrist?', 'Drei Tage nach Fälligkeit, also bis 13. März; Ben ist zu spät.'], ['Säumniszuschlag?', 'Abgerundet auf 2.350 €, 1 % für einen angefangenen Monat = 23,50 €.']],
       res: 'Säumniszuschlag 23,50 €.' },
     more: [{ sv: 'Eine Nachzahlung zur ESt 2024 wird 21 Monate nach Ablauf des Jahres 2024 festgesetzt. Die Karenzzeit beträgt (vereinfacht) 15 Monate.',
-      steps: [['Zinsmonate?', '6 volle Monate.'], ['Zinssatz?', '6 × 0,15 % = 0,9 % der Nachzahlung.']], res: '0,9 % Nachzahlungszinsen.' }],
+      steps: [['Zinsmonate?', '6 volle Monate.'], ['Zinssatz?', 'Regel: Zinsen 0,15 % je vollen Monat nach der Karenzzeit (§ 233a, § 238 AO)\nEingesetzt: 21 − 15 = 6 volle Monate; 6 · 0,15 %\nErgebnis: 0,9 % der Nachzahlung']], res: '0,9 % Nachzahlungszinsen.' }],
     nav: [['Wo ist der Säumniszuschlag geregelt?', '§ 240 Abs. 1 AO'], ['Wo steht der Zinssatz von 0,15 % für die Vollverzinsung?', '§ 238 Abs. 1a AO']],
     cards: [['Säumniszuschlag?', '1 % je angefangenem Monat auf den auf 50 € abgerundeten Rückstand (§ 240 Abs. 1).'], ['Schonfrist?', 'Drei Tage, nur bei Überweisung (§ 240 Abs. 3).'], ['Zinssatz der Vollverzinsung?', '0,15 % je vollem Monat, 1,8 % im Jahr.']] },
 

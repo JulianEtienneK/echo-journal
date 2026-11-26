@@ -100,7 +100,7 @@ window.STB_PFAD = {
           'Ohne Nachweis wird der Arbeitnehmer-Pauschbetrag von 1.230 € abgezogen (§ 9a S. 1 Nr. 1 Buchst. a). Höhere tatsächliche Werbungskosten ersetzen ihn.'],
         schema: ['Beruflich veranlasst?', 'Spezialregel (Entfernungspauschale, Homeoffice, Arbeitsmittel)?', 'Summe der tatsächlichen Werbungskosten', 'Vergleich mit 1.230 €: der höhere Betrag'],
         case: { sv: 'Felix fährt an 200 Tagen 23 km (einfache Strecke) zur Arbeit, arbeitet an 20 weiteren Tagen überwiegend zu Hause und kauft einen rein beruflich genutzten Laptop für 833 € brutto (700 € netto).',
-          steps: [['Entfernungspauschale?', '200 × 23 km × 0,38 € = 1.748 €.'], ['Homeoffice?', '20 Tage × 6 € = 120 €.'], ['Laptop?', 'Sofort abziehbar: 833 €. Arbeitnehmer ziehen den Bruttobetrag ab, die Netto-Grenze von 800 € für geringwertige Wirtschaftsgüter ist eingehalten.'], ['Pauschbetrag oder tatsächlich?', 'Tatsächlich: 1.748 € + 120 € + 833 € = 2.701 € > 1.230 €.']],
+          steps: [['Entfernungspauschale?', 'Regel: Entfernungspauschale = Arbeitstage · Entfernungskilometer · 0,38 € (§ 9 Abs. 1 S. 3 Nr. 4 EStG)\nEingesetzt: 200 · 23 · 0,38 €\nErgebnis: 1.748 €'], ['Homeoffice?', '20 Tage × 6 € = 120 €.'], ['Laptop?', 'Sofort abziehbar: 833 €. Arbeitnehmer ziehen den Bruttobetrag ab, die Netto-Grenze von 800 € für geringwertige Wirtschaftsgüter ist eingehalten.'], ['Pauschbetrag oder tatsächlich?', 'Tatsächlich: 1.748 € + 120 € + 833 € = 2.701 € > 1.230 €.']],
           res: 'Werbungskosten 2.701 €.' },
         nav: [['Wo steht die Entfernungspauschale?', '§ 9 Abs. 1 S. 3 Nr. 4 EStG'], ['Wo steht der Arbeitnehmer-Pauschbetrag?', '§ 9a S. 1 Nr. 1 Buchst. a EStG']],
         cards: [['Entfernungspauschale ab 2026?', '0,38 € je vollem Kilometer der einfachen Entfernung, ab dem ersten Kilometer.'], ['Homeoffice-Tagespauschale?', '6 € je Tag, höchstens 1.260 € im Jahr.'], ['Arbeitnehmer-Pauschbetrag?', '1.230 €, § 9a S. 1 Nr. 1 Buchst. a EStG.'], ['Definition Werbungskosten?', 'Aufwendungen zur Erwerbung, Sicherung und Erhaltung der Einnahmen, § 9 Abs. 1 S. 1 EStG.']] },
@@ -180,7 +180,7 @@ window.STB_PFAD = {
   },
   BOSS: {
     est1: { t: 'Fall Becker', sv: 'Tim Becker, ledig, keine Kinder: Arbeitslohn 52.000 €. Er fährt an 210 Tagen 18 km zur Arbeit und kauft Fachliteratur für 300 €. Aus einer vermieteten Eigentumswohnung (Baujahr 1995, Gebäudeanteil 200.000 €) erhält er 9.600 € Miete; er zahlt 3.000 € Schuldzinsen und 400 € Grundsteuer. Seine Bank schreibt ihm 1.500 € Zinsen gut. Sonderausgaben: Kranken- und Pflegeversicherung (Basis) 5.000 €, Kirchensteuer 600 €, Spende 300 €.',
-      steps: [['Werbungskosten bei § 19?', '210 × 18 km × 0,38 € = 1.436,40 € + 300 € = 1.736,40 €, mehr als der Pauschbetrag von 1.230 €.', 'e6'],
+      steps: [['Werbungskosten bei § 19?', 'Regel: Entfernungspauschale = Tage · km · 0,38 € plus übrige Werbungskosten; Ansatz, wenn höher als der Pauschbetrag von 1.230 €\nEingesetzt: 210 · 18 · 0,38 € = 1.436,40 €; + 300 € Fachliteratur\nErgebnis: 1.736,40 € > 1.230 €: tatsächliche Werbungskosten', 'e6'],
         ['Einkünfte aus nichtselbständiger Arbeit?', '52.000 € − 1.736,40 € = 50.263,60 €.', 'e5'],
         ['Einkünfte aus Vermietung?', 'AfA 2 % von 200.000 € = 4.000 €. 9.600 € − 4.000 € − 3.000 € − 400 € = 2.200 €.', 'e7'],
         ['Was passiert mit den Zinsen?', '1.500 € − 1.000 € Sparer-Pauschbetrag = 500 €, abgegolten mit 25 % (125 €). Sie bleiben im Schema außer Ansatz (§ 2 Abs. 5b).', 'e8'],

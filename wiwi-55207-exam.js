@@ -180,7 +180,7 @@
   const zumutbar = (gde, kind) => { const rates = { ledig: [5, 6, 7], ehe: [4, 5, 6], k12: [2, 3, 4], k3: [1, 1, 2] }[kind], cut = [15340, 51130]; const parts = [Math.min(gde, cut[0]), Math.max(0, Math.min(gde, cut[1]) - cut[0]), Math.max(0, gde - cut[1])]; return { parts, rates, z: parts.reduce((a, p, i) => a + p * rates[i] / 100, 0) }; };
 
   D.DRILLS = [
-    { id: 'vz', t: 'Festsetzungsverjährung', em: '⏳', sub: 'In welchem Jahr endet die Frist?', gen() {
+    { id: 'vz', t: 'Festsetzungsverjährung', em: '⏳', sub: 'In welchem Jahr endet die Frist?', fx: 'Beginn: Ablauf des Entstehungsjahres, bei Erklärungspflicht spätestens Ablauf des 3. Folgejahres (§ 170 AO); Ende = Beginn + Frist (4 Jahre, leichtfertig 5, Hinterziehung 10, § 169 AO)', gen() {
       const Y = R(2016, 2022), kind = pick(['pflicht', 'pflicht', 'nie', 'antrag', 'leicht', 'hinter']);
       const ab = Y + R(1, 5), dur = kind === 'leicht' ? 5 : kind === 'hinter' ? 10 : 4;
       let start, why;
@@ -191,19 +191,19 @@
       return { q: `${txt} Mit Ablauf welchen Jahres endet die Festsetzungsfrist für die verkürzte bzw. festzusetzende Steuer (ohne Ablaufhemmung)?`, a: start + dur, unit: 'Jahr', dec: 0, tol: 0,
         steps: [`Entstehung mit Ablauf ${Y} (§ 36 Abs. 1 EStG).`, why, `Dauer ${dur} Jahre (§ 169 Abs. 2 AO${kind === 'leicht' ? ', leichtfertige Verkürzung' : kind === 'hinter' ? ', Hinterziehung' : ''}).`, `Ende mit Ablauf des 31.12.${start + dur}.`] };
     } },
-    { id: 'frist', t: 'Bekanntgabe und Einspruchsfrist', em: '📬', sub: 'Viertagesfiktion, Monatsfrist, Wochenende', gen() {
+    { id: 'frist', t: 'Bekanntgabe und Einspruchsfrist', em: '📬', sub: 'Viertagesfiktion, Monatsfrist, Wochenende', fx: 'Bekanntgabe = Aufgabe zur Post + 4 Tage (§ 122 Abs. 2 AO); Ende = Bekanntgabe + 1 Monat (§ 355 AO); fällt es auf Sa, So oder Feiertag → nächster Werktag (§ 108 Abs. 3 AO)', gen() {
       const y = R(2025, 2027), post = mk(y, R(1, 11), R(1, 28));
       const fic = add(post, 4), [bek, m1] = workday(fic), raw = plusMonth(bek), [end, m2] = workday(raw);
       return { q: `Das Finanzamt gibt einen ESt-Bescheid mit ordnungsgemäßer Rechtsbehelfsbelehrung am ${WD[post.getDay()]}, ${ds(post)} zur Post (Inland). An welchem Tag endet die Einspruchsfrist? Antwort als TT,MM (z. B. 07,04 für den 7. April). Es zählen nur bundeseinheitliche Feiertage.`, a: end.getDate() + (end.getMonth() + 1) / 100, unit: 'TT,MM', dec: 2, tol: 0.001,
         steps: [`Bekanntgabefiktion: vierter Tag nach Aufgabe zur Post = ${WD[fic.getDay()]}, ${ds(fic)} (§ 122 Abs. 2 Nr. 1 AO).`, ...(m1.length ? [`${m1.join(', ')}: Verschiebung auf den nächsten Werktag, Bekanntgabe ${ds(bek)}.`] : []), `Ein Monat (§ 355 Abs. 1, § 108 Abs. 1 AO, § 188 Abs. 2 BGB): Ablauf des ${ds(raw)}${raw.getDate() !== bek.getDate() ? ' (kürzerer Monat: letzter Tag)' : ''}.`, ...(m2.length ? [`${m2.join(', ')}: Fristende verschiebt sich auf ${WD[end.getDay()]}, ${ds(end)} (§ 108 Abs. 3 AO).`] : []), `Fristende: Ablauf des ${ds(end)}.`] };
     } },
-    { id: 'vsz', t: 'Verspätungszuschlag', em: '🐌', sub: '0,25 % je angefangenem Monat, mindestens 10 €', gen() {
+    { id: 'vsz', t: 'Verspätungszuschlag', em: '🐌', sub: '0,25 % je angefangenem Monat, mindestens 10 €', fx: 'VSZ = 0,25 % · (festgesetzte Steuer − Vorauszahlungen − Anrechnungsbeträge) · angefangene Monate, mindestens 10 € je Monat (§ 152 Abs. 5 AO)', gen() {
       const Y = R(2022, 2025), st = R(30, 600) * 100, vz = Math.min(st, R(0, 500) * 100), sub = mk(Y + 1, R(8, 12), R(1, 28));
       const mon = (sub.getMonth() + 1) - 8 + 1, base = st - vz, pct = 0.0025 * base * mon, mn = 10 * mon, v = Math.floor(Math.max(pct, mn));
       return { q: `Erklärungsfrist für die ESt ${Y} war der 31.07.${Y + 1}; die Erklärung geht am ${ds(sub)} ein (ohne Fristverlängerung, ohne Beratung). Festgesetzt werden ${e0(st)}, die Vorauszahlungen betrugen ${e0(vz)}. Wie hoch ist der Verspätungszuschlag, wenn das Finanzamt ihn festsetzt (abgerundet auf volle Euro)?`, a: v, unit: '€', dec: 0, tol: 0.5,
         steps: [`Angefangene Monate ab 01.08.${Y + 1} bis ${ds(sub)}: ${mon}.`, `Bemessungsgrundlage: ${e0(st)} − ${e0(vz)} = ${e0(base)}.`, `0,25 % · ${e0(base)} · ${mon} = ${f(pct)} €; Mindestbetrag 10 € · ${mon} = ${e0(mn)}.`, `Verspätungszuschlag: ${e0(v)} (§ 152 Abs. 5 AO).`] };
     } },
-    { id: 'saeum', t: 'Säumniszuschlag', em: '⏰', sub: '1 % je angefangenem Monat auf 50 € abgerundet', gen() {
+    { id: 'saeum', t: 'Säumniszuschlag', em: '⏰', sub: '1 % je angefangenem Monat auf 50 € abgerundet', fx: 'SZ = 1 % · (Rückstand abgerundet auf volle 50 €) · angefangene Monate der Säumnis (§ 240 AO)', gen() {
       const y = R(2025, 2026), fae = mk(y, R(1, 10), R(1, 28)), betrag = R(200, 9000) + R(0, 99) / 100, how = pick(['Überweisung', 'Überweisung', 'Scheck']);
       const pay = add(fae, pick([2, 3, R(4, 40), R(20, 95), R(60, 120)]));
       const schon = how === 'Überweisung' && pay <= add(fae, 3);
@@ -212,55 +212,55 @@
       return { q: `Eine Steuer von ${f(betrag)} € ist am ${ds(fae)} fällig. Gezahlt wird am ${ds(pay)} per ${how} (Zahlungstag = Wertstellung beim Finanzamt). Wie hoch ist der Säumniszuschlag?`, a: v, unit: '€', dec: 2, tol: 0.01,
         steps: schon ? [`Überweisung innerhalb der dreitägigen Schonfrist (bis ${ds(add(fae, 3))}): kein Säumniszuschlag (§ 240 Abs. 3 AO).`] : [`Säumnis ab ${ds(add(fae, 1))}${how === 'Scheck' ? '; bei Scheck gibt es keine Schonfrist' : ''}.`, `Angefangene Monate bis ${ds(pay)}: ${k} (Säumnismonate enden am ${Array.from({ length: k }, (_, i) => ds(plusMonth(fae, i + 1))).join(', ')}).`, `Abgerundet auf volle 50 €: ${e0(base)}.`, `1 % · ${e0(base)} · ${k} = ${f(v)} €.`] };
     } },
-    { id: 'dw', t: 'Dienstwagen: 1 %-Regel', em: '🚗', sub: 'Privatnutzung und Fahrten zur Arbeit', gen() {
+    { id: 'dw', t: 'Dienstwagen: 1 %-Regel', em: '🚗', sub: 'Privatnutzung und Fahrten zur Arbeit', fx: 'Privatnutzung = 1 % · BLP · Monate; Fahrten Wohnung–Arbeit = 0,03 % · BLP · km · Monate (§ 8 Abs. 2 EStG)', gen() {
       const lp = R(250, 900) * 100, km = R(3, 45), m = pick([12, 12, 12, R(4, 11)]), sprit = R(8, 40) * 100;
       const a = 0.01 * lp * m, b = 0.0003 * lp * km * m;
       return { q: `Ein Arbeitnehmer darf einen Dienstwagen (Verbrenner, Bruttolistenpreis ${e0(lp)}) ${m === 12 ? 'das ganze Jahr' : `${m} Monate lang`} auch privat nutzen. Entfernung Wohnung – erste Tätigkeitsstätte: ${km} km. Der Arbeitgeber trägt auch private Benzinkosten von ${e0(sprit)}. Kein Fahrtenbuch. Wie hoch ist der geldwerte Vorteil?`, a: r2(a + b), unit: '€', dec: 2, tol: 0.05,
         steps: [`Privatnutzung: 1 % · ${e0(lp)} · ${m} = ${f(a)} €.`, `Fahrten zur Arbeit: 0,03 % · ${e0(lp)} · ${km} km · ${m} = ${f(b)} €.`, `Benzinkosten sind abgegolten.`, `Summe ${f(a + b)} €.`] };
     } },
-    { id: 'ag', t: 'Einkünfte aus nichtselbständiger Arbeit', em: '👷', sub: 'Pauschbetrag oder tatsächliche Werbungskosten', gen() {
+    { id: 'ag', t: 'Einkünfte aus nichtselbständiger Arbeit', em: '👷', sub: 'Pauschbetrag oder tatsächliche Werbungskosten', fx: 'Einkünfte § 19 = Arbeitslohn − max(Werbungskosten; Pauschbetrag 1.230 €)', gen() {
       const lohn = R(28, 90) * 1000, fahrt = R(0, 30) * 50, fach = R(0, 12) * 50, arbm = R(0, 8) * 50, home = R(0, 210) * 6 > 1260 ? 1260 : R(0, 150) * 6;
       const wk = fahrt + fach + arbm + home, ab = Math.max(wk, 1230);
       return { q: `Bruttoarbeitslohn ${e0(lohn)}. Nachgewiesene Aufwendungen: Fahrtkosten (Entfernungspauschale, bereits berechnet) ${e0(fahrt)}, Fachliteratur ${e0(fach)}, Arbeitsmittel ${e0(arbm)}, Homeoffice-Pauschale ${e0(home)}. Wie hoch sind die Einkünfte aus § 19 EStG? (Arbeitnehmer-Pauschbetrag 1.230 €)`, a: lohn - ab, unit: '€', dec: 0, tol: 0.5,
         steps: [`Tatsächliche Werbungskosten: ${e0(fahrt)} + ${e0(fach)} + ${e0(arbm)} + ${e0(home)} = ${e0(wk)}.`, wk > 1230 ? `Höher als der Pauschbetrag: tatsächliche WK abziehen.` : `Nicht höher als 1.230 €: Pauschbetrag (§ 9a S. 1 Nr. 1 Buchst. a EStG).`, `${e0(lohn)} − ${e0(ab)} = ${e0(lohn - ab)}.`] };
     } },
-    { id: 'vuv', t: 'Verbilligte Vermietung', em: '🏠', sub: '§ 21 Abs. 2 EStG: unter 50 % aufteilen', gen() {
+    { id: 'vuv', t: 'Verbilligte Vermietung', em: '🏠', sub: '§ 21 Abs. 2 EStG: unter 50 % aufteilen', fx: 'Quote = \\frac{Miete}{ortsübliche Miete}; unter 50 %: Werbungskosten nur zur Quote (§ 21 Abs. 2 EStG); Einkünfte = Einnahmen − WK', gen() {
       const markt = R(5, 14) * 50, quote = pick([R(25, 49), R(66, 95)]), miete = Math.round(markt * quote / 100 / 10) * 10, wk = R(30, 140) * 100;
       const q = miete / markt, full = q >= 0.66, wkab = full ? wk : wk * q, ein = miete * 12;
       return { q: `Eine Wohnung wird an die Tochter für ${e0(miete)} monatlich (warm wie kalt gleich, vereinfacht) vermietet; die ortsübliche Miete beträgt ${e0(markt)}. Werbungskosten im Jahr: ${e0(wk)}. Wie hoch sind die Einkünfte aus VuV?`, a: r2(ein - wkab), unit: '€', dec: 2, tol: 0.5,
         steps: [`Quote: ${e0(miete)} / ${e0(markt)} = ${f(q * 100, 1)} %.`, full ? `Ab 66 %: voll entgeltlich, Werbungskosten voll abziehbar.` : `Unter 50 %: Aufteilung, Werbungskosten nur zu ${f(q * 100, 1)} % = ${f(wkab)} €.`, `Einnahmen ${e0(ein)} − ${f(wkab)} € = ${f(ein - wkab)} €.`] };
     } },
-    { id: 'p17', t: '§ 17 EStG mit Freibetrag', em: '📈', sub: 'Teileinkünfte, Freibetrag, Abschmelzung', gen() {
+    { id: 'p17', t: '§ 17 EStG mit Freibetrag', em: '📈', sub: 'Teileinkünfte, Freibetrag, Abschmelzung', fx: 'Gewinn = Preis − Veräußerungskosten − AK; steuerpflichtig 60 %; Freibetrag = Quote · 9.060 € − (stpfl. Gewinn − Quote · 36.100 €), nicht unter 0 (§ 17 Abs. 3 EStG)', gen() {
       const q = pick([1, 2, 5, 10, 20, 25, 50, 100]), ak = R(2, 60) * 1000 * Math.max(1, q / 10), vp = ak + R(1, 40) * 1000 * Math.max(1, q / 20), vk = R(0, 30) * 100;
       const g = vp - vk - ak, stpf = 0.6 * g, fb = 9060 * q / 100, gr = 36100 * q / 100, fbn = Math.max(0, fb - Math.max(0, stpf - gr)), res = r2(stpf - fbn);
       return { q: `Eine Gesellschafterin verkauft ihre ${q} %-Beteiligung an einer GmbH (Privatvermögen) für ${e0(vp)}. Anschaffungskosten ${e0(ak)}, Veräußerungskosten ${e0(vk)}. Wie hoch ist der steuerpflichtige Betrag nach Teileinkünfteverfahren und Freibetrag?`, a: res, unit: '€', dec: 2, tol: 0.5,
         steps: [`Gewinn: ${e0(vp)} − ${e0(vk)} − ${e0(ak)} = ${e0(g)}; steuerpflichtig 60 % = ${f(stpf)} €.`, `Freibetrag ${q} % · 9.060 = ${f(fb)} €; Kürzungsgrenze ${q} % · 36.100 = ${f(gr)} €.`, stpf > gr ? `Überschreitung ${f(stpf - gr)} €; verbleibender Freibetrag ${f(fbn)} €.` : `Keine Überschreitung; voller Freibetrag ${f(fb)} €.`, `${f(stpf)} − ${f(fbn)} = ${f(res)} €.`] };
     } },
-    { id: 'p16', t: '§ 16 EStG mit Freibetrag', em: '🏪', sub: 'Veräußerungsgewinn und Abschmelzung', gen() {
+    { id: 'p16', t: '§ 16 EStG mit Freibetrag', em: '🏪', sub: 'Veräußerungsgewinn und Abschmelzung', fx: 'Gewinn = Preis − Veräußerungskosten − Buchwert; Freibetrag 45.000 € ab 55 oder berufsunfähig, gekürzt um den Betrag über 136.000 € (§ 16 Abs. 4 EStG)', gen() {
       const bw = R(20, 200) * 1000, vp = bw + R(30, 220) * 1000, vk = R(0, 80) * 100, alt = R(48, 70);
       const g = vp - vk - bw, ok = alt >= 55, fb = ok ? Math.max(0, 45000 - Math.max(0, g - 136000)) : 0;
       return { q: `Gewerbetreibende(r), ${alt} Jahre, nicht berufsunfähig, verkauft den ganzen Betrieb für ${e0(vp)}. Buchwert des Betriebsvermögens ${e0(bw)}, Veräußerungskosten ${e0(vk)}. Den Freibetrag hat sie/er noch nie beansprucht. Welcher Betrag ist nach Freibetrag zu versteuern?`, a: g - fb, unit: '€', dec: 0, tol: 0.5,
         steps: [`Veräußerungsgewinn: ${e0(vp)} − ${e0(vk)} − ${e0(bw)} = ${e0(g)}.`, ok ? (g > 136000 ? `Freibetrag 45.000 € − (${e0(g)} − 136.000 €) = ${e0(fb)}.` : `Gewinn bis 136.000 €: voller Freibetrag 45.000 €.`) : `Unter 55 und nicht berufsunfähig: kein Freibetrag.`, `Zu versteuern ${e0(g - fb)} (Tarif: § 34 EStG).`] };
     } },
-    { id: 'mu', t: 'Einkünfte eines Mitunternehmers', em: '🤝', sub: 'Gewinnanteil plus Sonderbereich', gen() {
+    { id: 'mu', t: 'Einkünfte eines Mitunternehmers', em: '🤝', sub: 'Gewinnanteil plus Sonderbereich', fx: 'Einkünfte = Quote · Gesamthandsgewinn + Sondervergütungen − Sonderbetriebsausgaben (§ 15 Abs. 1 S. 1 Nr. 2 EStG)', gen() {
       const quo = pick([10, 20, 25, 30, 40, 50]), gew = R(40, 400) * 1000, geh = R(0, 1) ? R(30, 120) * 1000 : 0, miet = R(0, 1) ? R(6, 36) * 1000 : 0, zins = R(0, 1) ? R(1, 12) * 1000 : 0, sba = miet ? R(5, 60) * 100 : 0;
       const anteil = gew * quo / 100, v = anteil + geh + miet + zins - sba;
       return { q: `Kommanditist M ist zu ${quo} % am Gewinn der KG beteiligt. Gewinn laut Gesamthandsbilanz: ${e0(gew)}; darin bereits als Aufwand abgezogen: Geschäftsführergehalt an M ${e0(geh)}, Miete an M für ein Grundstück ${e0(miet)}, Darlehenszinsen an M ${e0(zins)}. M trägt für das vermietete Grundstück eigene Kosten von ${e0(sba)}. Wie hoch sind seine Einkünfte aus Gewerbebetrieb?`, a: v, unit: '€', dec: 0, tol: 0.5,
         steps: [`Gewinnanteil: ${quo} % · ${e0(gew)} = ${e0(anteil)}.`, `Sondervergütungen: ${e0(geh)} + ${e0(miet)} + ${e0(zins)} = ${e0(geh + miet + zins)}.`, `Sonderbetriebsausgaben: − ${e0(sba)}.`, `Einkünfte ${e0(v)} (§ 15 Abs. 1 S. 1 Nr. 2 EStG).`] };
     } },
-    { id: 'kst', t: 'Körperschaftsteuerliches Einkommen', em: '🏛️', sub: 'Hinzurechnungen, vGA, 15 %', gen() {
+    { id: 'kst', t: 'Körperschaftsteuerliches Einkommen', em: '🏛️', sub: 'Hinzurechnungen, vGA, 15 %', fx: 'Einkommen = Jahresüberschuss + KSt + GewSt + ½ Aufsichtsratsvergütung + Geldbußen + vGA; KSt = 15 % · Einkommen', gen() {
       const jue = R(50, 900) * 1000, kst = R(5, 120) * 1000, gst = R(5, 120) * 1000, ar = R(0, 40) * 1000, buss = R(0, 1) ? R(1, 30) * 500 : 0, vga = R(0, 1) ? R(5, 80) * 1000 : 0;
       const ek = jue + kst + gst + ar / 2 + buss + vga, k = 0.15 * ek;
       return { q: `Jahresüberschuss der X-GmbH ${e0(jue)}. Als Aufwand gebucht sind u. a.: KSt-Vorauszahlungen ${e0(kst)}, Gewerbesteuer ${e0(gst)}, Aufsichtsratsvergütungen ${e0(ar)}, eine Geldbuße ${e0(buss)}. Das Gehalt der Gesellschafter-Geschäftsführerin ist um ${e0(vga)} unangemessen hoch. Wie hoch ist die Körperschaftsteuer (15 %, ohne Soli)?`, a: r2(k), unit: '€', dec: 2, tol: 0.5,
         steps: [`Hinzurechnungen: KSt ${e0(kst)}, GewSt ${e0(gst)}, 1/2 AR-Vergütung ${e0(ar / 2)}, Geldbuße ${e0(buss)}, vGA ${e0(vga)}.`, `Einkommen: ${e0(ek)}.`, `KSt 15 % = ${f(k)} €.`] };
     } },
-    { id: 'gew', t: 'Gewerbesteuer und § 35 EStG', em: '🏙️', sub: 'Einzelunternehmer mit Freibetrag', gen() {
+    { id: 'gew', t: 'Gewerbesteuer und § 35 EStG', em: '🏙️', sub: 'Einzelunternehmer mit Freibetrag', fx: 'Hinzurechnung § 8 Nr. 1 = 25 % · (Summe − 200.000 €); Gewerbeertrag abgerundet auf volle 100 € − Freibetrag 24.500 €; Messbetrag 3,5 %; GewSt = Messbetrag · Hebesatz; § 35: min(4 · Messbetrag; GewSt)', gen() {
       const gw = R(30, 300) * 1000 + R(0, 9) * 100 + R(0, 99), zins = pick([0, R(50, 400) * 1000]), hs = R(20, 55) * 10;
       const hin = Math.max(0, zins - 200000) * 0.25, ge = Math.floor((gw + hin) / 100) * 100, fbe = Math.max(0, ge - 24500), mb = fbe * 0.035, gst = mb * hs / 100, anr = Math.min(4 * mb, gst);
       return { q: `Einzelunternehmer, Gewinn ${e0(gw)}, darin abgezogene Schuldzinsen ${e0(zins)} (keine weiteren Hinzurechnungen oder Kürzungen). Hebesatz ${hs} %. Um wie viel Euro mindert § 35 EStG die Einkommensteuer (Ermäßigungshöchstbetrag nicht bindend)?`, a: r2(anr), unit: '€', dec: 2, tol: 0.05,
         steps: [`Hinzurechnung § 8 Nr. 1: 25 % · max(0; ${e0(zins)} − 200.000 €) = ${f(hin)} €.`, `Gewerbeertrag abgerundet: ${e0(ge)}; nach Freibetrag 24.500 €: ${e0(fbe)}.`, `Messbetrag 3,5 % = ${f(mb)} €; Gewerbesteuer · ${hs} % = ${f(gst)} €.`, `§ 35: 4 · ${f(mb)} = ${f(4 * mb)} €, höchstens ${f(gst)} € → ${f(anr)} €.`] };
     } },
-    { id: 'agb', t: 'Zumutbare Belastung', em: '🩹', sub: '§ 33 Abs. 3 EStG stufenweise', gen() {
+    { id: 'agb', t: 'Zumutbare Belastung', em: '🩹', sub: '§ 33 Abs. 3 EStG stufenweise', fx: 'zumutbare Belastung stufenweise: Satz_{1} · bis 15.340 € + Satz_{2} · bis 51.130 € + Satz_{3} · darüber (§ 33 Abs. 3 EStG); abziehbar = Aufwendungen − zumutbare Belastung', gen() {
       const gde = R(12, 120) * 1000 + R(0, 9) * 100, kind = pick(['ledig', 'ehe', 'k12', 'k3']), kost = R(10, 160) * 100;
       const z = zumutbar(gde, kind), ab = Math.max(0, kost - Math.floor(z.z));
       const lab = { ledig: 'ledig, keine Kinder', ehe: 'zusammenveranlagt, keine Kinder', k12: 'ein oder zwei Kinder', k3: 'drei oder mehr Kinder' }[kind];

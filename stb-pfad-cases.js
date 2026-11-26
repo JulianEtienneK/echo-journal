@@ -52,7 +52,7 @@ window.STB_PFAD.EXTRA = {
   e5: [
     { sv: 'Sven darf seinen Firmenwagen (Verbrenner, Bruttolistenpreis 40.000 €) privat nutzen und fährt damit auch zur ersten Tätigkeitsstätte, einfache Entfernung 15 km. Er führt kein Fahrtenbuch.',
       steps: [['Wert der privaten Nutzung pro Monat?', '1 % von 40.000 € = 400 € (§ 8 Abs. 2 S. 2 i. V. m. § 6 Abs. 1 Nr. 4 S. 2).'],
-        ['Zuschlag für die Fahrten zur ersten Tätigkeitsstätte?', '0,03 % × 40.000 € × 15 km = 180 € im Monat (§ 8 Abs. 2 S. 3).'],
+        ['Zuschlag für die Fahrten zur ersten Tätigkeitsstätte?', 'Regel: 0,03 % des Bruttolistenpreises je Entfernungskilometer und Monat (§ 8 Abs. 2 S. 3 EStG)\nEingesetzt: 0,03 % · 40.000 · 15\nErgebnis: 180 € im Monat'],
         ['Geldwerter Vorteil insgesamt?', '580 € im Monat, als Arbeitslohn lohnsteuerpflichtig.']],
       res: '580 € geldwerter Vorteil je Monat.' },
     { sv: 'Arbeitgeberin schenkt Mila im Dezember einen Gutschein über 40 €, der nur zum Bezug von Waren berechtigt; weitere Sachbezüge gibt es im Dezember nicht. Kollege Ole bekommt stattdessen 40 € zusätzlich in bar.',
@@ -62,12 +62,12 @@ window.STB_PFAD.EXTRA = {
   ],
   e6: [
     { sv: 'Leonie fährt an 100 Tagen 10 km (einfache Strecke) zur Arbeit. Weitere Werbungskosten hat sie nicht.',
-      steps: [['Entfernungspauschale?', '100 × 10 km × 0,38 € = 380 €.'],
+      steps: [['Entfernungspauschale?', 'Regel: Arbeitstage · Entfernungskilometer · 0,38 €\nEingesetzt: 100 · 10 · 0,38 €\nErgebnis: 380 € (unter dem Pauschbetrag von 1.230 €, der dann greift)'],
         ['Was wird abgezogen?', 'Der Arbeitnehmer-Pauschbetrag von 1.230 €, weil er höher ist als die tatsächlichen Werbungskosten (§ 9a S. 1 Nr. 1 Buchst. a).']],
       res: 'Abzug 1.230 €.' },
     { sv: 'Jan macht berufsbegleitend einen Lehrgang zum Steuerfachwirt: Gebühr 1.500 €, Bücher 200 €. Er fährt an 30 Abenden mit dem eigenen Auto zum Lehrgang, einfache Strecke 20 km. Der Arbeitgeber erstattet nichts.',
       steps: [['Sind die Lehrgangskosten Werbungskosten?', 'Ja: Fortbildung im ausgeübten Beruf, § 9 Abs. 1 S. 1 EStG.'],
-        ['Wie werden die Fahrten berücksichtigt?', 'Als Reisekosten, nicht mit der Entfernungspauschale: Die Bildungseinrichtung ist bei berufsbegleitender Fortbildung keine erste Tätigkeitsstätte. 30 × 40 km (hin und zurück) × 0,30 € = 360 € (§ 9 Abs. 1 S. 3 Nr. 4a).'],
+        ['Wie werden die Fahrten berücksichtigt?', 'Regel: berufsbegleitende Bildungseinrichtung ist keine erste Tätigkeitsstätte → Reisekosten mit 0,30 € je gefahrenem km (§ 9 Abs. 1 S. 3 Nr. 4a EStG), nicht Entfernungspauschale\nEingesetzt: 30 · (2 · 20 km) · 0,30 €\nErgebnis: 360 €'],
         ['Werbungskosten insgesamt?', '1.500 € + 200 € + 360 € = 2.060 €, mehr als der Pauschbetrag.']],
       res: 'Werbungskosten 2.060 €. Merke: 0,38 € je Entfernungskilometer, 0,30 € je gefahrenem Kilometer bei Reisekosten.' },
   ],
@@ -117,7 +117,7 @@ window.STB_PFAD.EXTRA = {
   e11: [
     { sv: 'Eheleute mit zwei Kindern, Gesamtbetrag der Einkünfte 60.000 €, zahlen 3.000 € Krankheitskosten selbst.',
       steps: [['Prozentsätze?', 'Mit einem oder zwei Kindern: 2 % bis 15.340 €, 3 % bis 51.130 €, 4 % darüber (§ 33 Abs. 3).'],
-        ['Zumutbare Belastung, stufenweise?', '2 % × 15.340 € = 306,80 €; 3 % × 35.790 € = 1.073,70 €; 4 % × 8.870 € = 354,80 €; zusammen 1.735,30 €.'],
+        ['Zumutbare Belastung, stufenweise?', 'Regel: zumutbare Belastung stufenweise; bei zwei Kindern 2 % bis 15.340 €, 3 % bis 51.130 €, 4 % darüber (§ 33 Abs. 3 EStG)\nEingesetzt: 2 % · 15.340 = 306,80; 3 % · (51.130 − 15.340) = 3 % · 35.790 = 1.073,70; 4 % · (60.000 − 51.130) = 4 % · 8.870 = 354,80\nErgebnis: 1.735,30 €'],
         ['Abziehbar?', '3.000 € − 1.735,30 € = 1.264,70 €.']],
       res: 'Außergewöhnliche Belastung 1.264,70 €.' },
     { sv: 'Bernd trägt die Beerdigungskosten seiner Mutter von 8.000 €. Er erbt von ihr 10.000 €.',

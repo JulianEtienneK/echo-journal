@@ -521,14 +521,14 @@ function viewDrill() {
   <section class="card"><div class="sv" style="white-space:pre-wrap">${mf(task.q)}</div>
     <input type="text" id="drillin" inputmode="decimal" placeholder="Ergebnis${task.unit ? ' in ' + esc(task.unit) : ''}" value="${esc(DR.given)}" ${res ? 'disabled' : ''} autocomplete="off">
     ${res ? `<b>${res === 'ok' ? '✅ Richtig' : '❌ Nicht ganz'} · Lösung: ${fmtN(task.a, task.dec ?? 2)}${task.unit ? ' ' + esc(task.unit) : ''}</b>
-      <div class="stack" style="gap:6px">${task.steps.map(x => `<div class="step open"><div class="ans" style="white-space:pre-wrap">${mf(x)}</div></div>`).join('')}</div>
+      <div class="stack" style="gap:6px">${d.fx ? `<div class="step open"><div class="ans"><b>Formel:</b> ${mf(d.fx)}</div></div>` : ''}<div class="step open"><div class="ans" style="white-space:pre-wrap"><b>Eingesetzt:</b><br>${task.steps.map(x => mf(x)).join('<br>')}</div></div><div class="step open"><div class="ans"><b>Ergebnis:</b> ${fmtN(task.a, task.dec ?? 2)}${task.unit ? ' ' + esc(task.unit) : ''}</div></div></div>
       ${whyBtn()}<div class="row" style="gap:8px"><button class="btn primary grow" data-act="drillnext">Nächste Aufgabe</button><button class="btn" data-act="drillmine">War doch richtig</button></div>`
       : `<button class="btn primary" data-act="drillcheck">Prüfen</button><button class="btn" data-act="drillskip">Lösung zeigen</button>`}</section>`;
 }
 function drillScore(ok) {
   const st = P.drills || (P.drills = {}), x = st[DR.d.id] || (st[DR.d.id] = { n: 0, ok: 0 }); x.n++; if (ok) { x.ok++; gainXP(CFG.xp, 20); }
   track('drill:' + DR.d.id, ok ? 2 : 0, { t: DR.d.t, k: 'drill' });
-  if (!ok) window.EULE && EULE.push({ src: CFG.src, q: DR.task.q, a: 'Ergebnis ' + fmtN(DR.task.a, DR.task.dec ?? 2) + (DR.task.unit ? ' ' + DR.task.unit : '') + '\n' + DR.task.steps.join('\n') });
+  if (!ok) window.EULE && EULE.push({ src: CFG.src, q: DR.task.q, a: (DR.d.fx ? 'Formel: ' + DR.d.fx + '\n' : '') + 'Eingesetzt: ' + DR.task.steps.join('\n') + '\nErgebnis: ' + fmtN(DR.task.a, DR.task.dec ?? 2) + (DR.task.unit ? ' ' + DR.task.unit : '') });
   act(); save();
 }
 

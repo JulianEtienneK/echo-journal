@@ -85,7 +85,7 @@ STB_PFAD.LESSONS.ust = [
       'Der Regelsteuersatz beträgt 19 % (§ 12 Abs. 1), der ermäßigte 7 % (§ 12 Abs. 2), u. a. für die meisten Lebensmittel, Bücher und Zeitungen, Personennahverkehr und Beherbergung. Seit 1.1.2026 gilt der ermäßigte Satz dauerhaft auch für Speisen in Restaurants und Cafés (§ 12 Abs. 2 Nr. 15); Getränke bleiben bei 19 %.'],
     schema: ['Entgelt: Gegenleistung ohne USt (§ 10 Abs. 1)', 'Durchlaufende Posten abziehen, Zuschüsse Dritter hinzurechnen', 'Steuersatz: 19 % oder 7 % (§ 12)', 'Aus brutto: 19/119 bzw. 7/107'],
     case: { sv: 'Ein Restaurant berechnet einem Gast für ein Menü 53,50 € und für Wein 23,80 €, jeweils brutto.',
-      steps: [['USt auf das Menü?', '7 % seit 2026: 53,50 € × 7/107 = 3,50 €.'], ['USt auf den Wein?', '19 %: 23,80 € × 19/119 = 3,80 €.'], ['Entgelt insgesamt?', '50,00 € + 20,00 € = 70,00 €.']],
+      steps: [['USt auf das Menü?', 'Regel: enthaltene USt = Brutto · \\frac{Satz}{100 + Satz}; Speisen im Restaurant seit 2026 7 %\nEingesetzt: 53,50 · \\frac{7}{107}\nErgebnis: 3,50 €'], ['USt auf den Wein?', 'Regel: enthaltene USt = Brutto · \\frac{Satz}{100 + Satz}; Getränke 19 %\nEingesetzt: 23,80 · \\frac{19}{119}\nErgebnis: 3,80 €'], ['Entgelt insgesamt?', '50,00 € + 20,00 € = 70,00 €.']],
       res: 'USt 7,30 €.' },
     more: [{ sv: 'Ein Unternehmer verkauft eine Maschine für 10.000 € netto; der Käufer zahlt außerdem 500 € Versandkosten, die der Verkäufer in Rechnung stellt.',
       steps: [['Gehören die Versandkosten zum Entgelt?', 'Ja, sie sind Teil dessen, was der Käufer aufwendet (Nebenleistung teilt das Schicksal der Hauptleistung).'], ['USt?', '19 % von 10.500 € = 1.995 €.']], res: 'Bemessungsgrundlage 10.500 €.' }],
@@ -158,10 +158,10 @@ STB_PFAD.LESSONS.ust = [
     cards: [['Berichtigungszeitraum § 15a?', '5 Jahre, bei Grundstücken 10 Jahre ab erstmaliger Verwendung.'], ['Berichtigung je Jahr?', 'Vorsteuer geteilt durch den Zeitraum, im Umfang der Änderung.'], ['Bagatellgrenze für die Vorsteuer des Wirtschaftsguts?', '1.000 € (§ 44 Abs. 1 UStDV).']] },
 ];
 STB_PFAD.BOSS.ust = { t: 'Fall Kaffeerösterei Bohne', sv: 'Die Bohne GmbH (Mannheim, Sollversteuerin, Monatszahlerin) röstet Kaffee. Im Juni: a) Verkauf von Kaffeebohnen an Privatkunden im Laden, 1.070 € brutto. b) Lieferung von Kaffee an einen Café-Betreiber in Wien mit österreichischer USt-IdNr., 5.000 €. c) Eine Berliner Agentur gestaltet die neue Website, 2.000 € zzgl. USt. d) Ein dänischer Fotograf liefert Produktfotos (B2B), 1.000 €. e) Im eigenen Café verkauft die GmbH Kuchen zum Verzehr vor Ort für 214 € und Getränke für 119 €, jeweils brutto.',
-  steps: [['a) Steuer?', 'Kaffeebohnen sind Lebensmittel: 7 %. 1.070 € × 7/107 = 70 €.', 'u7'],
+  steps: [['a) Steuer?', 'Regel: Lebensmittel 7 %; enthaltene USt = Brutto · \\frac{7}{107}\nEingesetzt: 1.070 · \\frac{7}{107}\nErgebnis: 70 €', 'u7'],
     ['b)?', 'Innergemeinschaftliche Lieferung: steuerfrei (§ 4 Nr. 1 Buchst. b, § 6a), ZM abgeben.', 'u11'],
     ['c)?', 'Vorsteuer 380 € bei ordnungsgemäßer Rechnung (§ 15 Abs. 1 S. 1 Nr. 1).', 'u9'],
     ['d)?', 'Ort Mannheim (§ 3a Abs. 2), Reverse Charge: GmbH schuldet 190 € (§ 13b Abs. 1) und zieht 190 € als Vorsteuer ab.', 'u10'],
-    ['e)?', 'Speisen im Café seit 2026 7 %: 214 € × 7/107 = 14 €. Getränke 19 %: 119 € × 19/119 = 19 €.', 'u7'],
-    ['Zahllast Juni, fällig wann?', 'USt 70 + 190 + 14 + 19 = 293 €; Vorsteuer 380 + 190 = 570 €; Überschuss 277 € zugunsten der GmbH. Voranmeldung bis 10. Juli (§ 18).', 'u8']],
+    ['e)?', 'Regel: Speisen im Café seit 2026 7 %, Getränke 19 %; enthaltene USt = Brutto · \\frac{Satz}{100 + Satz}\nEingesetzt: 214 · \\frac{7}{107}; 119 · \\frac{19}{119}\nErgebnis: 14 € und 19 €', 'u7'],
+    ['Zahllast Juni, fällig wann?', 'Regel: Zahllast = Umsatzsteuer − Vorsteuer; Voranmeldung bis zum 10. des Folgemonats (§ 18 UStG)\nEingesetzt: USt 70 + 190 + 14 + 19 = 293; Vorsteuer 380 + 190 = 570; 293 − 570\nErgebnis: −277 €, also Überschuss zugunsten der GmbH; Voranmeldung bis 10. Juli', 'u8']],
   res: 'Erstattung 277 € aus der Juni-Voranmeldung.' };
