@@ -2554,7 +2554,7 @@ const KV = {
   db: null,
   async open() {
     if (this.db) return this.db;
-    this.db = await new Promise((res, rej) => { const r = indexedDB.open('echo-meta', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+    this.db = await new Promise((res, rej) => { const r = indexedDB.open('echo-meta', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onblocked = () => rej(new Error('echo-meta blocked')); r.onerror = () => rej(r.error); });
     return this.db;
   },
   async op(mode, fn) { const db = await this.open(); return new Promise((res, rej) => { const q = fn(db.transaction('kv', mode).objectStore('kv')); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); },
@@ -3052,6 +3052,7 @@ if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListen
     LS.set('echo-mig-livestt', true);
   }
   const seed = window.ECHO_SEED;
+  window.__echoStep = 'Wochenziele';
   for (const sg of (seed && seed.goals) || []) {
     const flag = 'echo-seed-' + sg.week;
     if (!S.goals[sg.week] && !LS.get(flag, false)) { S.goals[sg.week] = { week: sg.week, items: parseGoalsText(sg.text) }; await DB.put('goals', S.goals[sg.week]); }
@@ -3093,7 +3094,10 @@ if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListen
   { const qp = new URLSearchParams(location.search); if (qp.get('soc') === 'med') { S.tab = 'socratic'; S.socMode = 'med'; LS.set('echo-soc-mode', 'med'); try { history.replaceState(null, '', location.pathname); } catch { /* ignore */ } }
     if (qp.get('xw') && XW_CATS[qp.get('xw')]) { LS.set('echo-xw-cat', qp.get('xw')); LS.set('echo-xw-sec', 'new'); S.tab = 'xw'; S.xwId = null; xwTopUp(); try { history.replaceState(null, '', location.pathname); } catch { /* ignore */ } }
     if (qp.get('soc') === 'sci') { S.tab = 'socratic'; S.socMode = 'sci'; LS.set('echo-soc-mode', 'sci'); S.sciCase = qp.get('case') || null; try { history.replaceState(null, '', location.pathname); } catch { /* ignore */ } } }
-  await abInit();
+  window.__echoStep = 'Automatische Sicherung prüfen';
+  // A stuck permission query or a blocked meta database must not keep Echo from starting.
+  await Promise.race([abInit(), new Promise(r => setTimeout(() => { if (AB.state !== 'on') AB.state = AB.handle ? 'paused' : 'off'; r(); }, 2500))]);
+  window.__echoStep = 'nach der Sicherung';
   { const g = LS.get('echo-geo', null), gm = LS.get('echo-games', null), md = LS.get('echo-med', null); if ((g && g.updated > (AB.last || 0)) || (gm && gm.updated > (AB.last || 0)) || (md && md.updated > (AB.last || 0))) abSchedule(); }
   if (!journalEmpty()) LS.set('echo-restore-hide', false);
   window.__echoStep = 'Startseite zeichnen';
