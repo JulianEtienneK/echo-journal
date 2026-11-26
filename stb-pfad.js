@@ -130,7 +130,7 @@ function afterReviews() {
   SS.stage = 'plan'; render();
 }
 function startLesson(l) {
-  SS = Object.assign(SS || { kind: 'today', xp: 0 }, { stage: 'lesson', L: l, k: 0, pre: '', step: 0, guess: '', navI: 0, navGiven: '', navRes: null, note: P.notes[l.id] || '', linkShown: false, recall: null });
+  SS = Object.assign(SS || { kind: 'today', xp: 0 }, { stage: 'lesson', L: l, k: 0, pre: '', step: 0, guess: '', mine: {}, navI: 0, navGiven: '', navRes: null, note: P.notes[l.id] || '', linkShown: false, recall: null });
   location.hash = 'heute'; render();
 }
 
@@ -178,13 +178,13 @@ function viewReview() {
   const head = `<div class="topbar"><a class="link" href="#" data-act="home">← ${esc(CFG.short)}</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button><span class="small muted mono">${Math.min(SS.i + 1, SS.queue.length)} / ${SS.queue.length}</span></div>
   <span class="eyebrow">Wiederholung${it.retry ? ' · noch einmal, bis es sitzt' : ''} · ${esc(l.t)}</span>`;
   if (!SS.shown) {
-    return `${head}<section class="card"><h2 style="line-height:1.35">${esc(c.q)}</h2>
+    return `${head}<section class="card"><h2 style="line-height:1.35">${mf(c.q)}</h2>
       <input type="text" id="typed" placeholder="${c.type === 'nav' ? 'z. B. § 9 Abs. 1 EStG' : 'Deine Antwort (Tippen hilft beim Erinnern)'}" value="${esc(SS.typed)}" autocomplete="off">
       ${c.type === 'nav' ? `<button class="btn primary" data-act="check">Prüfen</button>` : `<span class="small muted">Wie sicher bist du?</span><div class="conf"><button class="btn" data-act="conf" data-v="unsure">Unsicher</button><button class="btn" data-act="conf" data-v="sure">Sicher</button></div>`}</section>`;
   }
   const res = c.type === 'nav' ? ['❌ Nicht ganz', '🟡 Richtige Norm, Absatz oder Satz fehlt oder weicht ab', '✅ Genau'][SS.navRes] : '';
   return `${head}<section class="card"><span class="small muted">${esc(c.q)}</span>${SS.typed ? `<span class="small">Du: ${esc(SS.typed)}</span>` : ''}${res ? `<b>${res}</b>` : ''}
-    <div class="ans">${esc(c.a)}</div>${rateBtns()}</section>`;
+    <div class="ans">${mf(c.a)}</div>${rateBtns()}</section>`;
 }
 
 function viewPlan() {
@@ -203,25 +203,83 @@ function viewPlan() {
 }
 
 /* lesson: 0 pre-question · 1 why, core, schema · 2 worked or self-solved case · 3 paragraph navigation · 4 own words and link · 5 immediate recall · 6 done */
+/* Calculator for typed solutions: German numbers (12.950,46 · 1,05), · × * / : ÷ ^ ( ) %, √, ln, exp, ANF(i; n), RBF(i; n), AuF(i; n), AbF(i; n).
+   i ≥ 1 in the factor functions counts as percent (ANF(5; 10) = ANF(5 %; 10)). No eval: a small recursive-descent parser. */
+const CALC_FN = { ANF: (i, n) => i === 0 ? 1 / n : i * Math.pow(1 + i, n) / (Math.pow(1 + i, n) - 1), RBF: (i, n) => 1 / CALC_FN.ANF(i, n), AUF: (i, n) => Math.pow(1 + i, n), ABF: (i, n) => Math.pow(1 + i, -n), SQRT: x => Math.sqrt(x), LN: x => Math.log(x), EXP: x => Math.exp(x), LOG: x => Math.log10(x) };
+function calcEval(src) {
+  const s = String(src).replace(/[·×]/g, '*').replace(/[÷:]/g, '/').replace(/[−–]/g, '-').replace(/²/g, '^2').replace(/³/g, '^3').replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g, '(($1)/($2))').replace(/[{}]/g, m => m === '{' ? '(' : ')');
+  let i = 0; const ws = () => { while (s[i] === ' ' || s[i] === ' ') i++; };
+  const fail = () => { throw new Error('x'); };
+  const number = () => { ws(); const m = s.slice(i).match(/^(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+,\d+|\d+(?:\.\d+)?|,\d+)/); if (!m) return null; i += m[0].length; let t = m[0]; t = /,/.test(t) || /^\d{1,3}(\.\d{3})+$/.test(t) ? t.replace(/\./g, '').replace(',', '.') : t; return parseFloat(t.startsWith('.') ? '0' + t : t); };
+  const pct = v => { ws(); if (s[i] === '%') { i++; return v / 100; } return v; };
+  function args() { ws(); if (s[i] !== '(') fail(); i++; const a = [expr()]; ws(); while (s[i] === ';' || s[i] === ',') { i++; a.push(expr()); ws(); } if (s[i] !== ')') fail(); i++; return a; }
+  function primary() {
+    ws(); const c = s[i];
+    if (c === '(') { i++; const v = expr(); ws(); if (s[i] !== ')') fail(); i++; return v; }
+    if (c === '√') { i++; return Math.sqrt(factor()); }
+    const fm = s.slice(i).match(/^[A-Za-z]+/);
+    if (fm) { const f = CALC_FN[fm[0].toUpperCase()]; if (!f) fail(); i += fm[0].length; const at = i; let a = args();
+      if (f.length === 2 && a.length === 1) { const inner = s.slice(at, i).trim().slice(1, -1), k = inner.lastIndexOf(','); if (k < 0) fail(); a = [calcEval(inner.slice(0, k)), calcEval(inner.slice(k + 1))]; } if (f.length === 2 && a.length === 2 && a[0] >= 1) a[0] /= 100; return f(...a); }
+    const n = number(); if (n == null) fail(); return n;
+  }
+  function factor() { ws(); if (s[i] === '-') { i++; return -factor(); } if (s[i] === '+') { i++; return factor(); } let v = pct(primary()); ws(); if (s[i] === '^') { i++; v = Math.pow(v, factor()); } return v; }
+  function term() { let v = factor(); for (;;) { ws(); const c = s[i]; if (c === '*') { i++; v *= factor(); } else if (c === '/') { i++; v /= factor(); } else if (c === '(' || c === '√' || /[A-Za-z]/.test(c || '')) { v *= factor(); } else return v; } }
+  function expr() { let v = term(); for (;;) { ws(); if (s[i] === '+') { i++; v += term(); } else if (s[i] === '-') { i++; v -= term(); } else return v; } }
+  const v = expr(); ws(); if (i < s.length || !isFinite(v)) fail(); return v;
+}
+const calcFmt = v => v.toLocaleString('de-DE', { maximumFractionDigits: Math.abs(v) >= 100 ? 2 : Math.abs(v) >= 1 ? 4 : 6 });
+// Each line: the part after the last '=' that parses (text before it and units after it are ignored).
+function calcLines(text) {
+  return String(text || '').split('\n').map(line => {
+    const segs = line.split('=').map(x => x.trim()).filter(Boolean);
+    for (let k = segs.length - 1; k >= 0; k--) {
+      let t = segs[k].replace(/^[^0-9(√]*?:\s*/, '').replace(/\s*(GE|€|EUR|Mio\.?|Tsd\.?|Stück|Jahre?|p\. ?a\.)\s*$/i, '').replace(/^[^0-9(√,+\-−A-Za-z]*/, '').replace(/^(?!(?:ANF|RBF|AUF|ABF|SQRT|LN|EXP|LOG)\b)[A-Za-zäöüÄÖÜß*'’ ]+(?=[0-9(√])/i, '');
+      try { const v = calcEval(t); return { line: line.trim(), v }; } catch { /* try the segment before */ }
+    }
+    return null;
+  }).filter(Boolean);
+}
+const calcHTML = text => { const r = calcLines(text); return r.length ? `<div class="calcout">${r.map(x => `<div><span class="small muted">${esc(x.line.length > 60 ? x.line.slice(0, 57) + '…' : x.line)}</span> <b>= ${calcFmt(x.v)}</b></div>`).join('')}</div>` : ''; };
+/* Formula text → HTML: \frac{a}{b} stacked, \sqrt{x}, x^{…} / x^2 superscript, x_{…} / x_t subscript (only with CFG.math), line breaks. Input is plain text; it is escaped first. */
+(() => { if (document.getElementById('mf-css')) return; const st = document.createElement('style'); st.id = 'mf-css';
+  st.textContent = '.mfrac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 .15em;line-height:1.15}.mfrac>span:first-child{border-bottom:1px solid currentColor;padding:0 .2em .1em}.mfrac>span:last-child{padding:.1em .2em 0}.msqrt{border-top:1px solid currentColor;padding:0 .1em}sup,sub{font-size:.72em;line-height:0}.calcout{margin-top:6px;padding:8px 10px;border-radius:10px;background:rgba(127,127,127,.12);display:grid;gap:3px;font-variant-numeric:tabular-nums}.calcrow{display:flex;gap:8px;flex-wrap:wrap}.calcrow .btn{flex:1}';
+  document.head.appendChild(st); })();
+function mf(raw) {
+  let h = esc(raw == null ? '' : String(raw));
+  const grp = (s, i) => { if (s[i] !== '{') return null; let d = 0; for (let j = i; j < s.length; j++) { if (s[j] === '{') d++; else if (s[j] === '}' && --d === 0) return [s.slice(i + 1, j), j + 1]; } return null; };
+  const walk = s => {
+    let out = '', i = 0;
+    while (i < s.length) {
+      if (s.startsWith('\\frac', i)) { const a = grp(s, i + 5), b = a && grp(s, a[1]); if (a && b) { out += `<span class="mfrac"><span>${walk(a[0])}</span><span>${walk(b[0])}</span></span>`; i = b[1]; continue; } }
+      if (s.startsWith('\\sqrt', i)) { const a = grp(s, i + 5); if (a) { out += `√<span class="msqrt">${walk(a[0])}</span>`; i = a[1]; continue; } }
+      if ((s[i] === '^' || (s[i] === '_' && CFG.math)) && i > 0) { const tag = s[i] === '^' ? 'sup' : 'sub', a = grp(s, i + 1);
+        if (a) { out += `<${tag}>${walk(a[0])}</${tag}>`; i = a[1]; continue; }
+        const m = s.slice(i + 1).match(/^[−-]?[0-9A-Za-zα-ωµ*]+(?:[,.][0-9]+)?/); if (m) { out += `<${tag}>${m[0]}</${tag}>`; i += 1 + m[0].length; continue; } }
+      out += s[i]; i++;
+    }
+    return out;
+  };
+  return walk(h).replace(/\n/g, '<br>');
+}
 function viewLesson() {
   const l = SS.L, k = SS.k, fading = doneL().length >= 3;
   const head = `<div class="topbar"><a class="link" href="#" data-act="home">← ${esc(CFG.short)}</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button><span class="small muted">Lektion ${LESSONS.indexOf(l) + 1}</span></div>
   <header class="stack" style="gap:6px"><h1 style="font-size:26px">${esc(l.t)}</h1><div class="row" style="flex-wrap:wrap;gap:6px">${norms(l)}</div>${phase(6, k)}</header>`;
-  if (k === 0) return `${head}<section class="card"><span class="eyebrow">Vorab-Frage</span><h2 style="line-height:1.35">${esc(l.cards[0][0])}</h2>
+  if (k === 0) return `${head}<section class="card"><span class="eyebrow">Vorab-Frage</span><h2 style="line-height:1.35">${mf(l.cards[0][0])}</h2>
     <span class="small muted">Rate ruhig, bevor du liest. Auch eine falsche Vermutung macht die Antwort danach merkbarer.</span>
     <textarea id="pre" placeholder="Deine Vermutung">${esc(SS.pre)}</textarea><button class="btn primary" data-act="next">Zur Lektion</button></section>`;
   if (k === 1) return `${head}<section class="card"><span class="eyebrow">Roter Faden</span><div class="why">${esc(l.why)}</div></section>
-    <section class="card core">${l.core.map(p => `<p>${esc(p)}</p>`).join('')}</section>
-    <section class="card"><span class="eyebrow">Prüfschema</span><ol class="schema">${l.schema.map(s => `<li>${esc(s)}</li>`).join('')}</ol></section>
-    <section class="card"><span class="eyebrow">Deine Vorab-Frage</span><span class="small muted">${esc(l.cards[0][0])}</span>${SS.pre ? `<span class="small">Du: ${esc(SS.pre)}</span>` : ''}<div class="ans">${esc(l.cards[0][1])}</div>
+    <section class="card core">${l.core.map(p => `<p>${mf(p)}</p>`).join('')}</section>
+    <section class="card"><span class="eyebrow">Prüfschema</span><ol class="schema">${l.schema.map(s => `<li>${mf(s)}</li>`).join('')}</ol></section>
+    <section class="card"><span class="eyebrow">Deine Vorab-Frage</span><span class="small muted">${esc(l.cards[0][0])}</span>${SS.pre ? `<span class="small">Du: ${esc(SS.pre)}</span>` : ''}<div class="ans">${mf(l.cards[0][1])}</div>
     <button class="btn primary" data-act="next">Zum Fall</button></section>`;
   if (k === 2) {
     const c = l.case, s = SS.step, done = s >= c.steps.length;
-    const shown = c.steps.slice(0, s).map(([q, a]) => `<div class="step open"><b>${esc(q)}</b><div class="ans">${esc(a)}</div></div>`).join('');
-    const cur = done ? `<div class="ans"><b>Ergebnis:</b> ${esc(c.res)}</div><button class="btn primary" data-act="next">${l.nav && l.nav.length ? (CFG.navReview ? 'Weiter zur Paragrafen-Navigation' : 'Weiter zum Nachschlagen') : 'Weiter'}</button>`
-      : fading ? `<div class="step"><b>${esc(c.steps[s][0])}</b><textarea id="guess" placeholder="Erst selbst lösen, dann aufdecken">${esc(SS.guess)}</textarea><button class="btn primary" data-act="reveal">Aufdecken</button></div>`
+    const mine = SS.mine || {}, shown = c.steps.slice(0, s).map(([q, a], k) => `<div class="step open"><b>${mf(q)}</b>${mine[k] ? `<span class="small" style="white-space:pre-wrap">Du: ${esc(mine[k])}</span>${calcHTML(mine[k])}` : ''}<div class="ans">${mf(a)}</div></div>`).join('');
+    const cur = done ? `<div class="ans"><b>Ergebnis:</b> ${mf(c.res)}</div><button class="btn primary" data-act="next">${l.nav && l.nav.length ? (CFG.navReview ? 'Weiter zur Paragrafen-Navigation' : 'Weiter zum Nachschlagen') : 'Weiter'}</button>`
+      : fading ? `<div class="step"><b>${mf(c.steps[s][0])}</b><textarea id="guess" placeholder="Erst selbst lösen, dann aufdecken. Rechnungen wie 100.000 · 1,05^2 − 12.950,46 · 2,05 rechnet 🧮 aus.">${esc(SS.guess)}</textarea><div id="calcout"></div><div class="calcrow"><button class="btn" data-act="calc">🧮 Ausrechnen</button><button class="btn primary" data-act="reveal">Aufdecken</button></div></div>`
         : `<div class="step"><b>${esc(c.steps[s][0])}</b><span class="small muted">Überleg kurz selbst, dann deck den Schritt auf.</span><button class="btn primary" data-act="reveal">Schritt zeigen</button></div>`;
-    return `${head}<section class="card"><span class="eyebrow">${fading ? 'Fall · selbst lösen' : 'Fall · Lösungsweg zum Mitdenken'}</span><div class="sv">${esc(c.sv)}</div>${shown}${cur}</section>`;
+    return `${head}<section class="card"><span class="eyebrow">${fading ? 'Fall · selbst lösen' : 'Fall · Lösungsweg zum Mitdenken'}</span><div class="sv">${mf(c.sv)}</div>${shown}${cur}</section>`;
   }
   if (k === 3) {
     const n = l.nav[SS.navI];
@@ -274,18 +332,18 @@ function viewCase() {
   const C = SS.C, done = C.s >= C.steps.length;
   const head = `<div class="topbar"><a class="link" href="#" data-act="home">← ${esc(CFG.short)}</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button><span class="small muted">${C.boss ? 'Abschlussfall' : 'Fall-Training'}</span></div>
   <header class="stack" style="gap:6px"><h1 style="font-size:26px">${C.boss ? '👹 ' + esc(C.title) : '🧩 Gemischter Fall'}</h1>${C.boss ? '' : `<span class="small muted">${C.repeat ? 'Alle Fälle zu deinen bisherigen Lektionen hast du heute schon gelöst, das hier ist eine Wiederholung. Mit jeder neuen Lektion kommen neue Fälle dazu.' : `Fall ${C.idx} von ${C.of} zu diesem Thema · ${doneL().length} Lektion${doneL().length === 1 ? '' : 'en'} im Fallpool`}</span>`}${phase(C.steps.length + (C.boss ? 0 : 1), (C.pick ? 1 : 0) * (C.boss ? 0 : 1) + C.s)}</header>
-  <section class="card"><div class="sv">${esc(C.sv)}</div></section>`;
+  <section class="card"><div class="sv">${mf(C.sv)}</div></section>`;
   if (!C.pick) return `${head}<section class="card"><h3>Welches Thema steckt im Kern dieses Falls?</h3><span class="small muted">In der Klausur steht nirgends, ${CFG.extraCard ? 'welche Norm' : 'welches Thema'} gefragt ist. Erkennen ist die halbe Lösung.</span>
     <div class="opts">${C.opts.map(o => `<button class="opt" data-act="pick" data-v="${o.id}">${esc(o.t)}</button>`).join('')}</div></section>`;
   const pickFb = C.boss ? '' : `<section class="card"><b>${C.pick === C.L.id ? '✅ Richtig erkannt' : '❌ Gemeint war: ' + esc(C.L.t)}</b></section>`;
-  const prev = C.steps.slice(0, C.s).map(st => `<div class="step open"><b>${esc(st[0])}</b><div class="ans">${esc(st[1])}</div></div>`).join('');
-  if (done) return `${head}${pickFb}<section class="card">${prev}<div class="ans"><b>Ergebnis:</b> ${esc(C.res)}</div>
+  const prev = C.steps.slice(0, C.s).map(st => `<div class="step open"><b>${mf(st[0])}</b><div class="ans">${mf(st[1])}</div></div>`).join('');
+  if (done) return `${head}${pickFb}<section class="card">${prev}<div class="ans"><b>Ergebnis:</b> ${mf(C.res)}</div>
     <span class="small muted">${C.miss ? `${C.miss} Schritt${C.miss === 1 ? '' : 'e'} nicht getroffen; die passenden Karten kommen morgen wieder.` : 'Alle Schritte getroffen.'}</span>
     <button class="btn primary" data-act="casedone">Abschließen</button></section>`;
   const st = C.steps[C.s];
   return `${head}${pickFb}<section class="card">${prev}<div class="step"><b>${esc(st[0])}</b>${st[2] && C.boss ? `<span class="small muted">Thema: ${esc(LBY[st[2]].t)}</span>` : ''}
-    ${C.shown ? `${C.guess ? `<span class="small">Du: ${esc(C.guess)}</span>` : ''}<div class="ans">${esc(st[1])}</div><div class="rate" style="grid-template-columns:1fr 1fr"><button class="btn" data-act="step" data-v="0">Nicht getroffen</button><button class="btn primary" data-act="step" data-v="1">Getroffen</button></div>`
-      : `<textarea id="guess" placeholder="Deine Lösung für diesen Schritt">${esc(C.guess)}</textarea><button class="btn primary" data-act="sreveal">Aufdecken</button>`}</div></section>`;
+    ${C.shown ? `${C.guess ? `<span class="small" style="white-space:pre-wrap">Du: ${esc(C.guess)}</span>${calcHTML(C.guess)}` : ''}<div class="ans">${mf(st[1])}</div><div class="rate" style="grid-template-columns:1fr 1fr"><button class="btn" data-act="step" data-v="0">Nicht getroffen</button><button class="btn primary" data-act="step" data-v="1">Getroffen</button></div>`
+      : `<textarea id="guess" placeholder="Deine Lösung für diesen Schritt">${esc(C.guess)}</textarea><div id="calcout"></div><div class="calcrow"><button class="btn" data-act="calc">🧮 Ausrechnen</button><button class="btn primary" data-act="sreveal">Aufdecken</button></div>`}</div></section>`;
 }
 
 function viewRead(l) {
@@ -295,7 +353,7 @@ function viewRead(l) {
   <section class="card"><span class="eyebrow">Roter Faden</span><div class="why">${esc(l.why)}</div></section>
   <section class="card core">${l.core.map(p => `<p>${esc(p)}</p>`).join('')}</section>
   <section class="card"><span class="eyebrow">Prüfschema</span><ol class="schema">${l.schema.map(s => `<li>${esc(s)}</li>`).join('')}</ol></section>
-  <details class="card"><summary>Fall mit Lösung</summary><div class="sv" style="margin-top:8px">${esc(l.case.sv)}</div>${l.case.steps.map(([q, a]) => `<div class="step open"><b>${esc(q)}</b><div class="ans">${esc(a)}</div></div>`).join('')}<div class="ans"><b>Ergebnis:</b> ${esc(l.case.res)}</div></details>
+  <details class="card"><summary>Fall mit Lösung</summary><div class="sv" style="margin-top:8px">${mf(l.case.sv)}</div>${l.case.steps.map(([q, a]) => `<div class="step open"><b>${esc(q)}</b><div class="ans">${esc(a)}</div></div>`).join('')}<div class="ans"><b>Ergebnis:</b> ${mf(l.case.res)}</div></details>
   ${qaList(l.id)}
   ${P.notes[l.id] ? `<section class="card"><span class="eyebrow">Deine eigenen Worte</span><span>${esc(P.notes[l.id])}</span></section>` : ''}`;
 }
@@ -334,7 +392,7 @@ function askDraw() {
   o.innerHTML = `<div class="askbox"><div class="row spread"><span class="eyebrow">❓ Frage · ${esc(ASK.title)}</span><button class="link" data-q="close" style="background:none;border:0;font:inherit;cursor:pointer">Schließen</button></div>
     ${thread || '<span class="small muted">Frag, was dir unklar ist, z. B. warum etwas an dieser Stelle im Schema steht. Die Antwort kennt die Lektion, die gerade offen ist, und wird gespeichert.</span>'}
     ${ASK.busy ? '<span class="small muted">Denkt nach …</span>' : ''}${ASK.err ? `<span class="small" style="color:var(--warn,#b45309)">${esc(ASK.err)}</span>` : ''}
-    ${ASK.card && !ASK.saved ? `<div class="card flat" style="gap:6px"><span class="eyebrow">Als Lernkarte übernehmen?</span><b class="small">${esc(ASK.card[0])}</b><span class="small muted">${esc(ASK.card[1])}</span><button class="btn" data-q="card">＋ In die Wiederholungen</button></div>` : ASK.saved ? '<span class="small muted">✓ Karte ist in deinen Wiederholungen, zum ersten Mal morgen.</span>' : ''}
+    ${ASK.card && !ASK.saved ? `<div class="card flat" style="gap:6px"><span class="eyebrow">Als Lernkarte übernehmen?</span><b class="small">${mf(ASK.card[0])}</b><span class="small muted">${mf(ASK.card[1])}</span><button class="btn" data-q="card">＋ In die Wiederholungen</button></div>` : ASK.saved ? '<span class="small muted">✓ Karte ist in deinen Wiederholungen, zum ersten Mal morgen.</span>' : ''}
     ${key ? `<textarea id="askin" placeholder="${ASK.msgs.length ? 'Nachfrage …' : 'Deine Frage …'}" rows="3"></textarea><div class="row" style="gap:8px"><button class="btn" data-q="mic" aria-label="Diktieren">🎤</button><button class="btn primary grow" data-q="send" ${ASK.busy ? 'disabled' : ''}>Fragen</button></div>`
       : `<span class="small">Für Antworten braucht Echo deinen Anthropic-Schlüssel (Echo → Einstellungen). Bis dahin kannst du die Frage hier notieren; sie wird gespeichert und du kannst sie später stellen.</span><textarea id="askin" placeholder="Deine Frage …" rows="3"></textarea><button class="btn primary" data-q="note">Frage notieren</button>`}</div>`;
   const ta = o.querySelector('#askin'); if (ta && !ASK.busy) setTimeout(() => ta.focus(), 30);
@@ -373,7 +431,7 @@ function askClick(e) {
 }
 function qaList(lid) {
   const xs = P.qa.filter(x => !lid || x.lid === lid); if (!xs.length) return '';
-  return `<section class="card"><span class="eyebrow">Deine Fragen</span>${xs.slice().reverse().map(x => `<details><summary class="small">${esc(x.q)}</summary><div class="ans small" style="margin-top:6px">${x.a ? esc(x.a).replace(/\n/g, '<br>') : '<span class="muted">Noch keine Antwort gespeichert.</span>'}</div>${!lid && x.lid && LBY[x.lid] ? `<a class="small muted" href="#l-${x.lid}">${esc(LBY[x.lid].t)}</a>` : ''}</details>`).join('')}</section>`;
+  return `<section class="card"><span class="eyebrow">Deine Fragen</span>${xs.slice().reverse().map(x => `<details><summary class="small">${mf(x.q)}</summary><div class="ans small" style="margin-top:6px">${x.a ? mf(x.a).replace(/\n/g, '<br>') : '<span class="muted">Noch keine Antwort gespeichert.</span>'}</div>${!lid && x.lid && LBY[x.lid] ? `<a class="small muted" href="#l-${x.lid}">${esc(LBY[x.lid].t)}</a>` : ''}</details>`).join('')}</section>`;
 }
 function viewQA() {
   return `<div class="topbar"><a class="link" href="#">← ${esc(CFG.short)}</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button></div><header class="stack" style="gap:4px"><h1>❓ Deine Fragen</h1><span class="small muted">Gespeichert mit Antwort. Was als Karte übernommen wurde, kommt in den Wiederholungen.</span></header>${qaList(null) || '<section class="card"><span class="muted">Noch keine Fragen.</span></section>'}`;
@@ -381,7 +439,7 @@ function viewQA() {
 
 /* ---------- calculation drills: D.DRILLS = [{ id, t, em, sub, gen: () => ({ q, a, tol, unit, steps: [] }) }] ----------
    Every call of gen() builds a fresh task with new numbers, so practice never runs out. */
-const num = v => { const t = String(v).trim().replace(/\s|€|%/g, ''); if (!t) return NaN; const x = t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : t; return parseFloat(x); };
+const num = v => { const t = String(v).trim().replace(/\s|€|%/g, ''); if (!t) return NaN; const x = t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : t; if (/^[+-]?\d*\.?\d+$/.test(x)) return parseFloat(x); try { return calcEval(String(v).replace(/€/g, '')); } catch { return parseFloat(x); } };
 const fmtN = (x, d = 2) => Number(x).toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: d });
 function drillCard() {
   if (!(D.DRILLS || []).length) return '';
@@ -404,10 +462,10 @@ function viewDrill() {
   const { d, task, res } = DR;
   return `<div class="topbar"><a class="link" href="#rechnen">← Rechentrainer</a><button class="link" data-act="ask" style="background:none;border:0;cursor:pointer;font:inherit;color:var(--calm)">❓ Frage</button></div>
   <header class="stack" style="gap:4px"><span class="eyebrow">${d.em || '🧮'} ${esc(d.t)}</span></header>
-  <section class="card"><div class="sv" style="white-space:pre-wrap">${esc(task.q)}</div>
+  <section class="card"><div class="sv" style="white-space:pre-wrap">${mf(task.q)}</div>
     <input type="text" id="drillin" inputmode="decimal" placeholder="Ergebnis${task.unit ? ' in ' + esc(task.unit) : ''}" value="${esc(DR.given)}" ${res ? 'disabled' : ''} autocomplete="off">
     ${res ? `<b>${res === 'ok' ? '✅ Richtig' : '❌ Nicht ganz'} · Lösung: ${fmtN(task.a, task.dec ?? 2)}${task.unit ? ' ' + esc(task.unit) : ''}</b>
-      <div class="stack" style="gap:6px">${task.steps.map(x => `<div class="step open"><div class="ans" style="white-space:pre-wrap">${esc(x)}</div></div>`).join('')}</div>
+      <div class="stack" style="gap:6px">${task.steps.map(x => `<div class="step open"><div class="ans" style="white-space:pre-wrap">${mf(x)}</div></div>`).join('')}</div>
       <div class="row" style="gap:8px"><button class="btn primary grow" data-act="drillnext">Nächste Aufgabe</button><button class="btn" data-act="drillmine">War doch richtig</button></div>`
       : `<button class="btn primary" data-act="drillcheck">Prüfen</button><button class="btn" data-act="drillskip">Lösung zeigen</button>`}</section>`;
 }
@@ -436,12 +494,12 @@ function viewExam() {
   const { e, phase } = EX, max = e.tasks.reduce((a, t) => a + t.pts, 0);
   const left = Math.max(0, e.min * 60 - Math.floor((Date.now() - EX.t0) / 1000));
   const head = `<div class="topbar"><a class="link" href="#klausur">← Klausuren</a><span class="mono small" id="exleft" style="color:${left < 600 ? 'var(--gold)' : 'var(--muted)'}">${phase === 'write' ? '⏳ ' + mmss(left) : ''}</span></div><header class="stack" style="gap:4px"><h1 style="font-size:24px">📝 ${esc(e.t)}</h1></header>`;
-  if (phase === 'write') return `${head}${e.tasks.map((t, i) => `<section class="card"><div class="row spread"><b>Aufgabe ${i + 1}: ${esc(t.t)}</b><span class="small muted">${t.pts} P.</span></div><div class="sv" style="white-space:pre-wrap">${esc(t.q)}</div>${t.tf ? `<span class="small muted">Ankreuzen, was richtig ist. Nicht angekreuzt heißt falsch.</span>${t.tf.map((x, j) => `<label class="row" style="gap:10px;align-items:flex-start;line-height:1.5"><input type="checkbox" data-tf="${i}:${j}" ${(EX.tf[i] || {})[j] ? 'checked' : ''} style="margin-top:4px;width:20px;height:20px;flex:none"><span><b>${'ABCDE'[j] || j + 1}</b> ${esc(x[0])}</span></label>`).join('')}` : `<textarea data-ex="${i}" placeholder="Lösung (Rechenweg, Ergebnis, Begründung)" style="min-height:110px">${esc(EX.ans[i] || '')}</textarea>`}</section>`).join('')}
+  if (phase === 'write') return `${head}${e.tasks.map((t, i) => `<section class="card"><div class="row spread"><b>Aufgabe ${i + 1}: ${esc(t.t)}</b><span class="small muted">${t.pts} P.</span></div><div class="sv" style="white-space:pre-wrap">${mf(t.q)}</div>${t.tf ? `<span class="small muted">Ankreuzen, was richtig ist. Nicht angekreuzt heißt falsch.</span>${t.tf.map((x, j) => `<label class="row" style="gap:10px;align-items:flex-start;line-height:1.5"><input type="checkbox" data-tf="${i}:${j}" ${(EX.tf[i] || {})[j] ? 'checked' : ''} style="margin-top:4px;width:20px;height:20px;flex:none"><span><b>${'ABCDE'[j] || j + 1}</b> ${esc(x[0])}</span></label>`).join('')}` : `<textarea data-ex="${i}" placeholder="Lösung (Rechenweg, Ergebnis, Begründung)" style="min-height:110px">${esc(EX.ans[i] || '')}</textarea>`}</section>`).join('')}
     <button class="btn primary big" data-act="examend">Abgeben und auswerten</button>`;
   if (phase === 'grade') return `${head}<section class="card"><span class="small muted">${e.tasks.every(t => t.tf) ? 'Automatisch ausgewertet. Eine richtige Aussage, die du nicht angekreuzt hast, zählt wie in der Klausur als Fehler.' : 'Vergleiche jede Aufgabe mit der Lösung und vergib ehrlich Punkte. Gezählt wird nur, was du in der Zeit geschrieben hast.'}</span></section>
     ${e.tasks.map((t, i) => t.tf ? `<section class="card"><div class="row spread"><b>Aufgabe ${i + 1}: ${esc(t.t)}</b><span class="small muted">${fmtN(tfScore(t, i), 1)} / ${t.pts} P.</span></div>${t.tf.map((x, j) => { const m = !!(EX.tf[i] || {})[j], ok = m === !!x[1]; return `<div class="step open" style="border-color:${ok ? 'var(--calm)' : 'var(--gold)'}"><span><b>${'ABCDE'[j] || j + 1}</b> ${ok ? '✅' : '❌'} ${esc(x[0])}</span><div class="ans"><b>${x[1] ? 'Richtig' : 'Falsch'}.</b> ${esc(x[2] || '')}</div></div>`; }).join('')}<input type="hidden" data-sc="${i}" value="${tfScore(t, i)}"></section>` : `<section class="card"><div class="row spread"><b>Aufgabe ${i + 1}: ${esc(t.t)}</b><span class="small muted">max. ${t.pts} P.</span></div>
       <details><summary class="small">Aufgabe und deine Lösung</summary><div class="sv" style="white-space:pre-wrap;margin-top:6px">${esc(t.q)}</div><div class="small" style="white-space:pre-wrap;margin-top:6px">${esc(EX.ans[i] || '–')}</div></details>
-      <div class="ans" style="white-space:pre-wrap">${esc(t.sol)}</div>
+      <div class="ans" style="white-space:pre-wrap">${mf(t.sol)}</div>
       <input type="text" inputmode="decimal" data-sc="${i}" placeholder="Deine Punkte (0–${t.pts})" value="${EX.score[i] ?? ''}"></section>`).join('')}
     <button class="btn primary big" data-act="examscore">Ergebnis speichern</button>`;
   const pts = Object.values(EX.score).reduce((a, b) => a + b, 0);
@@ -529,7 +587,8 @@ app.addEventListener('click', e => {
     if (SS.k === 4) { SS.note = val('note'); const l = SS.L; SS.recall = { queue: shuffle(l.cards.map((_, i) => ({ id: l.id + ':c' + i }))), i: 0, shown: false }; }
     SS.k++; SS.step = 0; SS.guess = ''; render(); return;
   }
-  if (a === 'reveal') { SS.guess = ''; SS.step++; render(); return; }
+  if (a === 'reveal') { const g = val('guess'); if (g && g.trim()) (SS.mine || (SS.mine = {}))[SS.step] = g.trim(); SS.guess = ''; SS.step++; render(); return; }
+  if (a === 'calc') { const out = document.getElementById('calcout'), g = val('guess'); if (out) out.innerHTML = calcHTML(g) || '<div class="calcout small muted">Keine Rechnung erkannt. Beispiel: 100.000 · ANF(5 %; 10)</div>'; return; }
   if (a === 'navcheck') { SS.navGiven = val('nav'); SS.navRes = checkNorm(SS.navGiven, SS.L.nav[SS.navI][1]); render(); return; }
   if (a === 'navskip') { SS.k = 4; render(); return; }
   if (a === 'navnext') { SS.navI++; SS.navGiven = ''; SS.navRes = null; if (SS.navI >= SS.L.nav.length) SS.k = 4; render(); return; }
