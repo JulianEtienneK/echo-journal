@@ -64,6 +64,7 @@ function answer(val, easy) {
   else if (it.kind === 'mc') { ok = val === it.w.de; rate(it.w.b, ok); setWord(it.w, ok, 'mc'); s.newDone = (s.newDone || 0) + 1; }
   else { const r = checkProd(it.w, val); ok = r.ok; note = r.note || ''; setWord(it.w, ok, 'prod'); }
   if (ok) s.ok++; s.ans = { ok, val, note, easy }; s.log.push({ es: it.w.es, ok }); saveES(); render();
+  if (!easy && (!ok || it.kind === 'mc') && window.EULE) EULE.push({ src: 'es', q: 'Spanisch: ' + it.w.de, a: it.w.es, ref: it.w.es });
   if (it.kind === 'mc' || !ok) say(it.w.es);
 }
 function nextCard() { const s = S.sess; s.ans = null; s.i++; S.note = ''; if (!curItem()) finishSession(); else render(); setTimeout(() => document.getElementById('vin')?.focus(), 30); }

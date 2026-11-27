@@ -1,4 +1,4 @@
-/* Echo · Eule: a short learning window before sleep (10 min, extendable), and a morning recall of everything learned in it.
+/* Echo · Eule: a short learning window before sleep: the evening round is Spanisch, StB-Pfad and King's College, 7 minutes each (extendable), and a morning recall of everything learned in it.
    Why: sleep after learning consolidates facts, and relearning the next morning makes it stick with less effort (Mazza et al. 2016).
    Storage 'echo-eule' = { cur: {start, end, items} | null, sessions: [{id, start, end, after, items, done, res}], snooze, updated }.
    Item = { src: 'stb'|'med'|'quiz:<bank>'|'wege'|'frei', q, a, ref, t }. Pages call EULE.push(item); it only records while a window is open.
@@ -14,6 +14,9 @@
   const e = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const dk = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   const MIN = 60000;
+  // evening round: three blocks of 7 minutes; the window moves on block by block (Julian, 27.11.2026: 30 minutes in total is too much to keep up)
+  const BLOCK = 7;
+  const ROUND = [['es', 'spanisch.html', '🇪🇸', 'Spanisch', 'Vokabeln oder Grammatik'], ['stb', 'stb-pfad.html#heute', '⚖️', 'Steuerberater', 'StB-Pfad: fällige Karten oder nächste Lektion'], ['kcl', 'kcl.html', '🎓', "King's College", 'Paper von Rodriguez-Mateos lesen, Karten daraus']];
   // review opens at the next 4 am after the window, and at least 3 hours after it ended (a night in between)
   function afterOf(end) { const d = new Date(end); d.setHours(4, 0, 0, 0); if (d.getTime() <= end) d.setDate(d.getDate() + 1); return Math.max(d.getTime(), end + 3 * 60 * MIN); }
   function xp(n) {
@@ -49,9 +52,9 @@
   const ov = html => { document.querySelectorAll('.eu-ov').forEach(x => x.remove()); const o = document.createElement('div'); o.className = 'eu-ov'; o.innerHTML = `<div class="eu-box">${html}</div>`; document.body.appendChild(o); o.addEventListener('click', ev => { if (ev.target === o) o.remove(); }); return o; };
 
   /* ---------- the window ---------- */
-  function start(min = 10) {
+  function start(min = BLOCK) {
     const E = get(); if (E.cur && E.cur.end > Date.now()) return choose();
-    close(E); E.cur = { start: Date.now(), end: Date.now() + min * MIN, items: [] }; put(E); badge(); choose();
+    close(E); E.cur = { start: Date.now(), end: Date.now() + min * MIN, items: [], done: [] }; put(E); badge(); choose();
   }
   function extend(min = 5) { const E = get(); if (!E.cur) return; E.cur.end = Math.max(E.cur.end, Date.now()) + min * MIN; put(E); badge(); }
   function stop() { const E = get(), n = E.cur ? E.cur.items.length : 0; put(close(E)); badge(); goodnight(n); }
@@ -60,14 +63,31 @@
       <span class="eu-muted">Jetzt das Handy auf den Schrank. Schlaf ist der Teil, in dem das Gelernte fest wird.</span><button class="eu-btn p" data-eu="x">Okay</button>`);
     o.querySelector('[data-eu=x]').onclick = () => o.remove();
   }
+  // start one block of the round: fresh 7 minutes, then open its page
+  function go(topic) {
+    const E = get(); if (!E.cur) { close(E); E.cur = { start: Date.now(), end: 0, items: [], done: [] }; }
+    E.cur.done = E.cur.done || []; if (E.cur.topic && E.cur.topic !== topic && !E.cur.done.includes(E.cur.topic)) E.cur.done.push(E.cur.topic);
+    E.cur.topic = topic; E.cur.asked = false; E.cur.end = Date.now() + BLOCK * MIN; put(E); badge();
+  }
+  function nextBlock(r) {
+    const E = get(), n = E.cur ? E.cur.items.length : 0;
+    const o = ov(`<h2>🦉 7 Minuten um</h2><span>Weiter mit <b>${r[2]} ${r[3]}</b>? ${r[4]}.</span><span class="eu-muted">${n} ${n === 1 ? 'Sache' : 'Sachen'} bisher gemerkt.</span>
+      <div class="eu-row"><button class="eu-btn" data-eu="night">Gute Nacht</button><a class="eu-btn p" style="text-align:center;text-decoration:none" href="${r[1]}" data-eu="go">Weiter (7 min)</a></div>`);
+    o.onclick = null;
+    o.querySelector('[data-eu=go]').addEventListener('click', () => { go(r[0]); if (r[1].split('#')[0] === location.pathname.split('/').pop()) setTimeout(() => location.reload(), 30); });
+    o.querySelector('[data-eu=night]').onclick = () => { o.remove(); stop(); };
+  }
   function choose() {
-    const L = [['stb-pfad.html#heute', '⚖️', 'StB-Pfad', 'Fällige Karten oder die nächste Lektion', 1], ['medizin.html', '🩺', 'Medizin', 'Lernrunde Anatomie, Krankheiten, Stoffwechsel', 1], ['comedy.html', '😂', 'Comedy', 'Momente zerlegen oder eine Challenge schreiben', 1],
-      ['spiele.html#quiz-ernmed', '🥗', 'Ernährungsmedizin-Quiz', '', 0], ['spiele.html#quiz-steuer', '🧾', 'Steuer-Fallquiz', '', 0], ['spanisch.html', '🇪🇸', 'Spanisch', '', 0], ['wege.html', '🪷', 'Buddhismus und Stoa', '', 0]];
-    const o = ov(`<h2>🦉 Eule · Was lernst du?</h2><span class="eu-muted">Alles, was du in den nächsten Minuten neu lernst oder falsch hast, fragt Echo dich morgen früh ab.</span>
-      ${L.map(x => `<a class="eu-opt${x[4] ? ' hi' : ''}" href="${x[0]}"><span style="font-size:${x[4] ? 30 : 22}px">${x[1]}</span><span><b>${x[2]}</b>${x[3] ? `<small>${x[3]}</small>` : ''}</span></a>`).join('')}
-      <button class="eu-opt" data-eu="free"><span style="font-size:22px">✍️</span><span><b>Etwas anderes</b><small>Buch, Skript, Video: Frage und Antwort selbst notieren</small></span></button>`);
+    const E = get(), done = E.cur ? (E.cur.done || []).concat(E.cur.topic && E.cur.end <= Date.now() ? [E.cur.topic] : []) : [], now = E.cur && E.cur.end > Date.now() ? E.cur.topic : null;
+    const L = [['medizin.html', '🩺', 'Medizin', 'Lernrunde Anatomie, Krankheiten, Stoffwechsel'], ['comedy.html', '😂', 'Comedy', 'Momente zerlegen oder eine Challenge schreiben'],
+      ['spiele.html#quiz-ernmed', '🥗', 'Ernährungsmedizin-Quiz', ''], ['spiele.html#quiz-steuer', '🧾', 'Steuer-Fallquiz', ''], ['wege.html', '🪷', 'Buddhismus und Stoa', '']];
+    const o = ov(`<h2>🦉 Abendrunde · 3 × 7 Minuten</h2><span class="eu-muted">Was du dabei neu lernst oder falsch hast, fragt Echo dich morgen früh ab. Nach 7 Minuten schlägt Eule den nächsten Block vor.</span>
+      ${ROUND.map(r => `<a class="eu-opt hi" href="${r[1]}" data-topic="${r[0]}" style="${done.includes(r[0]) ? 'opacity:.55' : ''}"><span style="font-size:30px">${r[2]}</span><span><b>${r[3]} · 7 min${done.includes(r[0]) ? ' ✓' : now === r[0] ? ' · läuft' : ''}</b><small>${r[4]}</small></span></a>`).join('')}
+      <details><summary class="eu-muted" style="cursor:pointer">Stattdessen etwas anderes</summary><div style="display:grid;gap:8px;margin-top:8px">
+      ${L.map(x => `<a class="eu-opt" href="${x[0]}"><span style="font-size:22px">${x[1]}</span><span><b>${x[2]}</b>${x[3] ? `<small>${x[3]}</small>` : ''}</span></a>`).join('')}
+      <button class="eu-opt" data-eu="free"><span style="font-size:22px">✍️</span><span><b>Etwas anderes</b><small>Buch, Skript, Video: Frage und Antwort selbst notieren</small></span></button></div></details>`);
     o.querySelector('[data-eu=free]').onclick = free;
-    o.querySelectorAll('a.eu-opt').forEach(a => a.addEventListener('click', () => { if (a.getAttribute('href').split('#')[0] === location.pathname.split('/').pop()) setTimeout(() => location.reload(), 30); }));
+    o.querySelectorAll('a.eu-opt').forEach(a => a.addEventListener('click', () => { if (a.dataset.topic && a.dataset.topic !== now) go(a.dataset.topic); if (a.getAttribute('href').split('#')[0] === location.pathname.split('/').pop()) setTimeout(() => location.reload(), 30); }));
   }
   function free() {
     const o = ov(`<h2>✍️ Was hast du gelernt?</h2><span class="eu-muted">Als Frage formulieren, die du dir morgen selbst stellen würdest. Das Formulieren ist schon Lernen.</span>
@@ -90,7 +110,11 @@
   function badge() {
     document.querySelectorAll('.eu-badge').forEach(x => x.remove()); clearInterval(timer);
     const E = get(); if (!E.cur) return;
-    if (E.cur.end <= Date.now()) { const n = E.cur.items.length; put(close(E)); goodnight(n); return; }
+    if (E.cur.end <= Date.now()) {
+      const left = ROUND.filter(r => !(E.cur.done || []).includes(r[0]) && r[0] !== E.cur.topic);
+      if (E.cur.topic && left.length && !E.cur.asked) { E.cur.asked = true; put(E); return nextBlock(left[0]); }
+      const n = E.cur.items.length; put(close(E)); goodnight(n); return;
+    }
     const b = document.createElement('div'); b.className = 'eu-badge';
     b.innerHTML = `<span>🦉 <span id="eu-t"></span> · <span id="eu-n">${E.cur.items.length}</span></span><button data-eu="free" aria-label="Notieren">✍️</button><button data-eu="ext">+5</button><button data-eu="menu" aria-label="Themen">☰</button><button data-eu="stop" aria-label="Beenden">✕</button>`;
     document.body.appendChild(b);
@@ -110,7 +134,7 @@
     const by = {}; for (const it of items.sort(() => Math.random() - 0.5)) (by[it.src] = by[it.src] || []).push(it);
     const lists = Object.values(by), q = []; while (lists.some(l => l.length)) for (const l of lists) if (l.length) q.push(l.shift());
     const M = { q: q.slice(0, 25).map(it => ({ it })), i: 0, shown: false, ok: 0, miss: new Set() };
-    const label = s => s === 'stb' ? '⚖️ StB-Pfad' : s.startsWith('pfad:echo-wiwi-') ? '🎓 WiWi ' + s.slice(15) : s === 'med' ? '🩺 Medizin' : s.startsWith('quiz:') ? '🎯 Quiz' : s === 'wege' ? '🪷 Wege' : s === 'comedy' ? '😂 Comedy' : '✍️ Eigene Notiz';
+    const label = s => s === 'stb' ? '⚖️ StB-Pfad' : s.startsWith('pfad:echo-wiwi-') ? '🎓 WiWi ' + s.slice(15) : s === 'med' ? '🩺 Medizin' : s.startsWith('quiz:') ? '🎯 Quiz' : s === 'wege' ? '🪷 Wege' : s === 'comedy' ? '😂 Comedy' : s === 'kcl' ? "🎓 King's College" : s === 'es' ? '🇪🇸 Spanisch' : '✍️ Eigene Notiz';
     const o = ov(''), box = o.querySelector('.eu-box');
     o.onclick = null;
     // Phone challenge (Echo, 'echo-phone'): ask about yesterday first, if it is still open.
@@ -156,6 +180,7 @@
       else if (it.src.startsWith('pfad:') && it.ref) { const k = it.src.slice(5), P = lsj(k, null); if (P && P.cards && P.cards[it.ref]) { const c = P.cards[it.ref]; c.b = 0; c.due = dk(new Date()); P.updated = Date.now(); lsset(k, P); } }
       else if (it.src === 'med' && it.ref) { const M = lsj('echo-med', null); if (M && M.c && M.c[it.ref]) { M.c[it.ref].d = Date.now(); M.updated = Date.now(); lsset('echo-med', M); } }
       else if (it.src.startsWith('quiz:') && it.ref) { const G = lsj('echo-games', null), bank = it.src.slice(5); const s = G && G.quiz && G.quiz[bank] && G.quiz[bank][it.ref]; if (s) { s.b = 0; s.d = Date.now(); G.updated = Date.now(); lsset('echo-games', G); } }
+      else if (it.src === 'kcl' && it.ref) { const C = lsj('echo-kcl', null); if (C && C.cards && C.cards[it.ref]) { const c = C.cards[it.ref]; c.b = 0; c.due = dk(new Date()); C.updated = Date.now(); lsset('echo-kcl', C); } }
       else if (it.src === 'wege' && it.ref) { const W = lsj('echo-wege', null); if (W) { W.rev = W.rev || {}; W.rev[it.ref] = { b: 0, due: dk(new Date()) }; W.updated = Date.now(); lsset('echo-wege', W); } }
     } catch { /* the morning review still counts */ }
   }
