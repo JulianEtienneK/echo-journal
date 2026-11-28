@@ -73,7 +73,7 @@ function stepCard(key, lid, q, a, r) {
   rate(id, r);
 }
 const R3 = (act, extra = '') => `<div class="rate"><button class="btn" data-act="${act}" data-v="0"${extra}>Nicht gewusst</button><button class="btn" data-act="${act}" data-v="1"${extra}>Teilweise</button><button class="btn primary" data-act="${act}" data-v="2"${extra}>Gewusst</button></div>`;
-const whyBtn = () => `<button class="btn why" data-act="why">🤔 Warum so? Ausführlich erklären</button>`;
+const whyBtn = () => `<button class="btn why" data-act="why">🤔 Warum so? Tiefer erklärt</button>`;
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 function knowStats() {
   const L = P.log || {}, by = {}, lessons = {};
@@ -435,6 +435,22 @@ const SYS = 'Du bist ein erfahrener Tutor für die deutsche Steuerberaterprüfun
   'Antworte auf Deutsch, präzise und knapp (höchstens etwa 200 Wörter), mit Fundstellen (Gesetz, Paragraf, Absatz, Satz; ggf. R/H der Richtlinien oder BFH). Erkläre zuerst das Warum: die Systematik und den Zweck der Regel, dann die Folge, gern mit einem Mini-Beispiel. ' +
   'Erfinde keine Beträge, Fristen oder Urteile. Wenn du dir bei einer Zahl oder einem aktuellen Rechtsstand nicht sicher bist, sag das ausdrücklich und nenne, wo man es nachprüft. ' +
   'Beende die Antwort mit einer eigenen letzten Zeile im Format „KARTE: <kurze Abruffrage> || <Antwort in ein bis zwei Sätzen>“, die den Kern deiner Erklärung als Lernkarte festhält. Kein Markdown außer Absätzen.';
+// "Warum so?" without AI: what is asked, the solution in steps, and the lesson's reasoning (roter Faden, Kern, Prüfschema)
+function whyHTML() {
+  let q = '', a = '', mine = '', l = null, fx = '';
+  if (SS && SS.stage === 'lesson') { l = SS.L; if (SS.k === 2 && SS.L.case.steps[SS.step]) { [q, a] = SS.L.case.steps[SS.step]; mine = (SS.mine || {})[SS.step] || ''; q = 'Fall: ' + SS.L.case.sv + '\n→ ' + q; } else if (SS.k === 5 && SS.recall) { const c = cardDef(SS.recall.queue[SS.recall.i].id); if (c) { q = c.q; a = c.a; l = LBY[c.lid] || l; } } }
+  else if (DR) { q = DR.task.q; a = DR.task.steps.join('\n') + '\nErgebnis: ' + fmtN(DR.task.a, DR.task.dec ?? 2) + (DR.task.unit ? ' ' + DR.task.unit : ''); fx = DR.d.fx || ''; mine = DR.given || ''; }
+  else if (SS && SS.stage === 'review') { const c = cardDef(SS.queue[SS.i].id); if (c) { q = c.q; a = c.a; l = LBY[c.lid]; } }
+  else if (SS && SS.stage === 'case') { const C = SS.C, st = C.steps[C.s]; if (st) { q = 'Fall: ' + C.sv + '\n→ ' + st[0]; a = st[1]; mine = C.guess || ''; l = (st[2] && LBY[st[2]]) || C.L || null; } }
+  const sec = (h, body) => body ? `<div class="stack" style="gap:4px"><span class="eyebrow">${h}</span><div class="small" style="white-space:pre-wrap;line-height:1.55">${body}</div></div>` : '';
+  return `<div class="card flat" style="gap:12px">
+    ${sec('1 · Was gefragt ist', mf(q))}
+    ${fx ? sec('2 · Formel', mf(fx)) : ''}
+    ${sec(fx ? '3 · Rechenweg' : '2 · Lösung', mf(a))}
+    ${mine ? sec('Dein Ansatz', esc(mine) + calcHTML(mine)) : ''}
+    ${l ? sec('Warum diese Regel (Lektion „' + esc(l.t) + '“)', mf(l.why)) + sec('Was du dafür wissen musst', l.core.map(x => '• ' + mf(x)).join('\n')) + sec('Prüfschema: woran du erkennst, dass der Schritt dran ist', l.schema.map((x, i) => (i + 1) + '. ' + mf(x)).join('\n')) + (l.norms && l.norms.length ? sec('Fundstellen', esc(l.norms.join(' · '))) : '') : ''}
+  </div>`;
+}
 function askOpen() {
   const { l, item } = ctxNow();
   ASK = { lid: l ? l.id : null, ctx: ctxText(l, item), msgs: [], busy: false, err: '', card: null, saved: false, title: l ? l.t : CFG.askTopic };
@@ -447,13 +463,16 @@ function askDraw() {
   const thread = ASK.msgs.map(m => m.role === 'user' ? `<div class="askq">${m.content.endsWith(WHY) ? '🤔 Warum so? Bitte ausführlich erklären.' : esc(m.content.split('\n\nFrage: ').pop())}</div>` : `<div class="aska">${esc(m.shown || m.content).replace(/\n/g, '<br>')}</div>`).join('');
   const key = hasAI();
   o.innerHTML = `<div class="askbox"><div class="row spread"><span class="eyebrow">❓ Frage · ${esc(ASK.title)}</span><button class="link" data-q="close" style="background:none;border:0;font:inherit;cursor:pointer">Schließen</button></div>
-    ${thread || '<span class="small muted">Frag, was dir unklar ist, z. B. warum etwas an dieser Stelle im Schema steht. Die Antwort kennt die Lektion, die gerade offen ist, und wird gespeichert.</span>'}
+    ${ASK.static ? ASK.static + (hasAI() && !ASK.msgs.length ? '<button class="btn" data-q="deep">🤖 Noch tiefer: KI erklärt Schritt für Schritt</button>' : '') : ''}
+    ${thread || (ASK.static ? '' : '<span class="small muted">Frag, was dir unklar ist, z. B. warum etwas an dieser Stelle im Schema steht. Die Antwort kennt die Lektion, die gerade offen ist, und wird gespeichert.</span>')}
     ${ASK.busy ? '<span class="small muted">Denkt nach …</span>' : ''}${ASK.err ? `<span class="small" style="color:var(--warn,#b45309)">${esc(ASK.err)}</span>${ASK.retry ? '<button class="btn" data-q="retry">Nochmal versuchen</button>' : ''}` : ''}
     ${ASK.card && !ASK.saved ? `<div class="card flat" style="gap:6px"><span class="eyebrow">Als Lernkarte übernehmen?</span><b class="small">${mf(ASK.card[0])}</b><span class="small muted">${mf(ASK.card[1])}</span><button class="btn" data-q="card">＋ In die Wiederholungen</button></div>` : ASK.saved ? '<span class="small muted">✓ Karte ist in deinen Wiederholungen, zum ersten Mal morgen.</span>' : ''}
     ${key ? `<textarea id="askin" placeholder="${ASK.msgs.length ? 'Nachfrage …' : 'Deine Frage …'}" rows="3"></textarea><div class="row" style="gap:8px"><button class="btn" data-q="mic" aria-label="Diktieren">🎤</button><button class="btn primary grow" data-q="send" ${ASK.busy ? 'disabled' : ''}>Fragen</button></div>`
       : `<span class="small">Für Antworten braucht Echo deinen Anthropic-Schlüssel (Echo → Einstellungen). Bis dahin kannst du die Frage hier notieren; sie wird gespeichert und du kannst sie später stellen.</span><textarea id="askin" placeholder="Deine Frage …" rows="3"></textarea><button class="btn primary" data-q="note">Frage notieren</button>`}</div>`;
-  const ta = o.querySelector('#askin'); if (ta && !ASK.busy) setTimeout(() => ta.focus(), 30);
-  const box = o.querySelector('.askbox'); box.scrollTop = box.scrollHeight;
+  const ta = o.querySelector('#askin'), box = o.querySelector('.askbox');
+  if (ASK.static && !ASK.msgs.length && !ASK.busy) return;
+  if (ta && !ASK.busy) setTimeout(() => ta.focus({ preventScroll: true }), 30);
+  box.scrollTop = box.scrollHeight;
 }
 async function askSend(text) {
   ASK.busy = true; ASK.err = '';
@@ -479,6 +498,7 @@ function askClick(e) {
   const ta = document.getElementById('askin'), text = ta ? ta.value.trim() : '';
   if (k === 'close') { ASK = null; askDraw(); render(); }
   else if (k === 'send') { if (text && !ASK.busy) askSend(text); }
+  else if (k === 'deep') { if (!ASK.busy) askSend(WHY); }
   else if (k === 'retry') { const t = ASK.retry; ASK.retry = null; if (t && !ASK.busy) askSend(t); }
   else if (k === 'note') { if (!text) return; P.qa.push({ d: today(), lid: ASK.lid, q: text, a: '' }); save(); toast('Frage notiert'); ASK = null; askDraw(); render(); }
   else if (k === 'mic') dictate('de-DE', t => { const el = document.getElementById('askin'); if (el) el.value = (el.value ? el.value + ' ' : '') + t; });
@@ -636,7 +656,7 @@ app.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, v = b.dataset.v; tick();
   if (a === 'ask') { askOpen(); return; }
-  if (a === 'why') { askOpen(); if (hasAI()) askSend(WHY); else { ASK.err = 'Für die Erklärung braucht Echo deinen Anthropic-Schlüssel (Echo → Einstellungen).'; askDraw(); } return; }
+  if (a === 'why') { askOpen(); ASK.static = whyHTML(); ASK.title = 'Warum so?'; askDraw(); const box = document.querySelector('.askbox'); if (box) box.scrollTop = 0; return; }
   if (a === 'drillcheck' || a === 'drillskip') { DR.given = val('drillin'); const g = num(DR.given), t = DR.task; const ok = a === 'drillcheck' && isFinite(g) && Math.abs(g - t.a) <= (t.tol ?? Math.max(0.01, Math.abs(t.a) * 0.002)); DR.res = ok ? 'ok' : 'no'; drillScore(ok); render(); return; }
   if (a === 'drillmine') { const x = (P.drills || {})[DR.d.id], y = (P.log || {})['drill:' + DR.d.id]; if (x && DR.res === 'no') { x.ok++; if (y && y.miss) { y.miss--; y.ok++; y.h[y.h.length - 1] = 2; } gainXP(CFG.xp, 20); save(); } startDrill(DR.id); render(); return; }
   if (a === 'drillnext') { startDrill(DR.id); render(); return; }

@@ -30,7 +30,11 @@ async function askAI(system, messages, maxTokens = 900, model) {
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error((j.error && j.error.message) || ('HTTP ' + r.status));
-  return (j.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+  const out = (j.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+  // empty text (e.g. the model used the whole budget for thinking): once more with the fast model and a bigger budget
+  if (!out && !askAI._retry) { askAI._retry = true; try { return await askAI(system, messages, Math.max(maxTokens, 2000), 'claude-haiku-5-5'); } finally { askAI._retry = false; } }
+  if (!out) throw new Error('leere Antwort (' + (j.stop_reason || '?') + ', Modell ' + (j.model || '?') + ')');
+  return out;
 }
 function parseJSONLoose(t) { const m = String(t).match(/[[{][\s\S]*[\]}]/); if (!m) throw new Error('keine JSON-Antwort'); return JSON.parse(m[0]); }
 // Dictation via the browser's speech recognition where available (Chrome, Safari)
