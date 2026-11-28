@@ -444,11 +444,11 @@ function askDraw() {
   let o = document.getElementById('askov');
   if (!ASK) { if (o) o.remove(); return; }
   if (!o) { o = document.createElement('div'); o.id = 'askov'; o.className = 'askov'; document.body.appendChild(o); o.addEventListener('click', askClick); }
-  const thread = ASK.msgs.map(m => m.role === 'user' ? `<div class="askq">${esc(m.content.split('\n\nFrage: ').pop())}</div>` : `<div class="aska">${esc(m.shown || m.content).replace(/\n/g, '<br>')}</div>`).join('');
+  const thread = ASK.msgs.map(m => m.role === 'user' ? `<div class="askq">${m.content.endsWith(WHY) ? '🤔 Warum so? Bitte ausführlich erklären.' : esc(m.content.split('\n\nFrage: ').pop())}</div>` : `<div class="aska">${esc(m.shown || m.content).replace(/\n/g, '<br>')}</div>`).join('');
   const key = hasAI();
   o.innerHTML = `<div class="askbox"><div class="row spread"><span class="eyebrow">❓ Frage · ${esc(ASK.title)}</span><button class="link" data-q="close" style="background:none;border:0;font:inherit;cursor:pointer">Schließen</button></div>
     ${thread || '<span class="small muted">Frag, was dir unklar ist, z. B. warum etwas an dieser Stelle im Schema steht. Die Antwort kennt die Lektion, die gerade offen ist, und wird gespeichert.</span>'}
-    ${ASK.busy ? '<span class="small muted">Denkt nach …</span>' : ''}${ASK.err ? `<span class="small" style="color:var(--warn,#b45309)">${esc(ASK.err)}</span>` : ''}
+    ${ASK.busy ? '<span class="small muted">Denkt nach …</span>' : ''}${ASK.err ? `<span class="small" style="color:var(--warn,#b45309)">${esc(ASK.err)}</span>${ASK.retry ? '<button class="btn" data-q="retry">Nochmal versuchen</button>' : ''}` : ''}
     ${ASK.card && !ASK.saved ? `<div class="card flat" style="gap:6px"><span class="eyebrow">Als Lernkarte übernehmen?</span><b class="small">${mf(ASK.card[0])}</b><span class="small muted">${mf(ASK.card[1])}</span><button class="btn" data-q="card">＋ In die Wiederholungen</button></div>` : ASK.saved ? '<span class="small muted">✓ Karte ist in deinen Wiederholungen, zum ersten Mal morgen.</span>' : ''}
     ${key ? `<textarea id="askin" placeholder="${ASK.msgs.length ? 'Nachfrage …' : 'Deine Frage …'}" rows="3"></textarea><div class="row" style="gap:8px"><button class="btn" data-q="mic" aria-label="Diktieren">🎤</button><button class="btn primary grow" data-q="send" ${ASK.busy ? 'disabled' : ''}>Fragen</button></div>`
       : `<span class="small">Für Antworten braucht Echo deinen Anthropic-Schlüssel (Echo → Einstellungen). Bis dahin kannst du die Frage hier notieren; sie wird gespeichert und du kannst sie später stellen.</span><textarea id="askin" placeholder="Deine Frage …" rows="3"></textarea><button class="btn primary" data-q="note">Frage notieren</button>`}</div>`;
@@ -462,14 +462,15 @@ async function askSend(text) {
   askDraw();
   try {
     const s = LS.get('echo-settings', {});
-    const ans = await askAI(CFG.sys ? CFG.sys + ' Beende die Antwort mit einer eigenen letzten Zeile im Format „KARTE: <kurze Abruffrage> || <Antwort in ein bis zwei Sätzen>“, die den Kern deiner Erklärung als Lernkarte festhält. Kein Markdown.' : SYS, ASK.msgs.map(m => ({ role: m.role, content: m.content })), 900, s.model || s.fastModel);
+    const ans = await askAI(CFG.sys ? CFG.sys + ' Beende die Antwort mit einer eigenen letzten Zeile im Format „KARTE: <kurze Abruffrage> || <Antwort in ein bis zwei Sätzen>“, die den Kern deiner Erklärung als Lernkarte festhält. Kein Markdown.' : SYS, ASK.msgs.map(m => ({ role: m.role, content: m.content })), text === WHY ? 2500 : 1500, s.model || s.fastModel);
+    if (!ans || !ans.trim()) throw new Error('Die Antwort kam leer zurück (vermutlich zu lang abgebrochen). Bitte nochmal tippen.');
     const m = ans.match(/\n?\s*KARTE:\s*(.+?)\s*\|\|\s*([\s\S]+?)\s*$/);
-    const shown = m ? ans.slice(0, m.index).trim() : ans;
+    const shown = (m ? ans.slice(0, m.index).trim() : ans) || ans;
     ASK.msgs.push({ role: 'assistant', content: ans, shown });
     if (m) { ASK.card = [m[1].trim(), m[2].trim()]; ASK.saved = false; }
     P.qa.push({ d: today(), lid: ASK.lid, q: text, a: shown }); save(); gainXP(CFG.xp + '-frage', 10);
     window.EULE && EULE.push({ src: CFG.src, q: m ? ASK.card[0] : text, a: m ? ASK.card[1] : shown.slice(0, 600) });
-  } catch (e) { ASK.err = 'Keine Antwort: ' + e.message; ASK.msgs.pop(); }
+  } catch (e) { ASK.err = 'Keine Antwort: ' + e.message; ASK.msgs.pop(); ASK.retry = text; }
   ASK.busy = false; askDraw();
 }
 function askClick(e) {
@@ -478,6 +479,7 @@ function askClick(e) {
   const ta = document.getElementById('askin'), text = ta ? ta.value.trim() : '';
   if (k === 'close') { ASK = null; askDraw(); render(); }
   else if (k === 'send') { if (text && !ASK.busy) askSend(text); }
+  else if (k === 'retry') { const t = ASK.retry; ASK.retry = null; if (t && !ASK.busy) askSend(t); }
   else if (k === 'note') { if (!text) return; P.qa.push({ d: today(), lid: ASK.lid, q: text, a: '' }); save(); toast('Frage notiert'); ASK = null; askDraw(); render(); }
   else if (k === 'mic') dictate('de-DE', t => { const el = document.getElementById('askin'); if (el) el.value = (el.value ? el.value + ' ' : '') + t; });
   else if (k === 'card' && ASK.card) {
